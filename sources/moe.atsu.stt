@@ -824,7 +824,7 @@ var SourcePackage = (() => {
       exports.ATSU_SORT_OPTIONS = exports.ATSU_STATUSES = exports.ATSU_FORMATS = exports.ATSU_THEMES = exports.ATSU_GENRES = exports.DEDUPLICATION_MODE_OPTIONS = exports.IMAGE_FORMAT_OPTIONS = exports.PREF_KEYS = exports.IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.MANGA_URL_REGEX = exports.RATE_LIMIT_PER_SECOND = exports.DEFAULT_PAGE_SIZE = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_FALLBACK_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.CDN_STATIC_BASE = exports.STATIC_BASE = exports.SEARCH_ENDPOINT = exports.API_BASE = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = void 0;
       exports.SOURCE_ID = "moe.atsu";
       exports.SOURCE_NAME = "Atsumaru";
-      exports.SOURCE_VERSION = 1.4;
+      exports.SOURCE_VERSION = 1.5;
       exports.BASE_URL = "https://atsu.moe";
       exports.API_BASE = "https://atsu.moe/api";
       exports.SEARCH_ENDPOINT = `${exports.BASE_URL}/collections/manga/documents/search`;
@@ -1244,6 +1244,13 @@ var SourcePackage = (() => {
         }
         return trimmed.replace(/^\/+|\/+$/g, "").replace(/^manga\//i, "").trim();
       }
+      function safeEncodeUrl(url) {
+        try {
+          return encodeURI(decodeURI(url));
+        } catch {
+          return encodeURI(url);
+        }
+      }
       function resolveImageUrl(rawImage, imageFormat = "webp", fallback = constants_js_1.FALLBACK_COVER_URL) {
         var _a, _b, _c, _d, _e, _f;
         if (!rawImage) {
@@ -1258,22 +1265,24 @@ var SourcePackage = (() => {
         if (!candidate || typeof candidate !== "string") {
           return fallback;
         }
-        const trimmed = candidate.trim();
-        if (!trimmed) {
+        let value = candidate.trim();
+        if (!value) {
           return fallback;
         }
-        if (trimmed.startsWith("https://") || trimmed.startsWith("http://")) {
-          const cleaned = trimmed.replace(/^https?:\/\/https?:\/\//i, "https://").replace(/^https:\/\/\//i, "https://");
-          return cleaned.length >= 10 ? cleaned : fallback;
+        value = value.replace(/^https?:\/\/https?:\/\//i, "https://").replace(/^(https?):\/{3,}/i, "$1://").replace(/^(https?):\/(?!\/)/i, "$1://");
+        if (value.startsWith("//")) {
+          value = `https:${value}`;
         }
-        if (trimmed.startsWith("//")) {
-          return `https:${trimmed}`;
+        if (/^https?:\/\//i.test(value)) {
+          const absolute = value.replace(/^http:\/\//i, "https://").replace(/^https:\/\/(?:www\.)?atsu\.moe\/static\//i, `${constants_js_1.CDN_STATIC_BASE}/`);
+          const encoded = safeEncodeUrl(absolute);
+          return encoded.length >= 10 ? encoded : fallback;
         }
-        const cleanRelative = trimmed.replace(/^\/+/, "").replace(/^static\/+/i, "");
+        const cleanRelative = value.replace(/^\/+/, "").replace(/^static\/+/i, "");
         if (!cleanRelative) {
           return fallback;
         }
-        return `${constants_js_1.STATIC_BASE}/${cleanRelative}`;
+        return safeEncodeUrl(`${constants_js_1.CDN_STATIC_BASE}/${cleanRelative}`);
       }
       function resolveMangaCover(manga, imageFormat = "webp") {
         var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
@@ -1767,7 +1776,7 @@ var SourcePackage = (() => {
         }
         buildTypesenseSortBy(params) {
           var _a;
-          const rawKey = (_a = params.sortBy) != null ? _a : params.mode === "top_rated" ? "mbRating" : params.mode === "latest" ? "updatedAt" : "trending";
+          const rawKey = (_a = params.sortBy) != null ? _a : params.mode === "top_rated" ? "mbRating" : params.mode === "latest" || params.mode === "recently_added" ? "dateAdded" : params.mode === "most_bookmarked" ? "popularity" : "trending";
           if (rawKey === "title_asc") {
             return "title:asc";
           }
@@ -1775,13 +1784,16 @@ var SourcePackage = (() => {
             return "title:desc";
           }
           const direction = typeof params.sortAscending === "boolean" ? params.sortAscending ? "asc" : "desc" : "desc";
+          if (rawKey === "updatedAt") {
+            return `dateAdded:${direction}`;
+          }
           switch (rawKey) {
             case "mbRating":
-            case "updatedAt":
             case "dateAdded":
             case "released":
             case "popularity":
             case "trending":
+            case "views":
               return `${rawKey}:${direction}`;
             default:
               return `trending:${direction}`;
@@ -1803,6 +1815,18 @@ var SourcePackage = (() => {
           }
           if (!hasFilters && params.mode === "latest") {
             return this.fetchHomeEndpoint("recentlyUpdated", page, perPage, allowNsfw, prefs.imageFormat);
+          }
+          if (!hasFilters && params.mode === "hot_updates") {
+            return this.fetchHomeEndpoint("hotUpdates", page, perPage, allowNsfw, prefs.imageFormat);
+          }
+          if (!hasFilters && params.mode === "recently_added") {
+            return this.fetchHomeEndpoint("recentlyAdded", page, perPage, allowNsfw, prefs.imageFormat);
+          }
+          if (!hasFilters && params.mode === "top_rated") {
+            return this.fetchHomeEndpoint("topRated", page, perPage, allowNsfw, prefs.imageFormat);
+          }
+          if (!hasFilters && params.mode === "most_bookmarked") {
+            return this.fetchHomeEndpoint("mostBookmarked", page, perPage, allowNsfw, prefs.imageFormat);
           }
           const queryText = ((_d = params.query) == null ? void 0 : _d.trim()) || "*";
           const filterBy = this.buildTypesenseFilterBy(params, allowNsfw);
@@ -1843,8 +1867,9 @@ var SourcePackage = (() => {
               throw error;
             }
             if (queryText === "*") {
+              const fallbackEndpoint = params.mode === "latest" ? "recentlyUpdated" : params.mode === "hot_updates" ? "hotUpdates" : params.mode === "recently_added" ? "recentlyAdded" : params.mode === "top_rated" ? "topRated" : params.mode === "most_bookmarked" ? "mostBookmarked" : "popular";
               const fallbackType = params.mode === "manhwa" ? "Manwha" : params.mode === "manga" ? "Manga" : "Manga,Manwha,Manhua,OEL";
-              return this.fetchHomeEndpoint(params.mode === "latest" ? "recentlyUpdated" : "popular", page, perPage, allowNsfw, prefs.imageFormat, fallbackType);
+              return this.fetchHomeEndpoint(fallbackEndpoint, page, perPage, allowNsfw, prefs.imageFormat, fallbackType);
             }
             throw error;
           }
@@ -2087,6 +2112,10 @@ var SourcePackage = (() => {
             const imageUrl = resolveImageUrl(page.image, prefs.imageFormat, constants_js_1.FALLBACK_COVER_URL);
             return {
               url: imageUrl,
+              headers: {
+                Referer: constants_js_1.REFERER_URL,
+                Origin: constants_js_1.ORIGIN_URL
+              },
               context: {
                 pageId: page.id,
                 pageNumber: page.number,
@@ -2238,15 +2267,18 @@ var SourcePackage = (() => {
       var preferences_js_1 = require_preferences();
       var HOME_SECTION_KEYS = {
         SPOTLIGHT: "spotlight",
-        LATEST_UPDATES: "latest_updates",
-        TRENDING_MANHWA: "trending_manhwa"
+        HOT_UPDATES: "hot_updates",
+        POPULAR: "popular",
+        TOP_RATED: "top_rated"
       };
       var DIRECTORY_FEED_KEYS = {
-        MANGA: "manga",
-        MANHWA: "manhwa",
-        TOP_RATED: "top_rated",
+        TRENDING: "trending",
+        POPULAR: "popular",
         LATEST: "latest",
-        POPULAR: "popular"
+        HOT_UPDATES: "hot_updates",
+        RECENTLY_ADDED: "recently_added",
+        TOP_RATED: "top_rated",
+        MOST_BOOKMARKED: "most_bookmarked"
       };
       var _Target = class _Target {
         constructor(api) {
@@ -2260,6 +2292,12 @@ var SourcePackage = (() => {
         getConfiguration() {
           return {
             imageReferer: constants_js_1.REFERER_URL,
+            endpoint: [constants_js_1.BASE_URL, constants_js_1.CDN_STATIC_BASE],
+            useClientForImageRequests: true,
+            standardHeaders: {
+              Referer: constants_js_1.REFERER_URL,
+              Origin: constants_js_1.ORIGIN_URL
+            },
             cloudflareResolutionURL: constants_js_1.CLOUDFLARE_FALLBACK_URL
           };
         }
@@ -2283,20 +2321,47 @@ var SourcePackage = (() => {
                 }
               },
               {
-                id: DIRECTORY_FEED_KEYS.MANGA,
-                title: "Manga",
+                id: DIRECTORY_FEED_KEYS.TRENDING,
+                title: "Trending",
                 content: {
                   list: {
-                    key: DIRECTORY_FEED_KEYS.MANGA
+                    key: DIRECTORY_FEED_KEYS.TRENDING
                   }
                 }
               },
               {
-                id: DIRECTORY_FEED_KEYS.MANHWA,
-                title: "Manhwa",
+                id: DIRECTORY_FEED_KEYS.POPULAR,
+                title: "Popular",
                 content: {
                   list: {
-                    key: DIRECTORY_FEED_KEYS.MANHWA
+                    key: DIRECTORY_FEED_KEYS.POPULAR
+                  }
+                }
+              },
+              {
+                id: DIRECTORY_FEED_KEYS.LATEST,
+                title: "Latest Updates",
+                content: {
+                  list: {
+                    key: DIRECTORY_FEED_KEYS.LATEST
+                  }
+                }
+              },
+              {
+                id: DIRECTORY_FEED_KEYS.HOT_UPDATES,
+                title: "Hot Updates",
+                content: {
+                  list: {
+                    key: DIRECTORY_FEED_KEYS.HOT_UPDATES
+                  }
+                }
+              },
+              {
+                id: DIRECTORY_FEED_KEYS.RECENTLY_ADDED,
+                title: "Recently Added",
+                content: {
+                  list: {
+                    key: DIRECTORY_FEED_KEYS.RECENTLY_ADDED
                   }
                 }
               },
@@ -2306,6 +2371,15 @@ var SourcePackage = (() => {
                 content: {
                   list: {
                     key: DIRECTORY_FEED_KEYS.TOP_RATED
+                  }
+                }
+              },
+              {
+                id: DIRECTORY_FEED_KEYS.MOST_BOOKMARKED,
+                title: "Most Bookmarked",
+                content: {
+                  list: {
+                    key: DIRECTORY_FEED_KEYS.MOST_BOOKMARKED
                   }
                 }
               }
@@ -2319,16 +2393,11 @@ var SourcePackage = (() => {
               isLastPage: true
             };
           }
-          const [spotlightRes, latestRes, manhwaRes] = await Promise.all([
+          const [spotlightRes, latestRes, hotUpdatesRes, topRatedRes] = await Promise.all([
             this.api.fetchExplore({ mode: "popular", page: 1, perPage: 15 }),
             this.api.fetchExplore({ mode: "latest", page: 1, perPage: 24 }),
-            this.api.fetchExplore({
-              mode: "manhwa",
-              format: "Manwha",
-              sortBy: "trending",
-              page: 1,
-              perPage: 24
-            })
+            this.api.fetchExplore({ mode: "hot_updates", page: 1, perPage: 24 }),
+            this.api.fetchExplore({ mode: "top_rated", page: 1, perPage: 24 })
           ]);
           const sections = [
             {
@@ -2340,20 +2409,28 @@ var SourcePackage = (() => {
               destination: (0, toolchain_1.ItemListDestination)({ key: DIRECTORY_FEED_KEYS.POPULAR }, "Spotlight & Trending")
             },
             {
-              id: HOME_SECTION_KEYS.LATEST_UPDATES,
-              title: "Hot Arrivals & Latest Updates",
+              id: HOME_SECTION_KEYS.HOT_UPDATES,
+              title: "Hot Updates",
+              subtitle: "High momentum chapters and popular releases",
+              style: toolchain_1.PageSectionStyle.DEFAULT,
+              items: hotUpdatesRes.items,
+              destination: (0, toolchain_1.ItemListDestination)({ key: DIRECTORY_FEED_KEYS.HOT_UPDATES }, "Hot Updates")
+            },
+            {
+              id: HOME_SECTION_KEYS.POPULAR,
+              title: "Latest Updates",
               subtitle: "Recently updated chapters across all scanlators",
               style: toolchain_1.PageSectionStyle.DEFAULT,
               items: latestRes.items,
-              destination: (0, toolchain_1.ItemListDestination)({ key: DIRECTORY_FEED_KEYS.LATEST }, "Hot Arrivals & Latest Updates")
+              destination: (0, toolchain_1.ItemListDestination)({ key: DIRECTORY_FEED_KEYS.LATEST }, "Latest Updates")
             },
             {
-              id: HOME_SECTION_KEYS.TRENDING_MANHWA,
-              title: "Curated Trending Manhwa",
-              subtitle: "Top full-color vertical webtoons & manhwa",
+              id: HOME_SECTION_KEYS.TOP_RATED,
+              title: "Top Rated Series",
+              subtitle: "Critically acclaimed manga and manhwa",
               style: toolchain_1.PageSectionStyle.DEFAULT,
-              items: manhwaRes.items,
-              destination: (0, toolchain_1.ItemListDestination)({ key: DIRECTORY_FEED_KEYS.MANHWA }, "Curated Trending Manhwa")
+              items: topRatedRes.items,
+              destination: (0, toolchain_1.ItemListDestination)({ key: DIRECTORY_FEED_KEYS.TOP_RATED }, "Top Rated Series")
             }
           ];
           return {
@@ -2371,7 +2448,15 @@ var SourcePackage = (() => {
               });
               return res.items;
             }
-            case HOME_SECTION_KEYS.LATEST_UPDATES: {
+            case HOME_SECTION_KEYS.HOT_UPDATES: {
+              const res = await this.api.fetchExplore({
+                mode: "hot_updates",
+                page: 1,
+                perPage: 24
+              });
+              return res.items;
+            }
+            case HOME_SECTION_KEYS.POPULAR: {
               const res = await this.api.fetchExplore({
                 mode: "latest",
                 page: 1,
@@ -2379,11 +2464,9 @@ var SourcePackage = (() => {
               });
               return res.items;
             }
-            case HOME_SECTION_KEYS.TRENDING_MANHWA: {
+            case HOME_SECTION_KEYS.TOP_RATED: {
               const res = await this.api.fetchExplore({
-                mode: "manhwa",
-                format: "Manwha",
-                sortBy: "trending",
+                mode: "top_rated",
                 page: 1,
                 perPage: 24
               });
@@ -2401,20 +2484,47 @@ var SourcePackage = (() => {
         async getCustomFeeds() {
           return [
             {
-              id: DIRECTORY_FEED_KEYS.MANGA,
-              title: "Manga",
+              id: DIRECTORY_FEED_KEYS.TRENDING,
+              title: "Trending",
               content: {
                 list: {
-                  key: DIRECTORY_FEED_KEYS.MANGA
+                  key: DIRECTORY_FEED_KEYS.TRENDING
                 }
               }
             },
             {
-              id: DIRECTORY_FEED_KEYS.MANHWA,
-              title: "Manhwa",
+              id: DIRECTORY_FEED_KEYS.POPULAR,
+              title: "Popular",
               content: {
                 list: {
-                  key: DIRECTORY_FEED_KEYS.MANHWA
+                  key: DIRECTORY_FEED_KEYS.POPULAR
+                }
+              }
+            },
+            {
+              id: DIRECTORY_FEED_KEYS.LATEST,
+              title: "Latest Updates",
+              content: {
+                list: {
+                  key: DIRECTORY_FEED_KEYS.LATEST
+                }
+              }
+            },
+            {
+              id: DIRECTORY_FEED_KEYS.HOT_UPDATES,
+              title: "Hot Updates",
+              content: {
+                list: {
+                  key: DIRECTORY_FEED_KEYS.HOT_UPDATES
+                }
+              }
+            },
+            {
+              id: DIRECTORY_FEED_KEYS.RECENTLY_ADDED,
+              title: "Recently Added",
+              content: {
+                list: {
+                  key: DIRECTORY_FEED_KEYS.RECENTLY_ADDED
                 }
               }
             },
@@ -2428,11 +2538,11 @@ var SourcePackage = (() => {
               }
             },
             {
-              id: DIRECTORY_FEED_KEYS.LATEST,
-              title: "Latest Updates",
+              id: DIRECTORY_FEED_KEYS.MOST_BOOKMARKED,
+              title: "Most Bookmarked",
               content: {
                 list: {
-                  key: DIRECTORY_FEED_KEYS.LATEST
+                  key: DIRECTORY_FEED_KEYS.MOST_BOOKMARKED
                 }
               }
             }
@@ -2440,31 +2550,22 @@ var SourcePackage = (() => {
         }
         async getItemList(request, page) {
           var _a, _b, _c;
-          const key = (_a = request.key) != null ? _a : DIRECTORY_FEED_KEYS.POPULAR;
+          const key = (_a = request.key) != null ? _a : DIRECTORY_FEED_KEYS.TRENDING;
           const sortBy = (_b = request.sort) == null ? void 0 : _b.key;
           const sortAscending = (_c = request.sort) == null ? void 0 : _c.ascending;
           switch (key) {
-            case DIRECTORY_FEED_KEYS.MANGA:
+            case DIRECTORY_FEED_KEYS.TRENDING:
               return this.api.fetchExplore({
-                mode: "manga",
-                format: "Manga",
+                mode: "trending",
                 sortBy: sortBy != null ? sortBy : "trending",
                 sortAscending,
                 page
               });
-            case DIRECTORY_FEED_KEYS.MANHWA:
+            case DIRECTORY_FEED_KEYS.POPULAR:
               return this.api.fetchExplore({
-                mode: "manhwa",
-                format: "Manwha",
-                sortBy: sortBy != null ? sortBy : "trending",
+                mode: "popular",
+                sortBy,
                 sortAscending,
-                page
-              });
-            case DIRECTORY_FEED_KEYS.TOP_RATED:
-              return this.api.fetchExplore({
-                mode: "top_rated",
-                sortBy: sortBy != null ? sortBy : "mbRating",
-                sortAscending: sortAscending != null ? sortAscending : false,
                 page
               });
             case DIRECTORY_FEED_KEYS.LATEST:
@@ -2474,10 +2575,37 @@ var SourcePackage = (() => {
                 sortAscending: sortAscending != null ? sortAscending : false,
                 page
               });
-            case DIRECTORY_FEED_KEYS.POPULAR:
+            case DIRECTORY_FEED_KEYS.HOT_UPDATES:
+              return this.api.fetchExplore({
+                mode: "hot_updates",
+                sortBy,
+                sortAscending,
+                page
+              });
+            case DIRECTORY_FEED_KEYS.RECENTLY_ADDED:
+              return this.api.fetchExplore({
+                mode: "recently_added",
+                sortBy: sortBy != null ? sortBy : "dateAdded",
+                sortAscending: sortAscending != null ? sortAscending : false,
+                page
+              });
+            case DIRECTORY_FEED_KEYS.TOP_RATED:
+              return this.api.fetchExplore({
+                mode: "top_rated",
+                sortBy: sortBy != null ? sortBy : "mbRating",
+                sortAscending: sortAscending != null ? sortAscending : false,
+                page
+              });
+            case DIRECTORY_FEED_KEYS.MOST_BOOKMARKED:
+              return this.api.fetchExplore({
+                mode: "most_bookmarked",
+                sortBy: sortBy != null ? sortBy : "popularity",
+                sortAscending: sortAscending != null ? sortAscending : false,
+                page
+              });
             default:
               return this.api.fetchExplore({
-                mode: "popular",
+                mode: "trending",
                 sortBy,
                 sortAscending,
                 page
@@ -2575,7 +2703,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_moe();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "moe.atsu", "name": "Atsumaru", "version": 1.4, "website": "https://atsu.moe", "rating": 1, "thumbnail": "https://atsu.moe/favicon.ico", "languages": ["en"] };
+      exports.SourceMetadata = { "id": "moe.atsu", "name": "Atsumaru", "version": 1.5, "website": "https://atsu.moe", "rating": 1, "thumbnail": "https://atsu.moe/favicon.ico", "languages": ["en"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;
