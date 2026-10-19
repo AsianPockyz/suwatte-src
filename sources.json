@@ -1,0 +1,21 @@
+{
+  "catalogVersion": 2,
+  "generatedAt": "2026-10-19T01:34:28.341Z",
+  "listName": "Atsumaru Source",
+  "sources": [
+    {
+      "id": "moe.atsu",
+      "name": "Atsumaru",
+      "version": 1.4,
+      "website": "https://atsu.moe",
+      "rating": 1,
+      "thumbnail": "https://atsu.moe/favicon.ico",
+      "languages": [
+        "en"
+      ],
+      "path": "moe.atsu",
+      "sourceId": "moe.atsu",
+      "environment": "jsc"
+    }
+  ]
+}
