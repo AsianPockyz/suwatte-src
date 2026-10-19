@@ -824,7 +824,7 @@ var SourcePackage = (() => {
       exports.ATSU_SORT_OPTIONS = exports.ATSU_STATUSES = exports.ATSU_FORMATS = exports.ATSU_THEMES = exports.ATSU_GENRES = exports.DEDUPLICATION_MODE_OPTIONS = exports.IMAGE_FORMAT_OPTIONS = exports.PREF_KEYS = exports.IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.MANGA_URL_REGEX = exports.RATE_LIMIT_PER_SECOND = exports.DEFAULT_PAGE_SIZE = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_FALLBACK_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.CDN_STATIC_BASE = exports.STATIC_BASE = exports.SEARCH_ENDPOINT = exports.API_BASE = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = void 0;
       exports.SOURCE_ID = "moe.atsu";
       exports.SOURCE_NAME = "Atsumaru";
-      exports.SOURCE_VERSION = 1.5;
+      exports.SOURCE_VERSION = 1.6;
       exports.BASE_URL = "https://atsu.moe";
       exports.API_BASE = "https://atsu.moe/api";
       exports.SEARCH_ENDPOINT = `${exports.BASE_URL}/collections/manga/documents/search`;
@@ -2312,78 +2312,7 @@ var SourcePackage = (() => {
         // =========================================================================
         async getHomePage() {
           return {
-            feeds: [
-              {
-                id: "discover",
-                title: "Discover",
-                content: {
-                  page: "home"
-                }
-              },
-              {
-                id: DIRECTORY_FEED_KEYS.TRENDING,
-                title: "Trending",
-                content: {
-                  list: {
-                    key: DIRECTORY_FEED_KEYS.TRENDING
-                  }
-                }
-              },
-              {
-                id: DIRECTORY_FEED_KEYS.POPULAR,
-                title: "Popular",
-                content: {
-                  list: {
-                    key: DIRECTORY_FEED_KEYS.POPULAR
-                  }
-                }
-              },
-              {
-                id: DIRECTORY_FEED_KEYS.LATEST,
-                title: "Latest Updates",
-                content: {
-                  list: {
-                    key: DIRECTORY_FEED_KEYS.LATEST
-                  }
-                }
-              },
-              {
-                id: DIRECTORY_FEED_KEYS.HOT_UPDATES,
-                title: "Hot Updates",
-                content: {
-                  list: {
-                    key: DIRECTORY_FEED_KEYS.HOT_UPDATES
-                  }
-                }
-              },
-              {
-                id: DIRECTORY_FEED_KEYS.RECENTLY_ADDED,
-                title: "Recently Added",
-                content: {
-                  list: {
-                    key: DIRECTORY_FEED_KEYS.RECENTLY_ADDED
-                  }
-                }
-              },
-              {
-                id: DIRECTORY_FEED_KEYS.TOP_RATED,
-                title: "Top Rated",
-                content: {
-                  list: {
-                    key: DIRECTORY_FEED_KEYS.TOP_RATED
-                  }
-                }
-              },
-              {
-                id: DIRECTORY_FEED_KEYS.MOST_BOOKMARKED,
-                title: "Most Bookmarked",
-                content: {
-                  list: {
-                    key: DIRECTORY_FEED_KEYS.MOST_BOOKMARKED
-                  }
-                }
-              }
-            ]
+            feeds: await this.getCustomFeeds()
           };
         }
         async getItemPage(key, page) {
@@ -2484,6 +2413,22 @@ var SourcePackage = (() => {
         async getCustomFeeds() {
           return [
             {
+              id: "discover",
+              title: "Discover",
+              content: {
+                page: "home"
+              }
+            },
+            {
+              id: DIRECTORY_FEED_KEYS.TOP_RATED,
+              title: "Top Rated",
+              content: {
+                list: {
+                  key: DIRECTORY_FEED_KEYS.TOP_RATED
+                }
+              }
+            },
+            {
               id: DIRECTORY_FEED_KEYS.TRENDING,
               title: "Trending",
               content: {
@@ -2529,15 +2474,6 @@ var SourcePackage = (() => {
               }
             },
             {
-              id: DIRECTORY_FEED_KEYS.TOP_RATED,
-              title: "Top Rated",
-              content: {
-                list: {
-                  key: DIRECTORY_FEED_KEYS.TOP_RATED
-                }
-              }
-            },
-            {
               id: DIRECTORY_FEED_KEYS.MOST_BOOKMARKED,
               title: "Most Bookmarked",
               content: {
@@ -2554,6 +2490,18 @@ var SourcePackage = (() => {
           const sortBy = (_b = request.sort) == null ? void 0 : _b.key;
           const sortAscending = (_c = request.sort) == null ? void 0 : _c.ascending;
           switch (key) {
+            case "discover":
+              return this.api.fetchExplore({
+                mode: "popular",
+                page
+              });
+            case DIRECTORY_FEED_KEYS.TOP_RATED:
+              return this.api.fetchExplore({
+                mode: "top_rated",
+                sortBy: sortBy != null ? sortBy : "mbRating",
+                sortAscending: sortAscending != null ? sortAscending : false,
+                page
+              });
             case DIRECTORY_FEED_KEYS.TRENDING:
               return this.api.fetchExplore({
                 mode: "trending",
@@ -2586,13 +2534,6 @@ var SourcePackage = (() => {
               return this.api.fetchExplore({
                 mode: "recently_added",
                 sortBy: sortBy != null ? sortBy : "dateAdded",
-                sortAscending: sortAscending != null ? sortAscending : false,
-                page
-              });
-            case DIRECTORY_FEED_KEYS.TOP_RATED:
-              return this.api.fetchExplore({
-                mode: "top_rated",
-                sortBy: sortBy != null ? sortBy : "mbRating",
                 sortAscending: sortAscending != null ? sortAscending : false,
                 page
               });
@@ -2703,7 +2644,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_moe();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "moe.atsu", "name": "Atsumaru", "version": 1.5, "website": "https://atsu.moe", "rating": 1, "thumbnail": "https://atsu.moe/favicon.ico", "languages": ["en"] };
+      exports.SourceMetadata = { "id": "moe.atsu", "name": "Atsumaru", "version": 1.6, "website": "https://atsu.moe", "rating": 1, "thumbnail": "https://atsu.moe/favicon.ico", "languages": ["en"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;
