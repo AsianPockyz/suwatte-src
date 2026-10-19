@@ -824,7 +824,7 @@ var SourcePackage = (() => {
       exports.ATSU_SORT_OPTIONS = exports.ATSU_STATUSES = exports.ATSU_FORMATS = exports.ATSU_THEMES = exports.ATSU_GENRES = exports.DEDUPLICATION_MODE_OPTIONS = exports.IMAGE_FORMAT_OPTIONS = exports.DEFAULT_ALLOWED_CONTENT_RATINGS = exports.CONTENT_RATING_OPTIONS = exports.PREF_KEYS = exports.IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.MANGA_URL_REGEX = exports.RATE_LIMIT_PER_SECOND = exports.DEFAULT_PAGE_SIZE = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_FALLBACK_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.CDN_STATIC_BASE = exports.STATIC_BASE = exports.SEARCH_ENDPOINT = exports.API_BASE = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = void 0;
       exports.SOURCE_ID = "moe.atsu";
       exports.SOURCE_NAME = "Atsumaru";
-      exports.SOURCE_VERSION = 1.9;
+      exports.SOURCE_VERSION = 2;
       exports.BASE_URL = "https://atsu.moe";
       exports.API_BASE = "https://atsu.moe/api";
       exports.SEARCH_ENDPOINT = `${exports.BASE_URL}/collections/manga/documents/search`;
@@ -861,9 +861,8 @@ var SourcePackage = (() => {
       exports.CONTENT_RATING_OPTIONS = [
         { id: "Safe", title: "Safe (All Audiences)" },
         { id: "Suggestive", title: "Suggestive (Ecchi / Mild Fanservice)" },
-        { id: "Erotica", title: "Erotica (Mature / Smut)" },
-        { id: "Pornographic", title: "Pornographic (Explicit / 18+)" },
-        { id: "Adult", title: "Adult (Flagged 18+)" }
+        { id: "Erotica", title: "Erotica / Mature" },
+        { id: "Adult", title: "Adult / Pornographic (18+)" }
       ];
       exports.DEFAULT_ALLOWED_CONTENT_RATINGS = [
         "Safe",
@@ -903,27 +902,70 @@ var SourcePackage = (() => {
       exports.ATSU_THEMES = [
         { id: "94", title: "Isekai" },
         { id: "126", title: "Reincarnation" },
-        { id: "3495", title: "Regression" },
-        { id: "121", title: "Magic" },
+        { id: "3495", title: "Regressor Protagonist" },
+        { id: "748", title: "Age Regression" },
+        { id: "1010", title: "Transmigration" },
+        { id: "249", title: "Time Travel" },
+        { id: "3962", title: "Time Traveler" },
+        { id: "363", title: "Cultivation" },
         { id: "337", title: "Swordplay" },
-        { id: "688", title: "Martial Artist" },
-        { id: "227", title: "Revenge" },
-        { id: "20", title: "Harem" },
+        { id: "121", title: "Magic" },
+        { id: "528", title: "Necromancy" },
+        { id: "236", title: "Super Powers" },
+        { id: "883", title: "Special Ability" },
+        { id: "267", title: "Video Games" },
+        { id: "399", title: "Game Elements" },
+        { id: "1171", title: "Level System" },
+        { id: "500", title: "Dungeon" },
+        { id: "594", title: "Virtual Reality" },
         { id: "42", title: "School Life" },
         { id: "854", title: "Academy" },
-        { id: "127", title: "Nobility" },
-        { id: "128", title: "Royalty" },
-        { id: "764", title: "Dark Fantasy" },
-        { id: "642", title: "Fantasy World" },
+        { id: "162", title: "High School" },
+        { id: "257", title: "College" },
         { id: "160", title: "Demons" },
         { id: "395", title: "Monsters" },
-        { id: "528", title: "Necromancy" },
-        { id: "249", title: "Time Travel" },
-        { id: "584", title: "Time Rewind" },
+        { id: "176", title: "Gods" },
+        { id: "229", title: "Ghosts" },
+        { id: "252", title: "Vampires" },
+        { id: "413", title: "Zombies" },
+        { id: "12", title: "Gender Bender" },
+        { id: "167", title: "Crossdressing" },
+        { id: "30", title: "Sports" },
+        { id: "11", title: "Mecha" },
+        { id: "265", title: "Survival" },
+        { id: "230", title: "Military" },
+        { id: "353", title: "Mafia" },
+        { id: "352", title: "Yakuza" },
+        { id: "227", title: "Revenge" },
+        { id: "266", title: "Villainess" },
+        { id: "419", title: "Anti-Hero" },
         { id: "1064", title: "Weak to Strong" },
-        { id: "1818", title: "Strong Protagonist" },
+        { id: "3236", title: "Overpowered" },
         { id: "67", title: "Strong Male Lead" },
         { id: "69", title: "Strong Female Lead" },
+        { id: "20", title: "Harem" },
+        { id: "163", title: "Female Harem" },
+        { id: "165", title: "Reverse Harem" },
+        { id: "125", title: "Love Triangle" },
+        { id: "106", title: "Age Gap" },
+        { id: "97", title: "Childhood Friends" },
+        { id: "226", title: "Unrequited Love" },
+        { id: "16", title: "Yaoi" },
+        { id: "33", title: "Yuri" },
+        { id: "23", title: "Shounen Ai" },
+        { id: "47", title: "Shoujo Ai" },
+        { id: "118", title: "Omegaverse" },
+        { id: "232", title: "Netorare" },
+        { id: "262", title: "Gore" },
+        { id: "830", title: "Violence" },
+        { id: "127", title: "Nobility" },
+        { id: "128", title: "Royalty" },
+        { id: "450", title: "European Ambience" },
+        { id: "261", title: "Urban Fantasy" },
+        { id: "642", title: "Fantasy World" },
+        { id: "235", title: "Bullying" },
+        { id: "313", title: "Tsundere" },
+        { id: "315", title: "Yandere" },
         { id: "38", title: "Shounen" },
         { id: "8", title: "Seinen" },
         { id: "40", title: "Shoujo" },
@@ -1081,8 +1123,9 @@ var SourcePackage = (() => {
             const stored = await ObjectStore.get(constants_js_1.PREF_KEYS.CONTENT_RATINGS);
             const parsed = parseStringList(stored);
             if (parsed.length > 0) {
-              memoryPreferences.contentRatings = parsed;
-              return parsed;
+              const normalized = Array.from(new Set(parsed.map((r) => r === "Pornographic" ? "Adult" : r)));
+              memoryPreferences.contentRatings = normalized;
+              return normalized;
             }
             const legacyNsfw = await ObjectStore.boolean(constants_js_1.PREF_KEYS.SHOW_NSFW);
             if (legacyNsfw === true) {
@@ -1090,7 +1133,6 @@ var SourcePackage = (() => {
                 "Safe",
                 "Suggestive",
                 "Erotica",
-                "Pornographic",
                 "Adult"
               ];
               memoryPreferences.contentRatings = migrated;
@@ -1127,7 +1169,7 @@ var SourcePackage = (() => {
       }
       async function getShowNsfwPreference() {
         const ratings = await getContentRatingsPreference();
-        const allowsNsfw = ratings.some((r) => ["Erotica", "Pornographic", "Adult"].includes(r));
+        const allowsNsfw = ratings.some((r) => ["Erotica", "Adult"].includes(r));
         memoryPreferences.showNsfw = allowsNsfw;
         return allowsNsfw;
       }
@@ -1140,7 +1182,7 @@ var SourcePackage = (() => {
           getExcludedGenresPreference(),
           getExcludedTagsPreference()
         ]);
-        const showNsfw = contentRatings.some((r) => ["Erotica", "Pornographic", "Adult"].includes(r));
+        const showNsfw = contentRatings.some((r) => ["Erotica", "Adult"].includes(r));
         return {
           imageFormat,
           deduplicateChapters,
@@ -1295,9 +1337,10 @@ var SourcePackage = (() => {
         }
         const rawRatings = raw[constants_js_1.PREF_KEYS.CONTENT_RATINGS];
         if (rawRatings !== void 0 && rawRatings !== null) {
-          const ratings = parseStringList(rawRatings);
+          const rawList = parseStringList(rawRatings);
+          const ratings = Array.from(new Set(rawList.map((r) => r === "Pornographic" ? "Adult" : r)));
           memoryPreferences.contentRatings = ratings;
-          memoryPreferences.showNsfw = ratings.some((r) => ["Erotica", "Pornographic", "Adult"].includes(r));
+          memoryPreferences.showNsfw = ratings.some((r) => ["Erotica", "Adult"].includes(r));
           if (hasObjectStore()) {
             try {
               await ObjectStore.set(constants_js_1.PREF_KEYS.CONTENT_RATINGS, ratings);
@@ -1309,7 +1352,7 @@ var SourcePackage = (() => {
           const rawShowNsfw = raw[constants_js_1.PREF_KEYS.SHOW_NSFW];
           if (typeof rawShowNsfw === "boolean") {
             memoryPreferences.showNsfw = rawShowNsfw;
-            memoryPreferences.contentRatings = rawShowNsfw ? ["Safe", "Suggestive", "Erotica", "Pornographic", "Adult"] : ["Safe", "Suggestive"];
+            memoryPreferences.contentRatings = rawShowNsfw ? ["Safe", "Suggestive", "Erotica", "Adult"] : ["Safe", "Suggestive"];
             if (hasObjectStore()) {
               try {
                 await ObjectStore.set(constants_js_1.PREF_KEYS.SHOW_NSFW, rawShowNsfw);
@@ -1642,23 +1685,30 @@ var SourcePackage = (() => {
           return true;
         }
         const allowsAdult = allowedRatings.includes("Adult");
+        const allowsErotica = allowedRatings.includes("Erotica");
+        const allowsSuggestive = allowedRatings.includes("Suggestive");
+        const allowsSafe = allowedRatings.includes("Safe");
         if (manga.isAdult === true && !allowsAdult) {
           return false;
         }
         if (manga.mbContentRating) {
-          const rawRating = manga.mbContentRating.trim();
-          const matched = allowedRatings.some((r) => r.toLowerCase() === rawRating.toLowerCase());
-          if (!matched) {
+          const rawRating = manga.mbContentRating.trim().toLowerCase();
+          if (rawRating === "safe" && !allowsSafe) {
+            return false;
+          }
+          if (rawRating === "suggestive" && !allowsSuggestive) {
+            return false;
+          }
+          if (rawRating === "erotica" && !allowsErotica) {
+            return false;
+          }
+          if (rawRating === "pornographic" && !allowsAdult) {
             return false;
           }
         }
         const ratingEnum = mapContentRating(manga);
         if (ratingEnum === toolchain_1.ContentRating.MATURE) {
-          const allowsMature = allowedRatings.some((r) => {
-            const lower = r.toLowerCase();
-            return lower === "erotica" || lower === "pornographic" || lower === "adult";
-          });
-          if (!allowsMature) {
+          if (!allowsAdult && !allowsErotica) {
             return false;
           }
         }
@@ -2013,16 +2063,24 @@ var SourcePackage = (() => {
             deduplicateChapters: true,
             scanlatorWhitelist: [],
             showNsfw: Boolean(prefsOrShowNsfw),
-            contentRatings: prefsOrShowNsfw ? ["Safe", "Suggestive", "Erotica", "Pornographic", "Adult"] : ["Safe", "Suggestive"],
+            contentRatings: prefsOrShowNsfw ? ["Safe", "Suggestive", "Erotica", "Adult"] : ["Safe", "Suggestive"],
             excludedGenres: [],
             excludedTags: []
           };
           const isSearchNsfwOverride = params.includeNsfw === true;
-          const allowedRatings = isSearchNsfwOverride ? ["Safe", "Suggestive", "Erotica", "Pornographic", "Adult"] : (_a = prefs.contentRatings) != null ? _a : ["Safe", "Suggestive"];
+          const allowedRatings = isSearchNsfwOverride ? ["Safe", "Suggestive", "Erotica", "Adult"] : (_a = prefs.contentRatings) != null ? _a : ["Safe", "Suggestive"];
           if (!allowedRatings.includes("Adult")) {
             clauses.push("isAdult:=false");
           }
-          const mbRatings = ["Safe", "Suggestive", "Erotica", "Pornographic"].filter((r) => allowedRatings.includes(r));
+          const mbRatings = [];
+          if (allowedRatings.includes("Safe"))
+            mbRatings.push("Safe");
+          if (allowedRatings.includes("Suggestive"))
+            mbRatings.push("Suggestive");
+          if (allowedRatings.includes("Erotica"))
+            mbRatings.push("Erotica");
+          if (allowedRatings.includes("Adult"))
+            mbRatings.push("Pornographic");
           if (mbRatings.length > 0) {
             const formatted = mbRatings.map((r) => `\`${r}\``).join(",");
             clauses.push(`(mbContentRating:=[${formatted}] || mbContentRating:!=*)`);
@@ -2070,7 +2128,7 @@ var SourcePackage = (() => {
         }
         buildTypesenseSortBy(params) {
           var _a;
-          const rawKey = (_a = params.sortBy) != null ? _a : params.mode === "top_rated" ? "mbRating" : params.mode === "latest" || params.mode === "recently_added" ? "dateAdded" : params.mode === "most_bookmarked" ? "popularity" : "trending";
+          const rawKey = (_a = params.sortBy) != null ? _a : params.mode === "top_rated" ? "mbRating" : params.mode === "latest" || params.mode === "recently_added" ? "dateAdded" : params.mode === "popular" || params.mode === "most_bookmarked" ? "views" : "trending";
           if (rawKey === "title_asc") {
             return "title:asc";
           }
@@ -2081,11 +2139,13 @@ var SourcePackage = (() => {
           if (rawKey === "updatedAt") {
             return `dateAdded:${direction}`;
           }
+          if (rawKey === "popularity") {
+            return `views:${direction}`;
+          }
           switch (rawKey) {
             case "mbRating":
             case "dateAdded":
             case "released":
-            case "popularity":
             case "trending":
             case "views":
               return `${rawKey}:${direction}`;
@@ -2103,26 +2163,6 @@ var SourcePackage = (() => {
           const page = Math.max(1, (_a = params.page) != null ? _a : 1);
           const perPage = (_b = params.perPage) != null ? _b : constants_js_1.DEFAULT_PAGE_SIZE;
           const isSearchNsfwOverride = params.includeNsfw === true;
-          const allowNsfw = isSearchNsfwOverride || prefs.showNsfw;
-          const hasFilters = Boolean(params.query || params.format || params.status || params.genres && (params.genres.include.length > 0 || params.genres.exclude.length > 0) || params.tags && (params.tags.include.length > 0 || params.tags.exclude.length > 0) || params.sortBy);
-          if (!hasFilters && params.mode === "popular") {
-            return this.fetchHomeEndpoint("popular", page, perPage, prefs, isSearchNsfwOverride);
-          }
-          if (!hasFilters && params.mode === "latest") {
-            return this.fetchHomeEndpoint("recentlyUpdated", page, perPage, prefs, isSearchNsfwOverride);
-          }
-          if (!hasFilters && params.mode === "hot_updates") {
-            return this.fetchHomeEndpoint("hotUpdates", page, perPage, prefs, isSearchNsfwOverride);
-          }
-          if (!hasFilters && params.mode === "recently_added") {
-            return this.fetchHomeEndpoint("recentlyAdded", page, perPage, prefs, isSearchNsfwOverride);
-          }
-          if (!hasFilters && params.mode === "top_rated") {
-            return this.fetchHomeEndpoint("topRated", page, perPage, prefs, isSearchNsfwOverride);
-          }
-          if (!hasFilters && params.mode === "most_bookmarked") {
-            return this.fetchHomeEndpoint("mostBookmarked", page, perPage, prefs, isSearchNsfwOverride);
-          }
           const queryText = ((_c = params.query) == null ? void 0 : _c.trim()) || "*";
           const filterBy = this.buildTypesenseFilterBy(params, prefs);
           const sortBy = this.buildTypesenseSortBy(params);
@@ -2172,8 +2212,10 @@ var SourcePackage = (() => {
           }
         }
         async fetchHomeEndpoint(endpoint, page = 1, limit = constants_js_1.DEFAULT_PAGE_SIZE, prefsOrAllowNsfw, isNsfwOverride = false, types = "Manga,Manwha,Manhua,OEL") {
+          var _a, _b;
           const prefs = typeof prefsOrAllowNsfw === "object" && prefsOrAllowNsfw !== null ? prefsOrAllowNsfw : await (0, preferences_js_1.getUserPreferences)();
-          const allowNsfw = typeof prefsOrAllowNsfw === "boolean" ? prefsOrAllowNsfw : isNsfwOverride || prefs.showNsfw;
+          const allowsAdult = (_b = (_a = prefs.contentRatings) == null ? void 0 : _a.includes("Adult")) != null ? _b : false;
+          const allowAdult = isNsfwOverride || (typeof prefsOrAllowNsfw === "boolean" ? prefsOrAllowNsfw : allowsAdult);
           const offset = Math.max(0, (page - 1) * limit);
           const params = {
             offset,
@@ -2181,7 +2223,7 @@ var SourcePackage = (() => {
             types,
             mediums: "Comic",
             ...endpoint === "popular" ? { timeframe: "daily" } : {},
-            ...allowNsfw ? { adult: 1 } : {}
+            ...allowAdult ? { adult: 1 } : {}
           };
           const data = await this.getJson(`${constants_js_1.API_BASE}/home2/${endpoint}`, params);
           const rawItems = Array.isArray(data == null ? void 0 : data.items) ? data.items : [];
@@ -2940,7 +2982,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_moe();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "moe.atsu", "name": "Atsumaru", "version": 1.9, "website": "https://atsu.moe", "rating": 1, "thumbnail": "https://atsu.moe/favicon.ico", "languages": ["en"] };
+      exports.SourceMetadata = { "id": "moe.atsu", "name": "Atsumaru", "version": 2, "website": "https://atsu.moe", "rating": 1, "thumbnail": "https://atsu.moe/favicon.ico", "languages": ["en"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;
