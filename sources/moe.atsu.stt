@@ -821,10 +821,10 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.ATSU_SORT_OPTIONS = exports.ATSU_STATUSES = exports.ATSU_FORMATS = exports.ATSU_THEMES = exports.ATSU_GENRES = exports.DEDUPLICATION_MODE_OPTIONS = exports.IMAGE_FORMAT_OPTIONS = exports.NSFW_RATINGS_SET = exports.ALL_CONTENT_RATINGS = exports.DEFAULT_ALLOWED_CONTENT_RATINGS = exports.CONTENT_RATING_OPTIONS = exports.PREF_KEYS = exports.PAGE_IMAGE_HEADERS = exports.WEBP_ACCEPT_HEADER = exports.IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.MANGA_URL_REGEX = exports.RATE_LIMIT_PER_SECOND = exports.DEFAULT_PAGE_SIZE = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_FALLBACK_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.CDN_STATIC_BASE = exports.STATIC_BASE = exports.SEARCH_ENDPOINT = exports.API_BASE = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = void 0;
+      exports.ATSU_SORT_OPTIONS = exports.ATSU_STATUSES = exports.ATSU_FORMATS = exports.ATSU_THEMES = exports.ATSU_GENRES = exports.DEDUPLICATION_MODE_OPTIONS = exports.IMAGE_FORMAT_OPTIONS = exports.NSFW_RATINGS_SET = exports.ALL_CONTENT_RATINGS = exports.DEFAULT_ALLOWED_CONTENT_RATINGS = exports.CONTENT_RATING_OPTIONS = exports.ALL_ENABLED_FORMATS = exports.DEFAULT_ENABLED_FORMATS = exports.FORMAT_PREFERENCE_OPTIONS = exports.PREF_KEYS = exports.PAGE_IMAGE_HEADERS = exports.WEBP_ACCEPT_HEADER = exports.IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.CONTENT_URL_REGEX = exports.NOVEL_URL_REGEX = exports.MANGA_URL_REGEX = exports.RATE_LIMIT_PER_SECOND = exports.DEFAULT_PAGE_SIZE = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_FALLBACK_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.CDN_STATIC_BASE = exports.STATIC_BASE = exports.SEARCH_ENDPOINT = exports.API_BASE = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = void 0;
       exports.SOURCE_ID = "moe.atsu";
       exports.SOURCE_NAME = "Atsumaru";
-      exports.SOURCE_VERSION = 2.1;
+      exports.SOURCE_VERSION = 2.2;
       exports.BASE_URL = "https://atsu.moe";
       exports.API_BASE = "https://atsu.moe/api";
       exports.SEARCH_ENDPOINT = `${exports.BASE_URL}/collections/manga/documents/search`;
@@ -837,6 +837,8 @@ var SourcePackage = (() => {
       exports.DEFAULT_PAGE_SIZE = 40;
       exports.RATE_LIMIT_PER_SECOND = 2;
       exports.MANGA_URL_REGEX = /^https?:\/\/(?:www\.)?atsu\.moe\/manga\/([^/?#]+)/i;
+      exports.NOVEL_URL_REGEX = /^https?:\/\/(?:www\.)?atsu\.moe\/novel\/([^/?#]+)/i;
+      exports.CONTENT_URL_REGEX = /^https?:\/\/(?:www\.)?atsu\.moe\/(manga|novel)\/([^/?#]+)/i;
       exports.DEFAULT_HEADERS = Object.freeze({
         Referer: exports.REFERER_URL,
         Origin: exports.ORIGIN_URL,
@@ -861,8 +863,33 @@ var SourcePackage = (() => {
         SHOW_NSFW: "atsu_pref_show_nsfw",
         CONTENT_RATINGS: "atsu_pref_content_ratings",
         EXCLUDED_GENRES: "atsu_pref_excluded_genres",
-        EXCLUDED_TAGS: "atsu_pref_excluded_tags"
+        EXCLUDED_TAGS: "atsu_pref_excluded_tags",
+        ENABLED_FORMATS: "atsu_pref_enabled_formats"
       };
+      exports.FORMAT_PREFERENCE_OPTIONS = [
+        { id: "Manga", title: "Manga (Japanese graphic comics)" },
+        { id: "Manhwa", title: "Manhwa (Korean webtoons)" },
+        { id: "Manhua", title: "Manhua (Chinese comics)" },
+        { id: "Novel", title: "Novel (Light novels and web novels)" },
+        { id: "OEL", title: "OEL (Original English Language webcomics)" },
+        {
+          id: "OTHER",
+          title: "OTHER (Anthologies, doujinshi, and miscellaneous works)"
+        }
+      ];
+      exports.DEFAULT_ENABLED_FORMATS = Object.freeze([
+        "Manga",
+        "Manhwa",
+        "Manhua"
+      ]);
+      exports.ALL_ENABLED_FORMATS = Object.freeze([
+        "Manga",
+        "Manhwa",
+        "Manhua",
+        "Novel",
+        "OEL",
+        "OTHER"
+      ]);
       exports.CONTENT_RATING_OPTIONS = [
         { id: "Safe", title: "Safe (All Audiences)" },
         { id: "Suggestive", title: "Suggestive (Ecchi / Mild Fanservice)" },
@@ -995,8 +1022,11 @@ var SourcePackage = (() => {
       exports.ATSU_FORMATS = [
         { id: "all", title: "All" },
         { id: "Manga", title: "Manga" },
-        { id: "Manwha", title: "Manhwa" },
-        { id: "Manhua", title: "Manhua" }
+        { id: "Manhwa", title: "Manhwa" },
+        { id: "Manhua", title: "Manhua" },
+        { id: "Novel", title: "Novel" },
+        { id: "OEL", title: "OEL" },
+        { id: "OTHER", title: "OTHER" }
       ];
       exports.ATSU_STATUSES = [
         { id: "all", title: "All" },
@@ -1028,6 +1058,8 @@ var SourcePackage = (() => {
       exports.invalidatePreferencesCache = invalidatePreferencesCache;
       exports.parseStringList = parseStringList;
       exports.parseScanlatorWhitelist = parseScanlatorWhitelist;
+      exports.normalizeFormatToken = normalizeFormatToken;
+      exports.normalizeFormatsList = normalizeFormatsList;
       exports.getUserPreferences = getUserPreferences;
       exports.getImageFormatPreference = getImageFormatPreference;
       exports.getDeduplicateChaptersPreference = getDeduplicateChaptersPreference;
@@ -1036,6 +1068,7 @@ var SourcePackage = (() => {
       exports.getExcludedGenresPreference = getExcludedGenresPreference;
       exports.getExcludedTagsPreference = getExcludedTagsPreference;
       exports.getShowNsfwPreference = getShowNsfwPreference;
+      exports.getEnabledFormatsPreference = getEnabledFormatsPreference;
       exports.buildSettingsForm = buildSettingsForm;
       exports.updateUserPreferences = updateUserPreferences;
       var toolchain_1 = require_dist();
@@ -1060,6 +1093,10 @@ var SourcePackage = (() => {
         id: t.id,
         title: t.title
       }));
+      var UI_FORMAT_PREFERENCE_OPTIONS = constants_js_1.FORMAT_PREFERENCE_OPTIONS.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
       var memoryPreferences = {
         imageFormat: "webp",
         deduplicateChapters: true,
@@ -1067,7 +1104,8 @@ var SourcePackage = (() => {
         showNsfw: false,
         contentRatings: [...constants_js_1.DEFAULT_ALLOWED_CONTENT_RATINGS],
         excludedGenres: [],
-        excludedTags: []
+        excludedTags: [],
+        enabledFormats: [...constants_js_1.DEFAULT_ENABLED_FORMATS]
       };
       var isHydrated = false;
       var inflightHydration = null;
@@ -1181,20 +1219,93 @@ var SourcePackage = (() => {
         }
         return Array.from(unique);
       }
+      function normalizeFormatToken(raw) {
+        const trimmed = raw.trim();
+        if (!trimmed)
+          return null;
+        switch (trimmed) {
+          case "Manga":
+          case "manga":
+            return "Manga";
+          case "Manhwa":
+          case "Manwha":
+          case "manhwa":
+          case "manwha":
+            return "Manhwa";
+          case "Manhua":
+          case "manhua":
+            return "Manhua";
+          case "Novel":
+          case "novel":
+            return "Novel";
+          case "OEL":
+          case "oel":
+          case "Comic":
+          case "comic":
+            return "OEL";
+          case "OTHER":
+          case "Other":
+          case "other":
+            return "OTHER";
+          default: {
+            const lower = trimmed.toLowerCase();
+            if (lower === "manga")
+              return "Manga";
+            if (lower === "manhwa" || lower === "manwha")
+              return "Manhwa";
+            if (lower === "manhua")
+              return "Manhua";
+            if (lower === "novel")
+              return "Novel";
+            if (lower === "oel" || lower === "comic")
+              return "OEL";
+            if (lower === "other")
+              return "OTHER";
+            return null;
+          }
+        }
+      }
+      function normalizeFormatsList(rawInput) {
+        const unique = /* @__PURE__ */ new Set();
+        if (isRecord(rawInput) && !Array.isArray(rawInput.include) && !Array.isArray(rawInput.exclude)) {
+          for (const [key, val] of Object.entries(rawInput)) {
+            if (val === true) {
+              const canonical = normalizeFormatToken(key);
+              if (canonical) {
+                unique.add(canonical);
+              }
+            }
+          }
+          return Array.from(unique);
+        }
+        const rawList = parseStringList(rawInput);
+        for (let i = 0, len = rawList.length; i < len; i++) {
+          const item = rawList[i];
+          if (item) {
+            const canonical = normalizeFormatToken(item);
+            if (canonical) {
+              unique.add(canonical);
+            }
+          }
+        }
+        return Array.from(unique);
+      }
       async function hydratePreferencesFromStore() {
+        var _a;
         if (!hasObjectStore()) {
           isHydrated = true;
           return memoryPreferences;
         }
         try {
-          const [storedFormat, storedDedup, storedWhitelist, storedRatings, storedLegacyNsfw, storedExcludedGenres, storedExcludedTags] = await Promise.all([
+          const [storedFormat, storedDedup, storedWhitelist, storedRatings, storedLegacyNsfw, storedExcludedGenres, storedExcludedTags, storedEnabledFormats] = await Promise.all([
             ObjectStore.string(constants_js_1.PREF_KEYS.IMAGE_FORMAT).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.DEDUPLICATE_CHAPTERS).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.SCANLATOR_WHITELIST).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.CONTENT_RATINGS).catch(() => null),
             ObjectStore.boolean(constants_js_1.PREF_KEYS.SHOW_NSFW).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.EXCLUDED_GENRES).catch(() => null),
-            ObjectStore.get(constants_js_1.PREF_KEYS.EXCLUDED_TAGS).catch(() => null)
+            ObjectStore.get(constants_js_1.PREF_KEYS.EXCLUDED_TAGS).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.ENABLED_FORMATS).catch(() => null)
           ]);
           const imageFormat = storedFormat === "webp" || storedFormat === "original" ? storedFormat : memoryPreferences.imageFormat;
           let deduplicateChapters = memoryPreferences.deduplicateChapters;
@@ -1218,6 +1329,13 @@ var SourcePackage = (() => {
           }
           const excludedGenres = storedExcludedGenres !== null && storedExcludedGenres !== void 0 ? parseStringList(storedExcludedGenres) : memoryPreferences.excludedGenres;
           const excludedTags = storedExcludedTags !== null && storedExcludedTags !== void 0 ? parseStringList(storedExcludedTags) : memoryPreferences.excludedTags;
+          let enabledFormats = (_a = memoryPreferences.enabledFormats) != null ? _a : [...constants_js_1.DEFAULT_ENABLED_FORMATS];
+          if (storedEnabledFormats !== null && storedEnabledFormats !== void 0) {
+            const parsedFormats = normalizeFormatsList(storedEnabledFormats);
+            if (parsedFormats.length > 0) {
+              enabledFormats = parsedFormats;
+            }
+          }
           const showNsfw = hasNsfwRating(contentRatings);
           memoryPreferences = {
             imageFormat,
@@ -1226,7 +1344,8 @@ var SourcePackage = (() => {
             showNsfw,
             contentRatings,
             excludedGenres,
-            excludedTags
+            excludedTags,
+            enabledFormats
           };
         } catch {
         }
@@ -1273,7 +1392,13 @@ var SourcePackage = (() => {
         const prefs = isHydrated ? memoryPreferences : await getUserPreferences();
         return prefs.showNsfw;
       }
+      async function getEnabledFormatsPreference() {
+        var _a;
+        const prefs = isHydrated ? memoryPreferences : await getUserPreferences();
+        return (_a = prefs.enabledFormats) != null ? _a : [...constants_js_1.DEFAULT_ENABLED_FORMATS];
+      }
       async function buildSettingsForm() {
+        var _a;
         const prefs = await getUserPreferences();
         const whitelistString = prefs.scanlatorWhitelist.join(", ");
         return {
@@ -1356,15 +1481,39 @@ var SourcePackage = (() => {
                   defaultValue: { include: [], exclude: [] }
                 })
               ]
+            },
+            {
+              header: "Format & Medium Preferences",
+              footer: "Select which publication formats and mediums to include in catalog feeds, browse directories, and search results. Enable Manga, Manhwa, Manhua, Novel, OEL, or OTHER in any combination.",
+              views: [
+                (0, toolchain_1.UISelect)({
+                  id: constants_js_1.PREF_KEYS.ENABLED_FORMATS,
+                  title: "Enabled Formats & Mediums",
+                  options: UI_FORMAT_PREFERENCE_OPTIONS,
+                  exclude: false,
+                  currentValue: {
+                    include: (_a = prefs.enabledFormats) != null ? _a : [...constants_js_1.DEFAULT_ENABLED_FORMATS],
+                    exclude: []
+                  },
+                  defaultValue: {
+                    include: [...constants_js_1.DEFAULT_ENABLED_FORMATS],
+                    exclude: []
+                  }
+                })
+              ]
             }
           ]
         };
       }
       async function updateUserPreferences(data) {
+        var _a;
         if (!isRecord(data)) {
           return;
         }
-        let { imageFormat, deduplicateChapters, scanlatorWhitelist, showNsfw, contentRatings, excludedGenres, excludedTags } = memoryPreferences;
+        let { imageFormat, deduplicateChapters, scanlatorWhitelist, showNsfw, contentRatings, excludedGenres, excludedTags, enabledFormats } = memoryPreferences;
+        if (!enabledFormats || enabledFormats.length === 0) {
+          enabledFormats = [...constants_js_1.DEFAULT_ENABLED_FORMATS];
+        }
         const storeAvailable = hasObjectStore();
         const writeTasks = [];
         const rawFormat = data[constants_js_1.PREF_KEYS.IMAGE_FORMAT];
@@ -1436,6 +1585,15 @@ var SourcePackage = (() => {
             }));
           }
         }
+        const rawEnabledFormats = (_a = data[constants_js_1.PREF_KEYS.ENABLED_FORMATS]) != null ? _a : data["atsu_pref_formats"];
+        if (rawEnabledFormats !== void 0 && rawEnabledFormats !== null) {
+          const parsedFormats = normalizeFormatsList(rawEnabledFormats);
+          enabledFormats = parsedFormats.length > 0 ? parsedFormats : [...constants_js_1.DEFAULT_ENABLED_FORMATS];
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.ENABLED_FORMATS, enabledFormats).catch(() => {
+            }));
+          }
+        }
         memoryPreferences = {
           imageFormat,
           deduplicateChapters,
@@ -1443,7 +1601,8 @@ var SourcePackage = (() => {
           showNsfw,
           contentRatings,
           excludedGenres,
-          excludedTags
+          excludedTags,
+          enabledFormats
         };
         isHydrated = true;
         if (writeTasks.length > 0) {
@@ -1474,6 +1633,8 @@ var SourcePackage = (() => {
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.hasNsfwRating = exports.AtsuApiClient = void 0;
       exports.compileFilterContext = compileFilterContext;
+      exports.isNovelIdentifier = isNovelIdentifier;
+      exports.isNovelSummary = isNovelSummary;
       exports.extractMangaId = extractMangaId;
       exports.resolveImageUrl = resolveImageUrl;
       exports.resolveMangaCover = resolveMangaCover;
@@ -1486,6 +1647,7 @@ var SourcePackage = (() => {
       exports.mapSummaryToItem = mapSummaryToItem;
       exports.isMangaAllowedWithContext = isMangaAllowedWithContext;
       exports.isMangaAllowed = isMangaAllowed;
+      exports.sanitizeNovelHtml = sanitizeNovelHtml;
       exports.normalizeAndFilterChapters = normalizeAndFilterChapters;
       var toolchain_1 = require_dist();
       var constants_js_1 = require_constants();
@@ -1562,14 +1724,72 @@ var SourcePackage = (() => {
           }
           allowedRatingsSet = ratingSet;
         }
+        const rawFormats = Array.isArray(prefs.enabledFormats) && prefs.enabledFormats.length > 0 ? prefs.enabledFormats : constants_js_1.DEFAULT_ENABLED_FORMATS;
+        const formatSet = /* @__PURE__ */ new Set();
+        let allowsManga = false;
+        let allowsManhwa = false;
+        let allowsManhua = false;
+        let allowsNovel = false;
+        let allowsOel = false;
+        let allowsOther = false;
+        for (let i = 0, len = rawFormats.length; i < len; i++) {
+          const rawFmt = rawFormats[i];
+          if (!rawFmt)
+            continue;
+          const canonical = (0, preferences_js_1.normalizeFormatToken)(rawFmt);
+          switch (canonical) {
+            case "Manga":
+              allowsManga = true;
+              formatSet.add("Manga");
+              formatSet.add("manga");
+              break;
+            case "Manhwa":
+              allowsManhwa = true;
+              formatSet.add("Manhwa");
+              formatSet.add("Manwha");
+              formatSet.add("manhwa");
+              formatSet.add("manwha");
+              break;
+            case "Manhua":
+              allowsManhua = true;
+              formatSet.add("Manhua");
+              formatSet.add("manhua");
+              break;
+            case "Novel":
+              allowsNovel = true;
+              formatSet.add("Novel");
+              formatSet.add("novel");
+              break;
+            case "OEL":
+              allowsOel = true;
+              formatSet.add("OEL");
+              formatSet.add("oel");
+              formatSet.add("Comic");
+              formatSet.add("comic");
+              break;
+            case "OTHER":
+              allowsOther = true;
+              formatSet.add("OTHER");
+              formatSet.add("Other");
+              formatSet.add("other");
+              break;
+          }
+        }
         const compiled = {
           allowedRatingsSet,
+          allowedFormatsSet: formatSet,
           excludedGenreSet,
           excludedTagSet,
           allowsSafe,
           allowsSuggestive,
           allowsErotica,
-          allowsAdult
+          allowsAdult,
+          allowsManga,
+          allowsManhwa,
+          allowsManhua,
+          allowsNovel,
+          allowsOel,
+          allowsOther
         };
         cache.set(prefs, compiled);
         return compiled;
@@ -1585,30 +1805,67 @@ var SourcePackage = (() => {
         const body = typeof response.data === "string" ? response.data : "";
         return cfMitigated.includes("challenge") || server.includes("cloudflare") || body.includes("cf-browser-verification") || body.includes("Just a moment...") || body.includes("Attention Required! | Cloudflare");
       }
+      function isNovelIdentifier(idOrUrl) {
+        const trimmed = (idOrUrl != null ? idOrUrl : "").trim();
+        if (!trimmed) {
+          return false;
+        }
+        if (constants_js_1.NOVEL_URL_REGEX.test(trimmed)) {
+          return true;
+        }
+        if (/^novel[:/]/i.test(trimmed) || /\/novel\/[^/?#]+/i.test(trimmed)) {
+          return true;
+        }
+        return false;
+      }
+      function isNovelSummary(item) {
+        if (!item)
+          return false;
+        const medium = item.medium;
+        if (medium === "Novel" || medium === "novel" || typeof medium === "string" && medium.trim().toLowerCase() === "novel") {
+          return true;
+        }
+        const type = item.type;
+        if (type === "Novel" || type === "novel" || typeof type === "string" && type.trim().toLowerCase() === "novel") {
+          return true;
+        }
+        return false;
+      }
       function extractMangaId(idOrUrl) {
         var _a;
         const trimmed = (idOrUrl != null ? idOrUrl : "").trim();
         if (!trimmed) {
           throw new Error("Manga identifier cannot be empty.");
         }
+        const contentMatch = constants_js_1.CONTENT_URL_REGEX.exec(trimmed);
+        if (contentMatch == null ? void 0 : contentMatch[2]) {
+          return decodeURIComponent(contentMatch[2]);
+        }
         const regexMatch = constants_js_1.MANGA_URL_REGEX.exec(trimmed);
         if (regexMatch == null ? void 0 : regexMatch[1]) {
           return decodeURIComponent(regexMatch[1]);
+        }
+        const novelMatch = constants_js_1.NOVEL_URL_REGEX.exec(trimmed);
+        if (novelMatch == null ? void 0 : novelMatch[1]) {
+          return decodeURIComponent(novelMatch[1]);
         }
         if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
           const withoutProtocol = trimmed.replace(/^https?:\/\/[^/]+/i, "");
           const pathname = ((_a = withoutProtocol.split(/[?#]/)[0]) != null ? _a : "").trim();
           const parts = pathname.split("/").filter((segment) => segment.length > 0);
-          const mangaIdx = parts.findIndex((segment) => segment.toLowerCase() === "manga");
-          if (mangaIdx !== -1 && parts[mangaIdx + 1]) {
-            return decodeURIComponent(parts[mangaIdx + 1]);
+          const contentIdx = parts.findIndex((segment) => {
+            const lower = segment.toLowerCase();
+            return lower === "manga" || lower === "novel";
+          });
+          if (contentIdx !== -1 && parts[contentIdx + 1]) {
+            return decodeURIComponent(parts[contentIdx + 1]);
           }
           const lastSegment = parts[parts.length - 1];
           if (lastSegment) {
             return decodeURIComponent(lastSegment);
           }
         }
-        return trimmed.replace(/^\/+|\/+$/g, "").replace(/^manga\//i, "").trim();
+        return trimmed.replace(/^\/+|\/+$/g, "").replace(/^(?:manga|novel)[:/]/i, "").trim();
       }
       function safeEncodeUrl(url) {
         try {
@@ -1665,11 +1922,11 @@ var SourcePackage = (() => {
         if (!rawBanner) {
           return void 0;
         }
-        const path = typeof rawBanner === "string" ? rawBanner : rawBanner.url;
-        if (!path || typeof path !== "string" || !path.trim()) {
+        const bannerUrlCandidate = typeof rawBanner === "string" ? rawBanner : rawBanner.url;
+        if (!bannerUrlCandidate || typeof bannerUrlCandidate !== "string" || !bannerUrlCandidate.trim()) {
           return void 0;
         }
-        const resolved = resolveImageUrl(path, imageFormat, "");
+        const resolved = resolveImageUrl(bannerUrlCandidate, imageFormat, "");
         return resolved.length >= 10 ? resolved : void 0;
       }
       function mapContentRating(manga) {
@@ -1744,13 +2001,16 @@ var SourcePackage = (() => {
         }
       }
       function mapContentType(type, medium) {
-        if (medium && (medium === "Novel" || medium.toLowerCase() === "novel")) {
+        if (medium && (medium === "Novel" || medium === "novel" || medium.trim().toLowerCase() === "novel")) {
           return toolchain_1.ContentType.NOVEL;
         }
         if (!type) {
           return toolchain_1.ContentType.MANGA;
         }
         switch (type) {
+          case "Novel":
+          case "novel":
+            return toolchain_1.ContentType.NOVEL;
           case "Manwha":
           case "Manhwa":
           case "manwha":
@@ -1764,12 +2024,17 @@ var SourcePackage = (() => {
           case "oel":
           case "comic":
             return toolchain_1.ContentType.COMIC;
+          case "OTHER":
+          case "Other":
+          case "other":
           case "Manga":
           case "manga":
             return toolchain_1.ContentType.MANGA;
           default: {
             const normalized = type.trim().toLowerCase();
             switch (normalized) {
+              case "novel":
+                return toolchain_1.ContentType.NOVEL;
               case "manwha":
               case "manhwa":
                 return toolchain_1.ContentType.MANHWA;
@@ -1778,6 +2043,8 @@ var SourcePackage = (() => {
               case "oel":
               case "comic":
                 return toolchain_1.ContentType.COMIC;
+              case "other":
+              case "manga":
               default:
                 return toolchain_1.ContentType.MANGA;
             }
@@ -1827,18 +2094,20 @@ var SourcePackage = (() => {
         const title = (manga.englishTitle || manga.title || "Untitled Series").trim();
         const coverImage = resolveMangaCover(manga, imageFormat);
         const rating = mapContentRating(manga);
-        const typeLabel = manga.type === "Manwha" ? "Manhwa" : (_a = manga.type) != null ? _a : void 0;
+        const isNovel = isNovelSummary(manga);
+        const typeLabel = isNovel ? "Novel" : manga.type === "Manwha" ? "Manhwa" : manga.type === "Other" ? "OTHER" : (_a = manga.type) != null ? _a : void 0;
         const statusLabel = (_b = manga.status) != null ? _b : void 0;
         const subtitle = typeLabel && statusLabel ? `${typeLabel} \u2022 ${statusLabel}` : typeLabel || statusLabel || void 0;
         const rawScore = (_c = manga.mbRating) != null ? _c : manga.avgRating;
         const numericScore = typeof rawScore === "number" && Number.isFinite(rawScore) ? Math.round(rawScore * 100) / 100 : void 0;
         const rawViews = (_d = manga.views) != null ? _d : manga.popularity;
         const numericViews = typeof rawViews === "number" && Number.isFinite(rawViews) ? rawViews : typeof rawViews === "string" && Number.isFinite(Number(rawViews)) ? Number(rawViews) : void 0;
+        const routeSegment = isNovel ? "novel" : "manga";
         const item = {
           id,
           title,
           coverImage,
-          webUrl: `${constants_js_1.BASE_URL}/manga/${encodeURIComponent(id)}`,
+          webUrl: `${constants_js_1.BASE_URL}/${routeSegment}/${encodeURIComponent(id)}`,
           rating
         };
         if (subtitle) {
@@ -1938,6 +2207,27 @@ var SourcePackage = (() => {
             }
           }
         }
+        if (ctx.allowedFormatsSet.size > 0) {
+          const rawMedium = manga.medium;
+          const rawType = manga.type;
+          if (rawMedium === "Novel" || rawMedium === "novel" || typeof rawMedium === "string" && rawMedium.trim().toLowerCase() === "novel") {
+            if (!ctx.allowsNovel) {
+              return false;
+            }
+          } else if (rawType) {
+            if (!setHasToken(ctx.allowedFormatsSet, rawType)) {
+              return false;
+            }
+          } else if (rawMedium) {
+            if (rawMedium === "Comic" || rawMedium === "comic" || rawMedium.trim().toLowerCase() === "comic") {
+              if (!ctx.allowsManga && !ctx.allowsManhwa && !ctx.allowsManhua && !ctx.allowsOel && !ctx.allowsOther) {
+                return false;
+              }
+            } else if (!setHasToken(ctx.allowedFormatsSet, rawMedium)) {
+              return false;
+            }
+          }
+        }
         if (ctx.excludedGenreSet.size > 0 && hasBlacklistedIdOrTag(ctx.excludedGenreSet, manga.genreIds, manga.genres)) {
           return false;
         }
@@ -1946,16 +2236,67 @@ var SourcePackage = (() => {
         }
         return true;
       }
-      function isMangaAllowed(manga, allowedRatings, excludedGenreSet, excludedTagSet, allowNsfwOverride = false) {
+      function isMangaAllowed(manga, allowedRatings, excludedGenreSet, excludedTagSet, allowNsfwOverride = false, allowedFormats) {
         const ratingSet = allowedRatings instanceof Set ? allowedRatings : new Set(allowedRatings);
+        const rawFormats = allowedFormats ? Array.from(allowedFormats) : constants_js_1.ALL_ENABLED_FORMATS;
+        const formatSet = /* @__PURE__ */ new Set();
+        let allowsManga = false;
+        let allowsManhwa = false;
+        let allowsManhua = false;
+        let allowsNovel = false;
+        let allowsOel = false;
+        let allowsOther = false;
+        for (let i = 0, len = rawFormats.length; i < len; i++) {
+          const f = rawFormats[i];
+          if (!f)
+            continue;
+          const canonical = (0, preferences_js_1.normalizeFormatToken)(f);
+          if (canonical === "Manga") {
+            allowsManga = true;
+            formatSet.add("Manga");
+            formatSet.add("manga");
+          } else if (canonical === "Manhwa") {
+            allowsManhwa = true;
+            formatSet.add("Manhwa");
+            formatSet.add("Manwha");
+            formatSet.add("manhwa");
+            formatSet.add("manwha");
+          } else if (canonical === "Manhua") {
+            allowsManhua = true;
+            formatSet.add("Manhua");
+            formatSet.add("manhua");
+          } else if (canonical === "Novel") {
+            allowsNovel = true;
+            formatSet.add("Novel");
+            formatSet.add("novel");
+          } else if (canonical === "OEL") {
+            allowsOel = true;
+            formatSet.add("OEL");
+            formatSet.add("oel");
+            formatSet.add("Comic");
+            formatSet.add("comic");
+          } else if (canonical === "OTHER") {
+            allowsOther = true;
+            formatSet.add("OTHER");
+            formatSet.add("Other");
+            formatSet.add("other");
+          }
+        }
         const ctx = {
           allowedRatingsSet: ratingSet,
+          allowedFormatsSet: formatSet,
           excludedGenreSet,
           excludedTagSet,
           allowsSafe: ratingSet.has("Safe"),
           allowsSuggestive: ratingSet.has("Suggestive"),
           allowsErotica: ratingSet.has("Erotica"),
-          allowsAdult: ratingSet.has("Adult") || ratingSet.has("Pornographic")
+          allowsAdult: ratingSet.has("Adult") || ratingSet.has("Pornographic"),
+          allowsManga,
+          allowsManhwa,
+          allowsManhua,
+          allowsNovel,
+          allowsOel,
+          allowsOther
         };
         return isMangaAllowedWithContext(manga, ctx, allowNsfwOverride);
       }
@@ -2036,11 +2377,12 @@ var SourcePackage = (() => {
         }
         return credits;
       }
-      function extractExternalLinks(manga, mangaId) {
+      function extractExternalLinks(manga, mangaId, isNovel = false) {
+        const routeSegment = isNovel ? "novel" : "manga";
         const links = [
           {
             title: "View on Atsumaru",
-            url: `${constants_js_1.BASE_URL}/manga/${encodeURIComponent(mangaId)}`
+            url: `${constants_js_1.BASE_URL}/${routeSegment}/${encodeURIComponent(mangaId)}`
           }
         ];
         if (manga.anilistId) {
@@ -2067,6 +2409,12 @@ var SourcePackage = (() => {
             url: `https://kitsu.app/manga/${encodeURIComponent(String(manga.kitsuId))}`
           });
         }
+        if (manga.novelUpdatesId) {
+          links.push({
+            title: "NovelUpdates",
+            url: `https://www.novelupdates.com/series/${encodeURIComponent(String(manga.novelUpdatesId))}/`
+          });
+        }
         if (manga.kenmeiUrl && typeof manga.kenmeiUrl === "string" && manga.kenmeiUrl.startsWith("http")) {
           links.push({
             title: "Kenmei",
@@ -2074,6 +2422,135 @@ var SourcePackage = (() => {
           });
         }
         return links;
+      }
+      function resolveActiveFormatSpecs(prefs, formatOverride) {
+        const baseFormats = Array.isArray(prefs.enabledFormats) && prefs.enabledFormats.length > 0 ? prefs.enabledFormats : constants_js_1.DEFAULT_ENABLED_FORMATS;
+        let activeInput = baseFormats;
+        let overrideFormatSet = null;
+        if (formatOverride && formatOverride !== "all") {
+          const rawParts = formatOverride.split(",").map((s) => s.trim()).filter(Boolean);
+          if (rawParts.length > 0) {
+            activeInput = rawParts;
+            overrideFormatSet = /* @__PURE__ */ new Set();
+            for (let i = 0, len = rawParts.length; i < len; i++) {
+              const part = rawParts[i];
+              overrideFormatSet.add(part);
+              const canonical = (0, preferences_js_1.normalizeFormatToken)(part);
+              if (canonical === "Manga") {
+                overrideFormatSet.add("Manga");
+                overrideFormatSet.add("manga");
+              } else if (canonical === "Manhwa") {
+                overrideFormatSet.add("Manhwa");
+                overrideFormatSet.add("Manwha");
+                overrideFormatSet.add("manhwa");
+                overrideFormatSet.add("manwha");
+              } else if (canonical === "Manhua") {
+                overrideFormatSet.add("Manhua");
+                overrideFormatSet.add("manhua");
+              } else if (canonical === "Novel") {
+                overrideFormatSet.add("Novel");
+                overrideFormatSet.add("novel");
+              } else if (canonical === "OEL") {
+                overrideFormatSet.add("OEL");
+                overrideFormatSet.add("oel");
+                overrideFormatSet.add("Comic");
+                overrideFormatSet.add("comic");
+              } else if (canonical === "OTHER") {
+                overrideFormatSet.add("OTHER");
+                overrideFormatSet.add("Other");
+                overrideFormatSet.add("other");
+              }
+            }
+          }
+        }
+        const canonicalSet = /* @__PURE__ */ new Set();
+        const typesenseTokensSet = /* @__PURE__ */ new Set();
+        const apiTypesSet = /* @__PURE__ */ new Set();
+        let hasNovel = false;
+        let hasComic = false;
+        for (let i = 0, len = activeInput.length; i < len; i++) {
+          const raw = activeInput[i];
+          if (!raw)
+            continue;
+          const canonical = (0, preferences_js_1.normalizeFormatToken)(raw);
+          switch (canonical) {
+            case "Manga":
+              canonicalSet.add("Manga");
+              typesenseTokensSet.add("`Manga`");
+              apiTypesSet.add("Manga");
+              hasComic = true;
+              break;
+            case "Manhwa":
+              canonicalSet.add("Manhwa");
+              typesenseTokensSet.add("`Manwha`");
+              typesenseTokensSet.add("`Manhwa`");
+              apiTypesSet.add("Manwha");
+              apiTypesSet.add("Manhwa");
+              hasComic = true;
+              break;
+            case "Manhua":
+              canonicalSet.add("Manhua");
+              typesenseTokensSet.add("`Manhua`");
+              apiTypesSet.add("Manhua");
+              hasComic = true;
+              break;
+            case "Novel":
+              canonicalSet.add("Novel");
+              typesenseTokensSet.add("`Novel`");
+              apiTypesSet.add("Novel");
+              hasNovel = true;
+              break;
+            case "OEL":
+              canonicalSet.add("OEL");
+              typesenseTokensSet.add("`OEL`");
+              apiTypesSet.add("OEL");
+              hasComic = true;
+              break;
+            case "OTHER":
+              canonicalSet.add("OTHER");
+              typesenseTokensSet.add("`OTHER`");
+              typesenseTokensSet.add("`Other`");
+              apiTypesSet.add("OTHER");
+              apiTypesSet.add("Other");
+              hasComic = true;
+              break;
+          }
+        }
+        const apiMediumsParam = hasComic && hasNovel ? "Comic,Novel" : hasNovel ? "Novel" : "Comic";
+        return {
+          canonicalFormats: Array.from(canonicalSet),
+          typesenseTypeTokens: Array.from(typesenseTokensSet),
+          apiTypesParam: apiTypesSet.size > 0 ? Array.from(apiTypesSet).join(",") : "Manga,Manwha,Manhua",
+          apiMediumsParam,
+          hasNovel,
+          hasComic,
+          overrideFormatSet
+        };
+      }
+      function sanitizeNovelHtml(rawContent, chapterTitle) {
+        if (!rawContent || typeof rawContent !== "string") {
+          return "<p>No chapter text available.</p>";
+        }
+        let cleaned = rawContent.replace(/<!--[\s\S]*?-->/g, "").replace(/<(script|style|iframe|noscript|object|embed|form|ins)\b[^>]*>[\s\S]*?<\/\1>/gi, "").replace(/<(script|style|iframe|noscript|object|embed|ins|meta|link)\b[^>]*\/?>/gi, "").replace(/<(div|section|aside|p|span|a|figure)\b[^>]*(?:class|id|data-ad|data-ad-client|data-ad-slot|data-testid)\s*=\s*["'][^"']*(?:\bads?\b|adsbygoogle|ad-slot|ad-banner|ad-container|ad-wrapper|ad-unit|advertisement|sponsored|promo-banner|popup-ad|analytics|tracker|outbrain|taboola)[^"']*["'][^>]*>[\s\S]*?<\/\1>/gi, "").replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "").replace(/\s+(href|src)\s*=\s*["']\s*(?:javascript:|vbscript:|data:text\/html)[^"']*["']/gi, "");
+        cleaned = cleaned.replace(/(?:<br\s*\/?>\s*){2,}/gi, "</p><p>");
+        cleaned = cleaned.replace(/<br\s*\/?>/gi, "<br>");
+        cleaned = cleaned.replace(/<p\b[^>]*>/gi, "<p>");
+        cleaned = cleaned.replace(/<div\b[^>]*>/gi, "<p>").replace(/<\/div>/gi, "</p>");
+        cleaned = cleaned.replace(/<(span|strong|b|em|i|u|s|blockquote|h[1-6]|hr)\b[^>]*>/gi, "<$1>");
+        if (!/<p>/i.test(cleaned)) {
+          const blocks = cleaned.split(/\r?\n\s*\r?\n|\r?\n/).map((line) => line.trim()).filter((line) => line.length > 0);
+          if (blocks.length > 0) {
+            cleaned = blocks.map((line) => `<p>${line}</p>`).join("\n");
+          } else if (cleaned.trim().length > 0) {
+            cleaned = `<p>${cleaned.trim()}</p>`;
+          }
+        }
+        cleaned = cleaned.replace(/<p>\s*<p>/gi, "<p>").replace(/<\/p>\s*<\/p>/gi, "</p>").replace(/<p>(?:\s|&nbsp;|\u00a0|<br>)*<\/p>/gi, "").trim();
+        if (!cleaned) {
+          const fallbackTitle = chapterTitle == null ? void 0 : chapterTitle.trim();
+          return fallbackTitle ? `<p>${fallbackTitle}</p>` : "<p>No chapter text available.</p>";
+        }
+        return cleaned;
       }
       function normalizeAndFilterChapters(mangaId, rawChapters, scanlators, options) {
         var _a, _b, _c, _d, _e;
@@ -2261,6 +2738,7 @@ var SourcePackage = (() => {
           __publicField(this, "client");
           __publicField(this, "mangaCache", /* @__PURE__ */ new Map());
           __publicField(this, "inflightMangaRequests", /* @__PURE__ */ new Map());
+          __publicField(this, "knownNovelIds", /* @__PURE__ */ new Set());
           if (client) {
             this.client = client;
             return;
@@ -2363,6 +2841,9 @@ var SourcePackage = (() => {
             const doc = rawDocs[i];
             if (!doc || !doc.id)
               continue;
+            if (isNovelSummary(doc)) {
+              this.knownNovelIds.add(extractMangaId(doc.id));
+            }
             if (isMangaAllowedWithContext(doc, ctx, allowNsfwOverride)) {
               items.push(mapSummaryToItem(doc, imageFormat));
             }
@@ -2374,12 +2855,7 @@ var SourcePackage = (() => {
          * Uses O(1) Set lookups and comma-separated server-side filter lists to reduce raw network payloads.
          */
         buildTypesenseFilterBy(params, prefsOrShowNsfw) {
-          var _a, _b, _c, _d, _e, _f, _g, _h, _i;
-          const clauses = [
-            "hidden:!=true",
-            "medium:!=[`Novel`]",
-            "views:>0"
-          ];
+          var _a, _b, _c, _d, _e, _f, _g, _h;
           const prefs = typeof prefsOrShowNsfw === "object" && prefsOrShowNsfw !== null ? prefsOrShowNsfw : {
             imageFormat: "webp",
             deduplicateChapters: true,
@@ -2387,8 +2863,20 @@ var SourcePackage = (() => {
             showNsfw: Boolean(prefsOrShowNsfw),
             contentRatings: prefsOrShowNsfw ? [...constants_js_1.ALL_CONTENT_RATINGS] : [...constants_js_1.DEFAULT_ALLOWED_CONTENT_RATINGS],
             excludedGenres: [],
-            excludedTags: []
+            excludedTags: [],
+            enabledFormats: [...constants_js_1.DEFAULT_ENABLED_FORMATS]
           };
+          const effectiveFormatOverride = params.format && params.format !== "all" ? params.format : params.mode === "manga" ? "Manga" : params.mode === "manhwa" ? "Manhwa" : void 0;
+          const formatSpecs = resolveActiveFormatSpecs(prefs, effectiveFormatOverride);
+          const clauses = ["hidden:!=true"];
+          if (!formatSpecs.hasNovel) {
+            clauses.push("medium:!=[`Novel`]");
+          } else if (!formatSpecs.hasComic && formatSpecs.hasNovel) {
+            clauses.push("medium:=[`Novel`]");
+          } else {
+            clauses.push("medium:=[`Comic`,`Novel`]");
+          }
+          clauses.push("views:>0");
           const isSearchNsfwOverride = params.includeNsfw === true;
           const ctx = compileFilterContext(prefs, isSearchNsfwOverride);
           if (!ctx.allowsAdult) {
@@ -2408,16 +2896,8 @@ var SourcePackage = (() => {
           } else {
             clauses.push("mbContentRating:=[`none`]");
           }
-          const effectiveFormat = (_a = params.format) != null ? _a : params.mode === "manga" ? "Manga" : params.mode === "manhwa" ? "Manwha" : void 0;
-          if (effectiveFormat && effectiveFormat !== "all") {
-            if (effectiveFormat.includes(",")) {
-              const parts = effectiveFormat.split(",").map((s) => s.trim()).filter(Boolean).map((s) => `\`${s}\``).join(",");
-              if (parts) {
-                clauses.push(`type:=[${parts}]`);
-              }
-            } else {
-              clauses.push(`type:=[\`${effectiveFormat}\`]`);
-            }
+          if (formatSpecs.typesenseTypeTokens.length > 0) {
+            clauses.push(`type:=[${formatSpecs.typesenseTypeTokens.join(",")}]`);
           }
           if (params.status && params.status !== "all") {
             if (params.status.includes(",")) {
@@ -2429,9 +2909,9 @@ var SourcePackage = (() => {
               clauses.push(`status:=[\`${params.status}\`]`);
             }
           }
-          const includedGenres = new Set((_c = (_b = params.genres) == null ? void 0 : _b.include) != null ? _c : []);
-          const excludedGenres = new Set((_d = prefs.excludedGenres) != null ? _d : []);
-          if ((_e = params.genres) == null ? void 0 : _e.exclude) {
+          const includedGenres = new Set((_b = (_a = params.genres) == null ? void 0 : _a.include) != null ? _b : []);
+          const excludedGenres = new Set((_c = prefs.excludedGenres) != null ? _c : []);
+          if ((_d = params.genres) == null ? void 0 : _d.exclude) {
             for (let i = 0, len = params.genres.exclude.length; i < len; i++) {
               const g = params.genres.exclude[i];
               if (g)
@@ -2449,9 +2929,9 @@ var SourcePackage = (() => {
             }
             clauses.push(`genreIds:!=[${formatted.join(",")}]`);
           }
-          const includedTags = new Set((_g = (_f = params.tags) == null ? void 0 : _f.include) != null ? _g : []);
-          const excludedTags = new Set((_h = prefs.excludedTags) != null ? _h : []);
-          if ((_i = params.tags) == null ? void 0 : _i.exclude) {
+          const includedTags = new Set((_f = (_e = params.tags) == null ? void 0 : _e.include) != null ? _f : []);
+          const excludedTags = new Set((_g = prefs.excludedTags) != null ? _g : []);
+          if ((_h = params.tags) == null ? void 0 : _h.exclude) {
             for (let i = 0, len = params.tags.exclude.length; i < len; i++) {
               const t = params.tags.exclude[i];
               if (t)
@@ -2503,7 +2983,7 @@ var SourcePackage = (() => {
          * format/status filters, sorting, and pagination.
          */
         async fetchExplore(params = {}, preloadedPrefs) {
-          var _a, _b, _c, _d, _e, _f;
+          var _a, _b, _c, _d, _e, _f, _g;
           const prefs = preloadedPrefs != null ? preloadedPrefs : await (0, preferences_js_1.getUserPreferences)();
           const page = Math.max(1, (_a = params.page) != null ? _a : 1);
           const perPage = (_b = params.perPage) != null ? _b : constants_js_1.DEFAULT_PAGE_SIZE;
@@ -2511,12 +2991,15 @@ var SourcePackage = (() => {
           const queryText = ((_c = params.query) == null ? void 0 : _c.trim()) || "*";
           const filterBy = this.buildTypesenseFilterBy(params, prefs);
           const sortBy = this.buildTypesenseSortBy(params);
+          const effectiveFormatOverride = params.format && params.format !== "all" ? params.format : params.mode === "manga" ? "Manga" : params.mode === "manhwa" ? "Manhwa" : void 0;
+          const formatSpecs = resolveActiveFormatSpecs(prefs, effectiveFormatOverride);
+          const overrideFormatSet = formatSpecs.overrideFormatSet;
           const searchParams = {
             q: queryText,
             page,
             per_page: perPage,
             filter_by: filterBy,
-            include_fields: "id,title,englishTitle,image,poster,smallImage,mediumImage,largeImage,type,status,isAdult,mbContentRating,mbRating,avgRating,views,popularity,genreIds,tagIds"
+            include_fields: "id,title,englishTitle,image,poster,smallImage,mediumImage,largeImage,type,medium,status,isAdult,mbContentRating,mbRating,avgRating,views,popularity,genreIds,tagIds"
           };
           if (queryText !== "*") {
             searchParams.query_by = "title,englishTitle,otherNames,authors,acronyms";
@@ -2536,12 +3019,22 @@ var SourcePackage = (() => {
               const doc = (_d = hits[i]) == null ? void 0 : _d.document;
               if (!doc || !doc.id)
                 continue;
-              if (isMangaAllowedWithContext(doc, ctx, isSearchNsfwOverride)) {
-                items.push(mapSummaryToItem(doc, imageFormat));
+              if (isNovelSummary(doc)) {
+                this.knownNovelIds.add(extractMangaId(doc.id));
               }
+              if (!isMangaAllowedWithContext(doc, ctx, isSearchNsfwOverride)) {
+                continue;
+              }
+              if (overrideFormatSet) {
+                const itemFormatToken = isNovelSummary(doc) ? "Novel" : (_e = doc.type) != null ? _e : doc.medium;
+                if (itemFormatToken && !setHasToken(overrideFormatSet, itemFormatToken)) {
+                  continue;
+                }
+              }
+              items.push(mapSummaryToItem(doc, imageFormat));
             }
             const total = typeof (response == null ? void 0 : response.found) === "number" ? response.found : items.length;
-            const effectivePerPage = (_f = (_e = response == null ? void 0 : response.request_params) == null ? void 0 : _e.per_page) != null ? _f : perPage;
+            const effectivePerPage = (_g = (_f = response == null ? void 0 : response.request_params) == null ? void 0 : _f.per_page) != null ? _g : perPage;
             const isLastPage = hits.length === 0 || page * effectivePerPage >= total;
             return {
               items,
@@ -2554,22 +3047,22 @@ var SourcePackage = (() => {
             }
             if (queryText === "*") {
               const fallbackEndpoint = params.mode === "latest" ? "recentlyUpdated" : params.mode === "hot_updates" ? "hotUpdates" : params.mode === "recently_added" ? "recentlyAdded" : params.mode === "top_rated" ? "topRated" : params.mode === "most_bookmarked" ? "mostBookmarked" : "popular";
-              const fallbackType = params.format && params.format !== "all" ? params.format : params.mode === "manhwa" ? "Manwha" : params.mode === "manga" ? "Manga" : "Manga,Manwha,Manhua,OEL";
-              return this.fetchHomeEndpoint(fallbackEndpoint, page, perPage, prefs, isSearchNsfwOverride, fallbackType);
+              return this.fetchHomeEndpoint(fallbackEndpoint, page, perPage, prefs, isSearchNsfwOverride, formatSpecs.apiTypesParam, formatSpecs.apiMediumsParam);
             }
             throw error;
           }
         }
-        async fetchHomeEndpoint(endpoint, page = 1, limit = constants_js_1.DEFAULT_PAGE_SIZE, prefsOrAllowNsfw, isNsfwOverride = false, types = "Manga,Manwha,Manhua,OEL") {
+        async fetchHomeEndpoint(endpoint, page = 1, limit = constants_js_1.DEFAULT_PAGE_SIZE, prefsOrAllowNsfw, isNsfwOverride = false, types, mediums) {
           const prefs = typeof prefsOrAllowNsfw === "object" && prefsOrAllowNsfw !== null ? prefsOrAllowNsfw : await (0, preferences_js_1.getUserPreferences)();
           const ctx = compileFilterContext(prefs, isNsfwOverride);
           const allowAdult = isNsfwOverride || (typeof prefsOrAllowNsfw === "boolean" ? prefsOrAllowNsfw : ctx.allowsAdult);
+          const formatSpecs = resolveActiveFormatSpecs(prefs, types);
           const offset = Math.max(0, (page - 1) * limit);
           const params = {
             offset,
             limit,
-            types,
-            mediums: "Comic",
+            types: types != null ? types : formatSpecs.apiTypesParam,
+            mediums: mediums != null ? mediums : formatSpecs.apiMediumsParam,
             ...endpoint === "popular" ? { timeframe: "daily" } : {},
             ...allowAdult ? { adult: 1 } : {}
           };
@@ -2582,15 +3075,54 @@ var SourcePackage = (() => {
           };
         }
         /**
+         * Fetches the complete chapter list for a novel from `/api/novel/allChapters` or `/api/novel/chapters`,
+         * with fallback to `/api/manga/allChapters`.
+         */
+        async fetchRawNovelChapters(novelId, fallbackChapters) {
+          var _a, _b;
+          const cleanId = extractMangaId(novelId);
+          try {
+            const response = await this.getJson(`${constants_js_1.API_BASE}/novel/allChapters`, { novelId: cleanId, mangaId: cleanId, id: cleanId });
+            const list = (_a = response == null ? void 0 : response.novelChapters) != null ? _a : response == null ? void 0 : response.chapters;
+            if (Array.isArray(list) && list.length > 0) {
+              return list;
+            }
+          } catch (error) {
+            if (error instanceof CloudflareError) {
+              throw error;
+            }
+          }
+          try {
+            const paged = await this.getJson(`${constants_js_1.API_BASE}/novel/chapters`, {
+              id: cleanId,
+              novelId: cleanId,
+              filter: "all",
+              sort: "desc",
+              page: 0
+            });
+            const list = (_b = paged == null ? void 0 : paged.novelChapters) != null ? _b : paged == null ? void 0 : paged.chapters;
+            if (Array.isArray(list) && list.length > 0) {
+              return list;
+            }
+          } catch (error) {
+            if (error instanceof CloudflareError) {
+              throw error;
+            }
+          }
+          return this.fetchRawChapters(cleanId, fallbackChapters);
+        }
+        /**
          * Fetches the complete chapter list for a manga from `/api/manga/allChapters?mangaId={id}`,
          * with a defensive fallback to `/api/manga/chapters` if needed.
          */
         async fetchRawChapters(mangaId, fallbackChapters) {
+          var _a, _b;
           const cleanId = extractMangaId(mangaId);
           try {
             const response = await this.getJson(`${constants_js_1.API_BASE}/manga/allChapters`, { mangaId: cleanId });
-            if (Array.isArray(response == null ? void 0 : response.chapters) && response.chapters.length > 0) {
-              return response.chapters;
+            const list = (_a = response == null ? void 0 : response.chapters) != null ? _a : response == null ? void 0 : response.novelChapters;
+            if (Array.isArray(list) && list.length > 0) {
+              return list;
             }
           } catch (error) {
             if (error instanceof CloudflareError) {
@@ -2604,8 +3136,9 @@ var SourcePackage = (() => {
               sort: "desc",
               page: 0
             });
-            if (Array.isArray(paged == null ? void 0 : paged.chapters) && paged.chapters.length > 0) {
-              return paged.chapters;
+            const list = (_b = paged == null ? void 0 : paged.chapters) != null ? _b : paged == null ? void 0 : paged.novelChapters;
+            if (Array.isArray(list) && list.length > 0) {
+              return list;
             }
           } catch (error) {
             if (error instanceof CloudflareError) {
@@ -2614,12 +3147,64 @@ var SourcePackage = (() => {
           }
           return Array.isArray(fallbackChapters) ? fallbackChapters : [];
         }
+        async fetchPageDetailWithDualRoute(cleanId, preferNovelRoute) {
+          const extractDetail = (res) => {
+            var _a, _b, _c, _d;
+            if (!res || typeof res !== "object")
+              return void 0;
+            if ("novelPage" in res && ((_a = res.novelPage) == null ? void 0 : _a.id))
+              return res.novelPage;
+            if ("mangaPage" in res && ((_b = res.mangaPage) == null ? void 0 : _b.id))
+              return res.mangaPage;
+            if ("novel" in res && ((_c = res.novel) == null ? void 0 : _c.id))
+              return res.novel;
+            if ("manga" in res && ((_d = res.manga) == null ? void 0 : _d.id))
+              return res.manga;
+            if ("id" in res && typeof res.id === "string" && res.id) {
+              return res;
+            }
+            return void 0;
+          };
+          const primaryUrl = preferNovelRoute ? `${constants_js_1.API_BASE}/novel/page` : `${constants_js_1.API_BASE}/manga/page`;
+          const secondaryUrl = preferNovelRoute ? `${constants_js_1.API_BASE}/manga/page` : `${constants_js_1.API_BASE}/novel/page`;
+          try {
+            const primaryRes = await this.getJson(primaryUrl, {
+              id: cleanId,
+              ...preferNovelRoute ? { novelId: cleanId } : {}
+            });
+            const detail = extractDetail(primaryRes);
+            if (detail) {
+              return detail;
+            }
+          } catch (error) {
+            if (error instanceof CloudflareError) {
+              throw error;
+            }
+          }
+          try {
+            const secondaryRes = await this.getJson(secondaryUrl, {
+              id: cleanId,
+              ...!preferNovelRoute ? { novelId: cleanId } : {}
+            });
+            const detail = extractDetail(secondaryRes);
+            if (detail) {
+              return detail;
+            }
+          } catch (error) {
+            if (error instanceof CloudflareError) {
+              throw error;
+            }
+          }
+          return void 0;
+        }
         /**
-         * Concurrently fetches `/api/manga/page` and `/api/manga/allChapters` via `Promise.all`,
+         * Concurrently fetches metadata and chapters via `Promise.all` (routing to novel or manga endpoints),
          * deduplicating in-flight requests and caching results briefly so back-to-back
          * `getContent` and `getChapters` calls do not duplicate network requests.
          */
-        async fetchMangaBundle(mangaId) {
+        async fetchMangaBundle(idOrUrl) {
+          const mangaId = extractMangaId(idOrUrl);
+          const preferNovel = isNovelIdentifier(idOrUrl) || this.knownNovelIds.has(mangaId);
           const now = Date.now();
           const cached = this.mangaCache.get(mangaId);
           if (cached && now - cached.timestamp < MANGA_CACHE_TTL_MS) {
@@ -2630,15 +3215,20 @@ var SourcePackage = (() => {
             return inflight;
           }
           const requestPromise = (async () => {
-            const [pageResponse, rawChapters] = await Promise.all([
-              this.getJson(`${constants_js_1.API_BASE}/manga/page`, {
-                id: mangaId
-              }),
-              this.fetchRawChapters(mangaId)
+            const [detail, initialChapters] = await Promise.all([
+              this.fetchPageDetailWithDualRoute(mangaId, preferNovel),
+              preferNovel ? this.fetchRawNovelChapters(mangaId) : this.fetchRawChapters(mangaId)
             ]);
-            const detail = pageResponse == null ? void 0 : pageResponse.mangaPage;
             if (!detail || !detail.id) {
-              throw new Error(`Manga details not found for ID "${mangaId}".`);
+              throw new Error(`Content details not found for ID "${mangaId}".`);
+            }
+            const detectedNovel = preferNovel || isNovelSummary(detail);
+            if (detectedNovel) {
+              this.knownNovelIds.add(mangaId);
+            }
+            let rawChapters = initialChapters;
+            if (rawChapters.length === 0 && detectedNovel && !preferNovel) {
+              rawChapters = await this.fetchRawNovelChapters(mangaId, detail.chapters);
             }
             const effectiveChapters = rawChapters.length > 0 ? rawChapters : Array.isArray(detail.chapters) ? detail.chapters : [];
             const bundle = {
@@ -2663,16 +3253,20 @@ var SourcePackage = (() => {
           }
         }
         /**
-         * Retrieves manga synopsis, metadata, tags, recommendations, and full chapter list
-         * concurrently from `/api/manga/page?id={id}` and `/api/manga/allChapters?mangaId={id}`.
+         * Retrieves manga or novel synopsis, metadata, tags, recommendations, and full chapter list
+         * concurrently from Atsu.moe's manga or novel endpoints.
          */
         async fetchMangaDetails(idOrUrl) {
           var _a, _b, _c, _d, _e, _f, _g, _h, _i;
           const mangaId = extractMangaId(idOrUrl);
           const [prefs, { detail, rawChapters }] = await Promise.all([
             (0, preferences_js_1.getUserPreferences)(),
-            this.fetchMangaBundle(mangaId)
+            this.fetchMangaBundle(idOrUrl)
           ]);
+          const isNovel = isNovelIdentifier(idOrUrl) || isNovelSummary(detail) || this.knownNovelIds.has(mangaId);
+          if (isNovel) {
+            this.knownNovelIds.add(mangaId);
+          }
           const chapters = normalizeAndFilterChapters(mangaId, rawChapters, detail.scanlators, {
             deduplicate: prefs.deduplicateChapters,
             whitelist: prefs.scanlatorWhitelist
@@ -2719,7 +3313,7 @@ var SourcePackage = (() => {
             });
           }
           const credits = extractCredits(detail.authors);
-          const links = extractExternalLinks(detail, mangaId);
+          const links = extractExternalLinks(detail, mangaId, isNovel);
           const relatedItems = [];
           const seenRelated = /* @__PURE__ */ new Set();
           const ctx = compileFilterContext(prefs, false);
@@ -2752,8 +3346,11 @@ var SourcePackage = (() => {
           const numericViews = typeof rawViews === "number" && Number.isFinite(rawViews) ? rawViews : typeof rawViews === "string" && Number.isFinite(Number(rawViews)) ? Number(rawViews) : void 0;
           const additionalDetails = {};
           let hasAdditionalDetails = false;
-          if (detail.type) {
-            additionalDetails["Format"] = detail.type === "Manwha" ? "Manhwa" : String(detail.type);
+          if (isNovel) {
+            additionalDetails["Format"] = "Novel";
+            hasAdditionalDetails = true;
+          } else if (detail.type) {
+            additionalDetails["Format"] = detail.type === "Manwha" ? "Manhwa" : detail.type === "Other" ? "OTHER" : String(detail.type);
             hasAdditionalDetails = true;
           }
           if (detail.status) {
@@ -2777,14 +3374,15 @@ var SourcePackage = (() => {
               hasAdditionalDetails = true;
             }
           }
+          const routeSegment = isNovel ? "novel" : "manga";
           const content = {
             title,
             coverImage,
             ...bannerImage ? { bannerImage } : {},
-            webUrl: `${constants_js_1.BASE_URL}/manga/${encodeURIComponent(mangaId)}`,
+            webUrl: `${constants_js_1.BASE_URL}/${routeSegment}/${encodeURIComponent(mangaId)}`,
             rating: mapContentRating(detail),
             status: mapContentStatus(detail.status),
-            contentType: mapContentType(detail.type, detail.medium),
+            contentType: isNovel ? toolchain_1.ContentType.NOVEL : mapContentType(detail.type, detail.medium),
             readingMode: mapReadingMode(detail.type),
             summary,
             ...numericScore !== void 0 || numericViews !== void 0 ? {
@@ -2809,10 +3407,12 @@ var SourcePackage = (() => {
           };
         }
         /**
-         * Retrieves the deduplicated/filtered chapter list concurrently using Promise.all.
+         * Retrieves the deduplicated/filtered chapter list concurrently using Promise.all,
+         * automatically routing to novel or manga endpoints based on title medium/ID.
          */
         async fetchChapters(idOrUrl) {
           const mangaId = extractMangaId(idOrUrl);
+          const preferNovel = isNovelIdentifier(idOrUrl) || this.knownNovelIds.has(mangaId);
           const cached = this.mangaCache.get(mangaId);
           if (cached && Date.now() - cached.timestamp < MANGA_CACHE_TTL_MS) {
             const prefs2 = await (0, preferences_js_1.getUserPreferences)();
@@ -2821,19 +3421,24 @@ var SourcePackage = (() => {
               whitelist: prefs2.scanlatorWhitelist
             });
           }
-          const [prefs, pageResponse, rawChapters] = await Promise.all([
+          const [prefs, detail, initialChapters] = await Promise.all([
             (0, preferences_js_1.getUserPreferences)(),
-            this.getJson(`${constants_js_1.API_BASE}/manga/page`, {
-              id: mangaId
-            }).catch((error) => {
+            this.fetchPageDetailWithDualRoute(mangaId, preferNovel).catch((error) => {
               if (error instanceof CloudflareError) {
                 throw error;
               }
-              return null;
+              return void 0;
             }),
-            this.fetchRawChapters(mangaId)
+            preferNovel ? this.fetchRawNovelChapters(mangaId) : this.fetchRawChapters(mangaId)
           ]);
-          const detail = pageResponse == null ? void 0 : pageResponse.mangaPage;
+          const detectedNovel = preferNovel || isNovelSummary(detail);
+          if (detectedNovel) {
+            this.knownNovelIds.add(mangaId);
+          }
+          let rawChapters = initialChapters;
+          if (rawChapters.length === 0 && detectedNovel && !preferNovel) {
+            rawChapters = await this.fetchRawNovelChapters(mangaId, detail == null ? void 0 : detail.chapters);
+          }
           const scanlators = detail == null ? void 0 : detail.scanlators;
           const effectiveChapters = rawChapters.length > 0 ? rawChapters : Array.isArray(detail == null ? void 0 : detail.chapters) ? detail.chapters : [];
           if (detail == null ? void 0 : detail.id) {
@@ -2853,6 +3458,89 @@ var SourcePackage = (() => {
             deduplicate: prefs.deduplicateChapters,
             whitelist: prefs.scanlatorWhitelist
           });
+        }
+        /**
+         * Fetches and sanitizes a novel chapter's HTML text payload for Suwatte's native text reader.
+         */
+        async fetchChapterText(contentId, chapterId) {
+          const cleanId = extractMangaId(contentId);
+          const cleanChapterId = String(chapterId != null ? chapterId : "").trim();
+          if (!cleanChapterId) {
+            throw new Error("Chapter ID cannot be empty.");
+          }
+          const extractRawTextFromPayload = (payload) => {
+            var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m;
+            if (!payload || typeof payload !== "object") {
+              return null;
+            }
+            const chapterObj = (_b = (_a = payload.novelChapter) != null ? _a : payload.readChapter) != null ? _b : payload.chapter;
+            const title = (_c = chapterObj == null ? void 0 : chapterObj.title) != null ? _c : void 0;
+            const directCandidate = (_j = (_i = (_h = (_g = (_f = (_e = (_d = chapterObj == null ? void 0 : chapterObj.content) != null ? _d : chapterObj == null ? void 0 : chapterObj.text) != null ? _e : chapterObj == null ? void 0 : chapterObj.body) != null ? _f : chapterObj == null ? void 0 : chapterObj.html) != null ? _g : payload.content) != null ? _h : payload.text) != null ? _i : payload.body) != null ? _j : payload.html;
+            if (typeof directCandidate === "string" && directCandidate.trim()) {
+              return { rawText: directCandidate, title };
+            }
+            const paragraphs = (_k = chapterObj == null ? void 0 : chapterObj.paragraphs) != null ? _k : payload.paragraphs;
+            if (Array.isArray(paragraphs) && paragraphs.length > 0) {
+              const joined = paragraphs.map((p) => typeof p === "string" ? p.trim() : "").filter(Boolean).map((p) => p.startsWith("<p") ? p : `<p>${p}</p>`).join("\n");
+              if (joined) {
+                return { rawText: joined, title };
+              }
+            }
+            const pages = chapterObj == null ? void 0 : chapterObj.pages;
+            if (Array.isArray(pages) && pages.length > 0) {
+              const textChunks = [];
+              for (let i = 0, len = pages.length; i < len; i++) {
+                const page = pages[i];
+                const chunk = (_m = (_l = page == null ? void 0 : page.content) != null ? _l : page == null ? void 0 : page.text) != null ? _m : page == null ? void 0 : page.body;
+                if (typeof chunk === "string" && chunk.trim()) {
+                  textChunks.push(chunk.trim());
+                }
+              }
+              if (textChunks.length > 0) {
+                return { rawText: textChunks.join("\n\n"), title };
+              }
+            }
+            return null;
+          };
+          const endpoints = [
+            {
+              url: `${constants_js_1.API_BASE}/novel/chapter`,
+              params: {
+                novelId: cleanId,
+                mangaId: cleanId,
+                chapterId: cleanChapterId,
+                id: cleanChapterId
+              }
+            },
+            {
+              url: `${constants_js_1.API_BASE}/read/chapter`,
+              params: {
+                mangaId: cleanId,
+                novelId: cleanId,
+                chapterId: cleanChapterId
+              }
+            }
+          ];
+          for (let i = 0, len = endpoints.length; i < len; i++) {
+            const ep = endpoints[i];
+            try {
+              const response = await this.getJson(ep.url, ep.params);
+              const extracted = extractRawTextFromPayload(response);
+              if (extracted) {
+                const sanitizedBody = sanitizeNovelHtml(extracted.rawText, extracted.title);
+                return {
+                  format: toolchain_1.SourceChapterTextFormat.HTML,
+                  body: sanitizedBody,
+                  resources: []
+                };
+              }
+            } catch (error) {
+              if (error instanceof CloudflareError) {
+                throw error;
+              }
+            }
+          }
+          throw new Error(`No chapter text returned for novel "${cleanId}" chapter "${cleanChapterId}".`);
         }
         /**
          * Retrieves ordered chapter page URLs from `/api/read/chapter?mangaId={id}&chapterId={chapterId}`.
@@ -3056,6 +3744,16 @@ var SourcePackage = (() => {
         const format = filters[exports.FILTER_IDS.FORMAT];
         if (typeof format === "string" && format.length > 0 && format !== "all") {
           params.format = format;
+        } else if (Array.isArray(format) && format.length > 0) {
+          const joined = format.map((f) => String(f).trim()).filter((f) => f.length > 0 && f !== "all").join(",");
+          if (joined) {
+            params.format = joined;
+          }
+        } else if (isRecord(format) && Array.isArray(format.include)) {
+          const joined = format.include.map((f) => String(f).trim()).filter((f) => f.length > 0 && f !== "all").join(",");
+          if (joined) {
+            params.format = joined;
+          }
         }
         const status = filters[exports.FILTER_IDS.STATUS];
         if (typeof status === "string" && status.length > 0 && status !== "all") {
@@ -3342,7 +4040,8 @@ var SourcePackage = (() => {
         // ContentResolver
         // =========================================================================
         canResolveUrl(url) {
-          return constants_js_1.MANGA_URL_REGEX.test((url != null ? url : "").trim());
+          const trimmed = (url != null ? url : "").trim();
+          return constants_js_1.MANGA_URL_REGEX.test(trimmed) || constants_js_1.NOVEL_URL_REGEX.test(trimmed) || constants_js_1.CONTENT_URL_REGEX.test(trimmed);
         }
         async resolveUrl(url) {
           return this.getContent(url);
@@ -3359,6 +4058,9 @@ var SourcePackage = (() => {
         }
         async getChapterPages(contentId, chapterId) {
           return this.api.fetchChapterPages(contentId, chapterId);
+        }
+        async getChapterText(contentId, chapterId) {
+          return this.api.fetchChapterText(contentId, chapterId);
         }
         // =========================================================================
         // PreferenceProvider
@@ -3385,7 +4087,7 @@ var SourcePackage = (() => {
       var Target = _Target;
       exports.default = Target;
       exports.Target = Target;
-      Target.info.version = 2.1;
+      Target.info.version = 2.2;
     }
   });
 
@@ -3414,7 +4116,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_moe();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "moe.atsu", "name": "Atsumaru", "version": 2.1, "website": "https://atsu.moe", "rating": 1, "thumbnail": "https://atsu.moe/favicon.ico", "languages": ["en"] };
+      exports.SourceMetadata = { "id": "moe.atsu", "name": "Atsumaru", "version": 2.2, "website": "https://atsu.moe", "rating": 1, "thumbnail": "https://atsu.moe/favicon.ico", "languages": ["en"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;
