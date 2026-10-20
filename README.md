@@ -1,6 +1,6 @@
 # 📚 Suwatte Source Repository
 
-An automated repository hosting custom, high-performance source extensions for the [Suwatte](https://suwatte.app) iOS/iPadOS manga and novel reader.
+Self created repository hosting custom, high-performance source extensions for the [Suwatte](https://suwatte.app) iOS/iPadOS manga and novel reader.
 
 [![Suwatte](https://img.shields.io/badge/Suwatte-Supported-blue.svg?style=for-the-badge)](https://suwatte.app)
 [![Catalog Status](https://img.shields.io/badge/Catalog-Active-brightgreen.svg?style=for-the-badge)](#available-sources)
