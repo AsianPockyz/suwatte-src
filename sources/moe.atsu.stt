@@ -824,7 +824,7 @@ var SourcePackage = (() => {
       exports.ATSU_SORT_OPTIONS = exports.ATSU_STATUSES = exports.ATSU_FORMATS = exports.ATSU_THEMES = exports.ATSU_GENRES = exports.DEDUPLICATION_MODE_OPTIONS = exports.IMAGE_FORMAT_OPTIONS = exports.NSFW_RATINGS_SET = exports.ALL_CONTENT_RATINGS = exports.DEFAULT_ALLOWED_CONTENT_RATINGS = exports.CONTENT_RATING_OPTIONS = exports.ALL_ENABLED_FORMATS = exports.DEFAULT_ENABLED_FORMATS = exports.FORMAT_PREFERENCE_OPTIONS = exports.PREF_KEYS = exports.PAGE_IMAGE_HEADERS = exports.WEBP_ACCEPT_HEADER = exports.IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.CONTENT_URL_REGEX = exports.NOVEL_URL_REGEX = exports.MANGA_URL_REGEX = exports.RATE_LIMIT_PER_SECOND = exports.DEFAULT_PAGE_SIZE = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_FALLBACK_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.CDN_STATIC_BASE = exports.STATIC_BASE = exports.SEARCH_ENDPOINT = exports.API_BASE = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = void 0;
       exports.SOURCE_ID = "moe.atsu";
       exports.SOURCE_NAME = "Atsumaru";
-      exports.SOURCE_VERSION = 2.2;
+      exports.SOURCE_VERSION = 2.3;
       exports.BASE_URL = "https://atsu.moe";
       exports.API_BASE = "https://atsu.moe/api";
       exports.SEARCH_ENDPOINT = `${exports.BASE_URL}/collections/manga/documents/search`;
@@ -1633,6 +1633,7 @@ var SourcePackage = (() => {
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.hasNsfwRating = exports.AtsuApiClient = void 0;
       exports.compileFilterContext = compileFilterContext;
+      exports.getItemEffectiveFormat = getItemEffectiveFormat;
       exports.isNovelIdentifier = isNovelIdentifier;
       exports.isNovelSummary = isNovelSummary;
       exports.extractMangaId = extractMangaId;
@@ -1805,6 +1806,28 @@ var SourcePackage = (() => {
         const body = typeof response.data === "string" ? response.data : "";
         return cfMitigated.includes("challenge") || server.includes("cloudflare") || body.includes("cf-browser-verification") || body.includes("Just a moment...") || body.includes("Attention Required! | Cloudflare");
       }
+      function getItemEffectiveFormat(item) {
+        var _a;
+        if (!item || typeof item !== "object")
+          return "OTHER";
+        const medium = (item.medium || item.format || "").toString().toLowerCase();
+        const isNovel = medium === "novel" || item.isNovel === true || ((_a = item.type) == null ? void 0 : _a.toString().toLowerCase()) === "novel";
+        if (isNovel) {
+          return "Novel";
+        }
+        const type = (item.type || item.medium || item.format || "").toString().toLowerCase();
+        if (type.includes("manhwa") || type.includes("manwha"))
+          return "Manhwa";
+        if (type.includes("manhua"))
+          return "Manhua";
+        if (type.includes("oel"))
+          return "OEL";
+        if (type.includes("other"))
+          return "OTHER";
+        if (type.includes("manga"))
+          return "Manga";
+        return "OTHER";
+      }
       function isNovelIdentifier(idOrUrl) {
         const trimmed = (idOrUrl != null ? idOrUrl : "").trim();
         if (!trimmed) {
@@ -1821,15 +1844,7 @@ var SourcePackage = (() => {
       function isNovelSummary(item) {
         if (!item)
           return false;
-        const medium = item.medium;
-        if (medium === "Novel" || medium === "novel" || typeof medium === "string" && medium.trim().toLowerCase() === "novel") {
-          return true;
-        }
-        const type = item.type;
-        if (type === "Novel" || type === "novel" || typeof type === "string" && type.trim().toLowerCase() === "novel") {
-          return true;
-        }
-        return false;
+        return getItemEffectiveFormat(item) === "Novel";
       }
       function extractMangaId(idOrUrl) {
         var _a;
@@ -2001,54 +2016,20 @@ var SourcePackage = (() => {
         }
       }
       function mapContentType(type, medium) {
-        if (medium && (medium === "Novel" || medium === "novel" || medium.trim().toLowerCase() === "novel")) {
-          return toolchain_1.ContentType.NOVEL;
-        }
-        if (!type) {
-          return toolchain_1.ContentType.MANGA;
-        }
-        switch (type) {
+        const effective = getItemEffectiveFormat({ type, medium });
+        switch (effective) {
           case "Novel":
-          case "novel":
             return toolchain_1.ContentType.NOVEL;
-          case "Manwha":
           case "Manhwa":
-          case "manwha":
-          case "manhwa":
             return toolchain_1.ContentType.MANHWA;
           case "Manhua":
-          case "manhua":
             return toolchain_1.ContentType.MANHUA;
           case "OEL":
-          case "Comic":
-          case "oel":
-          case "comic":
             return toolchain_1.ContentType.COMIC;
-          case "OTHER":
-          case "Other":
-          case "other":
           case "Manga":
-          case "manga":
+          case "OTHER":
+          default:
             return toolchain_1.ContentType.MANGA;
-          default: {
-            const normalized = type.trim().toLowerCase();
-            switch (normalized) {
-              case "novel":
-                return toolchain_1.ContentType.NOVEL;
-              case "manwha":
-              case "manhwa":
-                return toolchain_1.ContentType.MANHWA;
-              case "manhua":
-                return toolchain_1.ContentType.MANHUA;
-              case "oel":
-              case "comic":
-                return toolchain_1.ContentType.COMIC;
-              case "other":
-              case "manga":
-              default:
-                return toolchain_1.ContentType.MANGA;
-            }
-          }
         }
       }
       function mapReadingMode(type) {
@@ -2088,19 +2069,20 @@ var SourcePackage = (() => {
         return ms > 0 ? new Date(ms) : void 0;
       }
       function mapSummaryToItem(manga, imageFormat = "webp") {
-        var _a, _b, _c, _d;
+        var _a, _b, _c;
         const rawId = manga.id;
         const id = rawId.includes("/") || rawId.startsWith("http") ? extractMangaId(rawId) : rawId.trim();
         const title = (manga.englishTitle || manga.title || "Untitled Series").trim();
         const coverImage = resolveMangaCover(manga, imageFormat);
         const rating = mapContentRating(manga);
-        const isNovel = isNovelSummary(manga);
-        const typeLabel = isNovel ? "Novel" : manga.type === "Manwha" ? "Manhwa" : manga.type === "Other" ? "OTHER" : (_a = manga.type) != null ? _a : void 0;
-        const statusLabel = (_b = manga.status) != null ? _b : void 0;
+        const effectiveFormat = getItemEffectiveFormat(manga);
+        const isNovel = effectiveFormat === "Novel";
+        const typeLabel = effectiveFormat;
+        const statusLabel = (_a = manga.status) != null ? _a : void 0;
         const subtitle = typeLabel && statusLabel ? `${typeLabel} \u2022 ${statusLabel}` : typeLabel || statusLabel || void 0;
-        const rawScore = (_c = manga.mbRating) != null ? _c : manga.avgRating;
+        const rawScore = (_b = manga.mbRating) != null ? _b : manga.avgRating;
         const numericScore = typeof rawScore === "number" && Number.isFinite(rawScore) ? Math.round(rawScore * 100) / 100 : void 0;
-        const rawViews = (_d = manga.views) != null ? _d : manga.popularity;
+        const rawViews = (_c = manga.views) != null ? _c : manga.popularity;
         const numericViews = typeof rawViews === "number" && Number.isFinite(rawViews) ? rawViews : typeof rawViews === "string" && Number.isFinite(Number(rawViews)) ? Number(rawViews) : void 0;
         const routeSegment = isNovel ? "novel" : "manga";
         const item = {
@@ -2208,24 +2190,9 @@ var SourcePackage = (() => {
           }
         }
         if (ctx.allowedFormatsSet.size > 0) {
-          const rawMedium = manga.medium;
-          const rawType = manga.type;
-          if (rawMedium === "Novel" || rawMedium === "novel" || typeof rawMedium === "string" && rawMedium.trim().toLowerCase() === "novel") {
-            if (!ctx.allowsNovel) {
-              return false;
-            }
-          } else if (rawType) {
-            if (!setHasToken(ctx.allowedFormatsSet, rawType)) {
-              return false;
-            }
-          } else if (rawMedium) {
-            if (rawMedium === "Comic" || rawMedium === "comic" || rawMedium.trim().toLowerCase() === "comic") {
-              if (!ctx.allowsManga && !ctx.allowsManhwa && !ctx.allowsManhua && !ctx.allowsOel && !ctx.allowsOther) {
-                return false;
-              }
-            } else if (!setHasToken(ctx.allowedFormatsSet, rawMedium)) {
-              return false;
-            }
+          const effectiveFormat = getItemEffectiveFormat(manga);
+          if (!ctx.allowedFormatsSet.has(effectiveFormat)) {
+            return false;
           }
         }
         if (ctx.excludedGenreSet.size > 0 && hasBlacklistedIdOrTag(ctx.excludedGenreSet, manga.genreIds, manga.genres)) {
@@ -2254,32 +2221,21 @@ var SourcePackage = (() => {
           if (canonical === "Manga") {
             allowsManga = true;
             formatSet.add("Manga");
-            formatSet.add("manga");
           } else if (canonical === "Manhwa") {
             allowsManhwa = true;
             formatSet.add("Manhwa");
-            formatSet.add("Manwha");
-            formatSet.add("manhwa");
-            formatSet.add("manwha");
           } else if (canonical === "Manhua") {
             allowsManhua = true;
             formatSet.add("Manhua");
-            formatSet.add("manhua");
           } else if (canonical === "Novel") {
             allowsNovel = true;
             formatSet.add("Novel");
-            formatSet.add("novel");
           } else if (canonical === "OEL") {
             allowsOel = true;
             formatSet.add("OEL");
-            formatSet.add("oel");
-            formatSet.add("Comic");
-            formatSet.add("comic");
           } else if (canonical === "OTHER") {
             allowsOther = true;
             formatSet.add("OTHER");
-            formatSet.add("Other");
-            formatSet.add("other");
           }
         }
         const ctx = {
@@ -2464,8 +2420,8 @@ var SourcePackage = (() => {
           }
         }
         const canonicalSet = /* @__PURE__ */ new Set();
-        const typesenseTokensSet = /* @__PURE__ */ new Set();
-        const apiTypesSet = /* @__PURE__ */ new Set();
+        const comicTypesenseTokensSet = /* @__PURE__ */ new Set();
+        const comicApiTypesSet = /* @__PURE__ */ new Set();
         let hasNovel = false;
         let hasComic = false;
         for (let i = 0, len = activeInput.length; i < len; i++) {
@@ -2476,51 +2432,61 @@ var SourcePackage = (() => {
           switch (canonical) {
             case "Manga":
               canonicalSet.add("Manga");
-              typesenseTokensSet.add("`Manga`");
-              apiTypesSet.add("Manga");
+              comicTypesenseTokensSet.add("`Manga`");
+              comicApiTypesSet.add("Manga");
               hasComic = true;
               break;
             case "Manhwa":
               canonicalSet.add("Manhwa");
-              typesenseTokensSet.add("`Manwha`");
-              typesenseTokensSet.add("`Manhwa`");
-              apiTypesSet.add("Manwha");
-              apiTypesSet.add("Manhwa");
+              comicTypesenseTokensSet.add("`Manwha`");
+              comicTypesenseTokensSet.add("`Manhwa`");
+              comicApiTypesSet.add("Manwha");
+              comicApiTypesSet.add("Manhwa");
               hasComic = true;
               break;
             case "Manhua":
               canonicalSet.add("Manhua");
-              typesenseTokensSet.add("`Manhua`");
-              apiTypesSet.add("Manhua");
+              comicTypesenseTokensSet.add("`Manhua`");
+              comicApiTypesSet.add("Manhua");
               hasComic = true;
               break;
             case "Novel":
               canonicalSet.add("Novel");
-              typesenseTokensSet.add("`Novel`");
-              apiTypesSet.add("Novel");
               hasNovel = true;
               break;
             case "OEL":
               canonicalSet.add("OEL");
-              typesenseTokensSet.add("`OEL`");
-              apiTypesSet.add("OEL");
+              comicTypesenseTokensSet.add("`OEL`");
+              comicApiTypesSet.add("OEL");
               hasComic = true;
               break;
             case "OTHER":
               canonicalSet.add("OTHER");
-              typesenseTokensSet.add("`OTHER`");
-              typesenseTokensSet.add("`Other`");
-              apiTypesSet.add("OTHER");
-              apiTypesSet.add("Other");
+              comicTypesenseTokensSet.add("`OTHER`");
+              comicTypesenseTokensSet.add("`Other`");
+              comicApiTypesSet.add("OTHER");
+              comicApiTypesSet.add("Other");
               hasComic = true;
               break;
           }
         }
         const apiMediumsParam = hasComic && hasNovel ? "Comic,Novel" : hasNovel ? "Novel" : "Comic";
+        let apiTypesParam;
+        if (hasNovel && !hasComic) {
+          apiTypesParam = "Manga,Manwha,Manhua,OEL,OTHER,Novel";
+        } else if (hasNovel && hasComic) {
+          const all = new Set(comicApiTypesSet);
+          all.add("Novel");
+          apiTypesParam = Array.from(all).join(",");
+        } else if (comicApiTypesSet.size > 0) {
+          apiTypesParam = Array.from(comicApiTypesSet).join(",");
+        } else {
+          apiTypesParam = "Manga,Manwha,Manhua";
+        }
         return {
           canonicalFormats: Array.from(canonicalSet),
-          typesenseTypeTokens: Array.from(typesenseTokensSet),
-          apiTypesParam: apiTypesSet.size > 0 ? Array.from(apiTypesSet).join(",") : "Manga,Manwha,Manhua",
+          typesenseTypeTokens: Array.from(comicTypesenseTokensSet),
+          apiTypesParam,
           apiMediumsParam,
           hasNovel,
           hasComic,
@@ -2765,6 +2731,9 @@ var SourcePackage = (() => {
           });
           this.client = builder.build();
         }
+        getItemEffectiveFormat(item) {
+          return getItemEffectiveFormat(item);
+        }
         async getJson(url, params) {
           let cleanParams;
           if (params) {
@@ -2869,12 +2838,18 @@ var SourcePackage = (() => {
           const effectiveFormatOverride = params.format && params.format !== "all" ? params.format : params.mode === "manga" ? "Manga" : params.mode === "manhwa" ? "Manhwa" : void 0;
           const formatSpecs = resolveActiveFormatSpecs(prefs, effectiveFormatOverride);
           const clauses = ["hidden:!=true"];
-          if (!formatSpecs.hasNovel) {
-            clauses.push("medium:!=[`Novel`]");
-          } else if (!formatSpecs.hasComic && formatSpecs.hasNovel) {
+          if (formatSpecs.hasNovel && !formatSpecs.hasComic) {
             clauses.push("medium:=[`Novel`]");
-          } else {
+          } else if (!formatSpecs.hasNovel && formatSpecs.hasComic) {
+            clauses.push("medium:!=[`Novel`]");
+            if (formatSpecs.typesenseTypeTokens.length > 0) {
+              clauses.push(`type:=[${formatSpecs.typesenseTypeTokens.join(",")}]`);
+            }
+          } else if (formatSpecs.hasNovel && formatSpecs.hasComic) {
             clauses.push("medium:=[`Comic`,`Novel`]");
+            if (formatSpecs.typesenseTypeTokens.length > 0 && formatSpecs.typesenseTypeTokens.length < 8) {
+              clauses.push(`(medium:=[\`Novel\`] || type:=[${formatSpecs.typesenseTypeTokens.join(",")}])`);
+            }
           }
           clauses.push("views:>0");
           const isSearchNsfwOverride = params.includeNsfw === true;
@@ -2895,9 +2870,6 @@ var SourcePackage = (() => {
             clauses.push(`(mbContentRating:=[${mbRatings.join(",")}] || mbContentRating:!=*)`);
           } else {
             clauses.push("mbContentRating:=[`none`]");
-          }
-          if (formatSpecs.typesenseTypeTokens.length > 0) {
-            clauses.push(`type:=[${formatSpecs.typesenseTypeTokens.join(",")}]`);
           }
           if (params.status && params.status !== "all") {
             if (params.status.includes(",")) {
@@ -2983,7 +2955,7 @@ var SourcePackage = (() => {
          * format/status filters, sorting, and pagination.
          */
         async fetchExplore(params = {}, preloadedPrefs) {
-          var _a, _b, _c, _d, _e, _f, _g;
+          var _a, _b, _c, _d, _e, _f;
           const prefs = preloadedPrefs != null ? preloadedPrefs : await (0, preferences_js_1.getUserPreferences)();
           const page = Math.max(1, (_a = params.page) != null ? _a : 1);
           const perPage = (_b = params.perPage) != null ? _b : constants_js_1.DEFAULT_PAGE_SIZE;
@@ -3026,15 +2998,15 @@ var SourcePackage = (() => {
                 continue;
               }
               if (overrideFormatSet) {
-                const itemFormatToken = isNovelSummary(doc) ? "Novel" : (_e = doc.type) != null ? _e : doc.medium;
-                if (itemFormatToken && !setHasToken(overrideFormatSet, itemFormatToken)) {
+                const itemFormat = getItemEffectiveFormat(doc);
+                if (!overrideFormatSet.has(itemFormat)) {
                   continue;
                 }
               }
               items.push(mapSummaryToItem(doc, imageFormat));
             }
             const total = typeof (response == null ? void 0 : response.found) === "number" ? response.found : items.length;
-            const effectivePerPage = (_g = (_f = response == null ? void 0 : response.request_params) == null ? void 0 : _f.per_page) != null ? _g : perPage;
+            const effectivePerPage = (_f = (_e = response == null ? void 0 : response.request_params) == null ? void 0 : _e.per_page) != null ? _f : perPage;
             const isLastPage = hits.length === 0 || page * effectivePerPage >= total;
             return {
               items,
@@ -3775,7 +3747,7 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.Target = void 0;
+      exports.Target = exports.getItemEffectiveFormat = void 0;
       var toolchain_1 = require_dist();
       var api_js_1 = require_api();
       var constants_js_1 = require_constants();
@@ -3922,6 +3894,7 @@ var SourcePackage = (() => {
         constructor(api) {
           __publicField(this, "info", _Target.info);
           __publicField(this, "api");
+          __publicField(this, "getItemEffectiveFormat", api_js_1.getItemEffectiveFormat);
           this.api = api instanceof api_js_1.AtsuApiClient ? api : new api_js_1.AtsuApiClient();
         }
         /**
@@ -4084,10 +4057,15 @@ var SourcePackage = (() => {
         thumbnail: constants_js_1.FALLBACK_COVER_URL,
         languages: ["en"]
       });
+      __publicField(_Target, "getItemEffectiveFormat", api_js_1.getItemEffectiveFormat);
       var Target = _Target;
       exports.default = Target;
       exports.Target = Target;
-      Target.info.version = 2.2;
+      Target.info.version = 2.3;
+      var api_js_2 = require_api();
+      Object.defineProperty(exports, "getItemEffectiveFormat", { enumerable: true, get: function() {
+        return api_js_2.getItemEffectiveFormat;
+      } });
     }
   });
 
@@ -4116,7 +4094,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_moe();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "moe.atsu", "name": "Atsumaru", "version": 2.2, "website": "https://atsu.moe", "rating": 1, "thumbnail": "https://atsu.moe/favicon.ico", "languages": ["en"] };
+      exports.SourceMetadata = { "id": "moe.atsu", "name": "Atsumaru", "version": 2.3, "website": "https://atsu.moe", "rating": 1, "thumbnail": "https://atsu.moe/favicon.ico", "languages": ["en"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;
