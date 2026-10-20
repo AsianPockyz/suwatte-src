@@ -1,6 +1,6 @@
 {
   "catalogVersion": 2,
-  "generatedAt": "2026-10-20T14:14:22.527Z",
+  "generatedAt": "2026-10-20T21:15:28.110Z",
   "listName": "Atsumaru Source",
   "sources": [
     {
@@ -16,6 +16,27 @@
       "path": "moe.atsu",
       "variantId": "moe.atsu",
       "sourceId": "moe.atsu",
+      "environment": "jsc"
+    },
+    {
+      "id": "org.imhentai",
+      "name": "IMHentai",
+      "version": 1.0,
+      "website": "https://imhentai.xxx",
+      "rating": 2,
+      "thumbnail": "imhentai.png",
+      "languages": [
+        "en",
+        "ja",
+        "zh",
+        "es",
+        "fr",
+        "de",
+        "ru"
+      ],
+      "path": "org.imhentai",
+      "variantId": "org.imhentai",
+      "sourceId": "org.imhentai",
       "environment": "jsc"
     }
   ]

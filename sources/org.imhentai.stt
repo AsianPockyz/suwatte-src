@@ -1,0 +1,4026 @@
+var global = globalThis;
+"use strict";
+var SourcePackage = (() => {
+  var __defProp = Object.defineProperty;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+  var __esm = (fn, res) => function __init() {
+    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  };
+  var __commonJS = (cb, mod) => function __require() {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  };
+  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+
+  // node_modules/esbuild-plugins-node-modules-polyfill/globals/process.js
+  var init_process = __esm({
+    "node_modules/esbuild-plugins-node-modules-polyfill/globals/process.js"() {
+    }
+  });
+
+  // node_modules/esbuild-plugins-node-modules-polyfill/globals/Buffer.js
+  var init_Buffer = __esm({
+    "node_modules/esbuild-plugins-node-modules-polyfill/globals/Buffer.js"() {
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/runtime/index.js
+  var require_runtime = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/runtime/index.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.instantiateSource = exports.buildVariantMetadata = exports.readSourceVariants = exports.readSourceInfo = exports.normalizeSourceEntry = exports.resolveDefaultExport = void 0;
+      var resolveDefaultExport = (sourceModule) => {
+        const value = sourceModule;
+        const resolved = typeof value === "object" && value !== null && "default" in value ? value.default : value;
+        if (typeof resolved !== "function" || !("info" in resolved)) {
+          throw new Error("Default export must be a class with a static 'info' property");
+        }
+        return resolved;
+      };
+      exports.resolveDefaultExport = resolveDefaultExport;
+      exports.normalizeSourceEntry = exports.resolveDefaultExport;
+      var readSourceInfo = (cls) => {
+        const info = cls.info;
+        if (!info || typeof info !== "object" || !info.id) {
+          throw new Error("Source class must have a static 'info' property with at least an 'id'");
+        }
+        return info;
+      };
+      exports.readSourceInfo = readSourceInfo;
+      var readSourceVariants = (cls) => {
+        const variants = cls.variants;
+        if (Array.isArray(variants) && variants.length > 0) {
+          return variants;
+        }
+        return [
+          {
+            id: cls.info.id,
+            name: cls.info.name,
+            languages: cls.info.languages
+          }
+        ];
+      };
+      exports.readSourceVariants = readSourceVariants;
+      var buildVariantMetadata = (info, variant) => {
+        var _a, _b, _c;
+        return {
+          ...info,
+          id: (_a = variant.id) != null ? _a : info.id,
+          name: (_b = variant.name) != null ? _b : info.name,
+          languages: (_c = variant.languages) != null ? _c : info.languages
+        };
+      };
+      exports.buildVariantMetadata = buildVariantMetadata;
+      var instantiateSource = (cls, variant) => {
+        return new cls(variant == null ? void 0 : variant.args);
+      };
+      exports.instantiateSource = instantiateSource;
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/networking/builder.js
+  var require_builder = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/networking/builder.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.NetworkClientBuilder = void 0;
+      var NetworkClientBuilder = class {
+        constructor() {
+          // Array of functions that transform requests
+          __publicField(this, "requestTransformers", []);
+          // Array of functions that transform responses
+          __publicField(this, "responseTransformers", []);
+          // Object representing HTTP headers, where each key-value pair represents a header
+          __publicField(this, "headers", {});
+          // Array of cookies
+          __publicField(this, "cookies", []);
+          // The maximum time to wait for a request to complete, in milliseconds
+          __publicField(this, "timeout");
+          // The number of requests allowed per second
+          __publicField(this, "requestsPerSecond");
+          // A function that determines whether a status code is considered successful
+          __publicField(this, "statusValidator");
+          // The maximum number of retries for a request
+          __publicField(this, "maxRetries");
+        }
+        /**
+         * Sets the rate limit for the NetworkClient.
+         *
+         * @param requests - The maximum number of requests to make per interval.
+         * @param interval - The length of the rate limiting interval in seconds.
+         * @returns The builder, to allow for method chaining.
+         */
+        setRateLimit(requests, interval) {
+          this.requestsPerSecond = requests / interval;
+          return this;
+        }
+        /**
+         * Adds a request interceptor to the NetworkClient.
+         *
+         * @param transformer - The interceptor to add. This should be a function that takes a request and modifies it in some way.
+         * @returns The builder, to allow for method chaining.
+         */
+        addRequestInterceptor(transformer) {
+          this.requestTransformers.push(transformer);
+          return this;
+        }
+        /**
+         * Adds a response interceptor to the NetworkClient.
+         *
+         * @param transformer - The interceptor to add. This should be a function that takes a response and modifies it in some way.
+         * @returns The builder, to allow for method chaining.
+         */
+        addResponseInterceptor(transformer) {
+          this.responseTransformers.push(transformer);
+          return this;
+        }
+        /**
+         * Sets the authorization token for the NetworkClient.
+         *
+         * @param token - The token to be included in the Authorization header of every request.
+         * @returns The builder, to allow for method chaining.
+         */
+        setAuthorizationToken(token) {
+          return this.addHeader("Authorization", token);
+        }
+        /**
+         * Sets the status validator for the NetworkClient.
+         *
+         * @param validator - A function that takes a status code and returns true if it is considered successful.
+         * @returns The builder, to allow for method chaining.
+         */
+        setStatusValidator(validator) {
+          this.statusValidator = validator;
+          return this;
+        }
+        /**
+         * Sets the timeout for requests made by the NetworkClient.
+         *
+         * @param timeout - The maximum time to wait for a request to complete, in milliseconds.
+         * @returns The builder, to allow for method chaining.
+         */
+        setTimeout(timeout) {
+          this.timeout = timeout;
+          return this;
+        }
+        /**
+         * Sets the maximum number of retries for this request by the NetworkClient.
+         *
+         * @param retries - The maximum number of retries for this request
+         * @returns The builder, to allow for method chaining.
+         */
+        setMaxRetries(retries) {
+          this.maxRetries = retries;
+          return this;
+        }
+        /**
+         * Sets a header for the NetworkClient.
+         *
+         * @param key - The name of the header
+         * @param value - The value of the header
+         * @returns The builder, to allow for method chaining.
+         */
+        addHeader(key, value) {
+          this.headers[key] = value;
+          return this;
+        }
+        /**
+         * Sets a cookie for the NetworkClient.
+         *
+         * @param cookie - The cookie to be included in every request.
+         * @returns The builder, to allow for method chaining.
+         */
+        addCookie(cookie) {
+          this.cookies.push(cookie);
+          return this;
+        }
+        /**
+         * Builds a NetworkClient using the parameters set on the builder.
+         *
+         * @returns A NetworkClient with the configured parameters.
+         */
+        build() {
+          return new NetworkClient(this);
+        }
+      };
+      exports.NetworkClientBuilder = NetworkClientBuilder;
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/networking/client.js
+  var require_client = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/networking/client.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/networking/http.js
+  var require_http = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/networking/http.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/networking/request.js
+  var require_request = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/networking/request.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/networking/response.js
+  var require_response = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/networking/response.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/networking/transformer.js
+  var require_transformer = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/networking/transformer.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/networking/index.js
+  var require_networking = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/networking/index.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        var desc = Object.getOwnPropertyDescriptor(m, k);
+        if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+          desc = { enumerable: true, get: function() {
+            return m[k];
+          } };
+        }
+        Object.defineProperty(o, k2, desc);
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        o[k2] = m[k];
+      }));
+      var __exportStar = exports && exports.__exportStar || function(m, exports2) {
+        for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p)) __createBinding(exports2, m, p);
+      };
+      Object.defineProperty(exports, "__esModule", { value: true });
+      __exportStar(require_builder(), exports);
+      __exportStar(require_client(), exports);
+      __exportStar(require_http(), exports);
+      __exportStar(require_request(), exports);
+      __exportStar(require_response(), exports);
+      __exportStar(require_transformer(), exports);
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/native.js
+  var require_native = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/native.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/destination.js
+  var require_destination = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/destination.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.URLDestination = URLDestination;
+      exports.ContentDestination = ContentDestination;
+      exports.ItemPageDestination = ItemPageDestination;
+      exports.ChapterDestination = ChapterDestination;
+      exports.ItemListDestination = ItemListDestination;
+      exports.NoDestination = NoDestination;
+      function URLDestination(props, title = null) {
+        return {
+          url: {
+            props,
+            title
+          }
+        };
+      }
+      function ContentDestination(props, title = null) {
+        return {
+          content: {
+            props,
+            title
+          }
+        };
+      }
+      function ItemPageDestination(props, title = null) {
+        return {
+          page: {
+            props,
+            title
+          }
+        };
+      }
+      function ChapterDestination(props) {
+        return {
+          chapter: {
+            props
+          }
+        };
+      }
+      function ItemListDestination(props, title = null) {
+        return {
+          list: {
+            props,
+            title
+          }
+        };
+      }
+      function NoDestination() {
+        return {
+          empty: {
+            props: {}
+          }
+        };
+      }
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/chapter.js
+  var require_chapter = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/chapter.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.ChapterLockedError = exports.ChapterUnavailableError = exports.SOURCE_CHAPTER_TEXT_LIMITS = exports.SourceChapterTextFormat = void 0;
+      var SourceChapterTextFormat;
+      (function(SourceChapterTextFormat2) {
+        SourceChapterTextFormat2["HTML"] = "html";
+        SourceChapterTextFormat2["PLAIN_TEXT"] = "plainText";
+      })(SourceChapterTextFormat || (exports.SourceChapterTextFormat = SourceChapterTextFormat = {}));
+      exports.SOURCE_CHAPTER_TEXT_LIMITS = Object.freeze({
+        bridgePayload: 4 * 1024 * 1024,
+        body: 2 * 1024 * 1024,
+        resources: 512,
+        resourceHref: 2048,
+        resourceURL: 8192,
+        resourceMediaType: 256
+      });
+      var ChapterUnavailableError = class extends Error {
+        constructor(message = "Chapter content is unavailable.") {
+          super(message);
+          this.name = "ChapterUnavailable";
+        }
+      };
+      exports.ChapterUnavailableError = ChapterUnavailableError;
+      var ChapterLockedError = class extends Error {
+        constructor(message = "Chapter content is locked.") {
+          super(message);
+          this.name = "ChapterLocked";
+        }
+      };
+      exports.ChapterLockedError = ChapterLockedError;
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/configuration.js
+  var require_configuration = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/configuration.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/content.js
+  var require_content = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/content.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.ContentRating = exports.TrackStatus = exports.ReadingMode = exports.ContentType = exports.ContentStatus = void 0;
+      var ContentStatus;
+      (function(ContentStatus2) {
+        ContentStatus2[ContentStatus2["UNKNOWN"] = 0] = "UNKNOWN";
+        ContentStatus2[ContentStatus2["ONGOING"] = 1] = "ONGOING";
+        ContentStatus2[ContentStatus2["COMPLETED"] = 2] = "COMPLETED";
+        ContentStatus2[ContentStatus2["CANCELLED"] = 3] = "CANCELLED";
+        ContentStatus2[ContentStatus2["HIATUS"] = 4] = "HIATUS";
+      })(ContentStatus || (exports.ContentStatus = ContentStatus = {}));
+      var ContentType;
+      (function(ContentType2) {
+        ContentType2[ContentType2["MANGA"] = 0] = "MANGA";
+        ContentType2[ContentType2["MANHUA"] = 1] = "MANHUA";
+        ContentType2[ContentType2["MANHWA"] = 2] = "MANHWA";
+        ContentType2[ContentType2["COMIC"] = 3] = "COMIC";
+        ContentType2[ContentType2["NOVEL"] = 4] = "NOVEL";
+      })(ContentType || (exports.ContentType = ContentType = {}));
+      var ReadingMode;
+      (function(ReadingMode2) {
+        ReadingMode2[ReadingMode2["PAGED_MANGA"] = 0] = "PAGED_MANGA";
+        ReadingMode2[ReadingMode2["PAGED_COMIC"] = 1] = "PAGED_COMIC";
+        ReadingMode2[ReadingMode2["PAGED_VERTICAL"] = 2] = "PAGED_VERTICAL";
+        ReadingMode2[ReadingMode2["VERTICAL"] = 3] = "VERTICAL";
+      })(ReadingMode || (exports.ReadingMode = ReadingMode = {}));
+      var TrackStatus;
+      (function(TrackStatus2) {
+        TrackStatus2[TrackStatus2["UNTRACKED"] = 0] = "UNTRACKED";
+        TrackStatus2[TrackStatus2["READING"] = 1] = "READING";
+        TrackStatus2[TrackStatus2["PLANNING"] = 2] = "PLANNING";
+        TrackStatus2[TrackStatus2["COMPLETED"] = 3] = "COMPLETED";
+        TrackStatus2[TrackStatus2["PAUSED"] = 4] = "PAUSED";
+        TrackStatus2[TrackStatus2["DROPPED"] = 5] = "DROPPED";
+        TrackStatus2[TrackStatus2["REPEATING"] = 6] = "REPEATING";
+      })(TrackStatus || (exports.TrackStatus = TrackStatus = {}));
+      var ContentRating;
+      (function(ContentRating2) {
+        ContentRating2[ContentRating2["EVERYONE"] = 0] = "EVERYONE";
+        ContentRating2[ContentRating2["SUGGESTIVE"] = 1] = "SUGGESTIVE";
+        ContentRating2[ContentRating2["MATURE"] = 2] = "MATURE";
+        ContentRating2[ContentRating2["UNKNOWN"] = 3] = "UNKNOWN";
+      })(ContentRating || (exports.ContentRating = ContentRating = {}));
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/item.js
+  var require_item = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/item.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/page.js
+  var require_page = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/page.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.PageSectionStyle = void 0;
+      var PageSectionStyle;
+      (function(PageSectionStyle2) {
+        PageSectionStyle2[PageSectionStyle2["DEFAULT"] = 0] = "DEFAULT";
+        PageSectionStyle2[PageSectionStyle2["DETAIL_VERTICAL"] = 1] = "DETAIL_VERTICAL";
+        PageSectionStyle2[PageSectionStyle2["DETAIL_HORIZONTAL"] = 2] = "DETAIL_HORIZONTAL";
+        PageSectionStyle2[PageSectionStyle2["GALLERY"] = 3] = "GALLERY";
+        PageSectionStyle2[PageSectionStyle2["LIST"] = 4] = "LIST";
+        PageSectionStyle2[PageSectionStyle2["GRID"] = 5] = "GRID";
+        PageSectionStyle2[PageSectionStyle2["TAG_GRID"] = 6] = "TAG_GRID";
+        PageSectionStyle2[PageSectionStyle2["TAG_LIST"] = 7] = "TAG_LIST";
+        PageSectionStyle2[PageSectionStyle2["BANNER"] = 8] = "BANNER";
+        PageSectionStyle2[PageSectionStyle2["HIGHLIGHT"] = 9] = "HIGHLIGHT";
+        PageSectionStyle2[PageSectionStyle2["READABLE"] = 10] = "READABLE";
+        PageSectionStyle2[PageSectionStyle2["MOSAIC"] = 11] = "MOSAIC";
+        PageSectionStyle2[PageSectionStyle2["RANKED"] = 12] = "RANKED";
+        PageSectionStyle2[PageSectionStyle2["STORY_RAIL"] = 13] = "STORY_RAIL";
+        PageSectionStyle2[PageSectionStyle2["EDITORIAL"] = 14] = "EDITORIAL";
+        PageSectionStyle2[PageSectionStyle2["THREE_STACK"] = 15] = "THREE_STACK";
+        PageSectionStyle2[PageSectionStyle2["WINDOWPANE"] = 16] = "WINDOWPANE";
+        PageSectionStyle2[PageSectionStyle2["SIDECAR"] = 17] = "SIDECAR";
+        PageSectionStyle2[PageSectionStyle2["DUET"] = 18] = "DUET";
+        PageSectionStyle2[PageSectionStyle2["TAPESTRY"] = 19] = "TAPESTRY";
+      })(PageSectionStyle || (exports.PageSectionStyle = PageSectionStyle = {}));
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/delegate.js
+  var require_delegate = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/delegate.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/tag.js
+  var require_tag = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/tag.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/updates.js
+  var require_updates = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/updates.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/source.js
+  var require_source = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/source.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/filter.js
+  var require_filter = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/filter.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.ToggleFilter = ToggleFilter;
+      exports.TextFilter = TextFilter;
+      exports.PickerFilter = PickerFilter;
+      exports.SelectFilter = SelectFilter;
+      exports.SearchFilter = SearchFilter;
+      function ToggleFilter() {
+        return {
+          toggle: {
+            props: true
+          }
+        };
+      }
+      function TextFilter() {
+        return {
+          text: {
+            props: true
+          }
+        };
+      }
+      function PickerFilter(props) {
+        return {
+          picker: {
+            props
+          }
+        };
+      }
+      function SelectFilter(options, exclude = false) {
+        return {
+          select: {
+            props: {
+              options,
+              exclude
+            }
+          }
+        };
+      }
+      function SearchFilter(id, title, kind, subtitle) {
+        return {
+          id,
+          title,
+          subtitle,
+          kind
+        };
+      }
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/form.js
+  var require_form = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/form.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.UIKeyboardType = void 0;
+      exports.UIToggle = UIToggle;
+      exports.UIDatePicker = UIDatePicker;
+      exports.UIPicker = UIPicker;
+      exports.UISelect = UISelect;
+      exports.UIStepper = UIStepper;
+      exports.UITextField = UITextField;
+      exports.UIWebViewButton = UIWebViewButton;
+      exports.UIOAuthButton = UIOAuthButton;
+      var UIKeyboardType;
+      (function(UIKeyboardType2) {
+        UIKeyboardType2[UIKeyboardType2["ALPHANUMERIC"] = 0] = "ALPHANUMERIC";
+        UIKeyboardType2[UIKeyboardType2["EMAIL"] = 1] = "EMAIL";
+        UIKeyboardType2[UIKeyboardType2["NUMERIC"] = 2] = "NUMERIC";
+        UIKeyboardType2[UIKeyboardType2["NUMERIC_DECIMAL"] = 3] = "NUMERIC_DECIMAL";
+      })(UIKeyboardType || (exports.UIKeyboardType = UIKeyboardType = {}));
+      function UIToggle(props) {
+        return {
+          toggle: { props }
+        };
+      }
+      function UIDatePicker(props) {
+        return {
+          datepicker: { props }
+        };
+      }
+      function UIPicker(props) {
+        return {
+          picker: { props }
+        };
+      }
+      function UISelect(props) {
+        return {
+          select: {
+            props
+          }
+        };
+      }
+      function UIStepper(props) {
+        return {
+          stepper: { props }
+        };
+      }
+      function UITextField(props) {
+        return {
+          textfield: { props }
+        };
+      }
+      function UIWebViewButton(props) {
+        return {
+          webview: {
+            props
+          }
+        };
+      }
+      function UIOAuthButton(props) {
+        return {
+          oauth: {
+            props
+          }
+        };
+      }
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/image.js
+  var require_image = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/image.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/index.js
+  var require_source2 = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/index.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        var desc = Object.getOwnPropertyDescriptor(m, k);
+        if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+          desc = { enumerable: true, get: function() {
+            return m[k];
+          } };
+        }
+        Object.defineProperty(o, k2, desc);
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        o[k2] = m[k];
+      }));
+      var __exportStar = exports && exports.__exportStar || function(m, exports2) {
+        for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p)) __createBinding(exports2, m, p);
+      };
+      Object.defineProperty(exports, "__esModule", { value: true });
+      __exportStar(require_destination(), exports);
+      __exportStar(require_chapter(), exports);
+      __exportStar(require_configuration(), exports);
+      __exportStar(require_content(), exports);
+      __exportStar(require_item(), exports);
+      __exportStar(require_page(), exports);
+      __exportStar(require_delegate(), exports);
+      __exportStar(require_tag(), exports);
+      __exportStar(require_updates(), exports);
+      __exportStar(require_source(), exports);
+      __exportStar(require_filter(), exports);
+      __exportStar(require_form(), exports);
+      __exportStar(require_image(), exports);
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/store.js
+  var require_store = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/store.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/utils.js
+  var require_utils = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/utils.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/toolchain.js
+  var require_toolchain = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/toolchain.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/index.js
+  var require_types = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/index.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        var desc = Object.getOwnPropertyDescriptor(m, k);
+        if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+          desc = { enumerable: true, get: function() {
+            return m[k];
+          } };
+        }
+        Object.defineProperty(o, k2, desc);
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        o[k2] = m[k];
+      }));
+      var __exportStar = exports && exports.__exportStar || function(m, exports2) {
+        for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p)) __createBinding(exports2, m, p);
+      };
+      Object.defineProperty(exports, "__esModule", { value: true });
+      __exportStar(require_networking(), exports);
+      __exportStar(require_native(), exports);
+      __exportStar(require_source2(), exports);
+      __exportStar(require_store(), exports);
+      __exportStar(require_utils(), exports);
+      __exportStar(require_toolchain(), exports);
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/index.js
+  var require_dist = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/index.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        var desc = Object.getOwnPropertyDescriptor(m, k);
+        if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+          desc = { enumerable: true, get: function() {
+            return m[k];
+          } };
+        }
+        Object.defineProperty(o, k2, desc);
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        o[k2] = m[k];
+      }));
+      var __exportStar = exports && exports.__exportStar || function(m, exports2) {
+        for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p)) __createBinding(exports2, m, p);
+      };
+      Object.defineProperty(exports, "__esModule", { value: true });
+      __exportStar(require_types(), exports);
+      __exportStar(require_runtime(), exports);
+    }
+  });
+
+  // __temp__/runners/imhentai/types.js
+  var require_types2 = __commonJS({
+    "__temp__/runners/imhentai/types.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      var toolchain_1 = require_dist();
+      toolchain_1.ContentRating.ADULT = toolchain_1.ContentRating.MATURE;
+    }
+  });
+
+  // __temp__/runners/imhentai/constants.js
+  var require_constants = __commonJS({
+    "__temp__/runners/imhentai/constants.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.EXTENSION_CODE_MAP = exports.IMHENTAI_POPULAR_PARODIES = exports.IMHENTAI_TAGS = exports.IMHENTAI_FILTER_LANGUAGES = exports.IMHENTAI_SORT_OPTIONS = exports.BROWSE_FEED_DEFINITIONS = exports.BROWSE_FEED_KEYS = exports.HOME_SECTION_KEYS = exports.DEFAULT_TITLE_PREFERENCE = exports.TITLE_PREFERENCE_OPTIONS = exports.HEAVY_TROPE_SYNONYM_MAP = exports.HEAVY_TROPE_OPTIONS = exports.LANGUAGE_QUERY_MAP = exports.DEFAULT_LANGUAGE = exports.LANGUAGE_OPTIONS = exports.CATEGORY_QUERY_MAP = exports.ALL_CATEGORIES = exports.DEFAULT_CATEGORIES = exports.CATEGORY_OPTIONS = exports.PREF_KEYS = exports.SERVER_PREFIX_REGEX = exports.SERVER_FROM_URL_REGEX = exports.VIEW_PATH_REGEX = exports.GALLERY_PATH_REGEX = exports.GALLERY_URL_REGEX = exports.DEFAULT_IMAGE_EXT = exports.DEFAULT_SERVER_ID = exports.RATE_LIMIT_PER_SECOND = exports.STATIC_CONFIGURATION = exports.PAGE_IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.STANDARD_HEADERS = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_RESOLUTION_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.SOURCE_CONTENT_RATING = exports.SOURCE_LANGUAGES = exports.SOURCE_ENVIRONMENT = exports.THUMBNAIL_FILENAME = exports.VARIANT_ID = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = exports.ContentRating = void 0;
+      var toolchain_1 = require_dist();
+      require_types2();
+      toolchain_1.ContentRating.ADULT = toolchain_1.ContentRating.MATURE;
+      exports.ContentRating = toolchain_1.ContentRating;
+      exports.SOURCE_ID = "org.imhentai";
+      exports.SOURCE_NAME = "IMHentai";
+      exports.SOURCE_VERSION = 1;
+      exports.BASE_URL = "https://imhentai.xxx";
+      exports.VARIANT_ID = "org.imhentai";
+      exports.THUMBNAIL_FILENAME = "imhentai.png";
+      exports.SOURCE_ENVIRONMENT = "jsc";
+      exports.SOURCE_LANGUAGES = Object.freeze([
+        "en",
+        "ja",
+        "zh",
+        "es",
+        "fr",
+        "de",
+        "ru"
+      ]);
+      exports.SOURCE_CONTENT_RATING = exports.ContentRating.ADULT;
+      exports.REFERER_URL = "https://imhentai.xxx/";
+      exports.ORIGIN_URL = "https://imhentai.xxx";
+      exports.CLOUDFLARE_RESOLUTION_URL = "https://imhentai.xxx";
+      exports.FALLBACK_COVER_URL = "https://imhentai.xxx/assets/images/logo.png";
+      exports.STANDARD_HEADERS = Object.freeze({
+        Referer: exports.REFERER_URL,
+        Origin: exports.ORIGIN_URL
+      });
+      exports.DEFAULT_HEADERS = Object.freeze({
+        Referer: exports.REFERER_URL,
+        Origin: exports.ORIGIN_URL,
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1"
+      });
+      exports.PAGE_IMAGE_HEADERS = Object.freeze({
+        Referer: exports.REFERER_URL,
+        Origin: exports.ORIGIN_URL
+      });
+      exports.STATIC_CONFIGURATION = Object.freeze({
+        imageReferer: exports.REFERER_URL,
+        cloudflareResolutionURL: exports.CLOUDFLARE_RESOLUTION_URL,
+        standardHeaders: exports.STANDARD_HEADERS
+      });
+      exports.RATE_LIMIT_PER_SECOND = 3;
+      exports.DEFAULT_SERVER_ID = "1";
+      exports.DEFAULT_IMAGE_EXT = "jpg";
+      exports.GALLERY_URL_REGEX = /^https?:\/\/(?:www\.)?imhentai\.xxx\/gallery\/(\d+)/i;
+      exports.GALLERY_PATH_REGEX = /\/gallery\/(\d+)/i;
+      exports.VIEW_PATH_REGEX = /\/view\/(\d+)(?:\/(\d+))?/i;
+      exports.SERVER_FROM_URL_REGEX = /https?:\/\/m(\d+)\.imhentai\.xxx\/([^/]+)\/(\d+)\//i;
+      exports.SERVER_PREFIX_REGEX = /https?:\/\/m(\d+)\.imhentai\.xxx/i;
+      exports.PREF_KEYS = {
+        CATEGORIES: "imhentai_pref_categories",
+        LANGUAGE: "imhentai_pref_language",
+        EXCLUDED_TROPES: "imhentai_pref_excluded_tropes",
+        CUSTOM_BLACKLIST: "imhentai_pref_custom_blacklist",
+        TITLE_PREFERENCE: "imhentai_pref_title_preference"
+      };
+      exports.CATEGORY_OPTIONS = Object.freeze([
+        { id: "doujinshi", title: "Doujinshi", queryParam: "d" },
+        { id: "manga", title: "Serialized Manga", queryParam: "m" },
+        { id: "western", title: "Western Adult Comics", queryParam: "w" },
+        { id: "imageset", title: "Artist CG / Image Sets", queryParam: "i" },
+        { id: "cosplay", title: "Cosplay Packs", queryParam: "c" }
+      ]);
+      exports.DEFAULT_CATEGORIES = Object.freeze([
+        "doujinshi",
+        "manga"
+      ]);
+      exports.ALL_CATEGORIES = Object.freeze([
+        "doujinshi",
+        "manga",
+        "western",
+        "imageset",
+        "cosplay"
+      ]);
+      exports.CATEGORY_QUERY_MAP = Object.freeze({
+        doujinshi: "d",
+        manga: "m",
+        western: "w",
+        imageset: "i",
+        "image set": "i",
+        "artist cg": "i",
+        cosplay: "c"
+      });
+      exports.LANGUAGE_OPTIONS = Object.freeze([
+        { id: "en", title: "English", queryParam: "en" },
+        { id: "jp", title: "Japanese", queryParam: "jp" },
+        { id: "zh", title: "Chinese", queryParam: "zh" },
+        { id: "all", title: "All Languages" }
+      ]);
+      exports.DEFAULT_LANGUAGE = "en";
+      exports.LANGUAGE_QUERY_MAP = Object.freeze({
+        en: "en",
+        english: "en",
+        jp: "jp",
+        ja: "jp",
+        japanese: "jp",
+        zh: "zh",
+        chinese: "zh",
+        es: "es",
+        spanish: "es",
+        fr: "fr",
+        french: "fr",
+        de: "de",
+        german: "de",
+        ru: "ru",
+        russian: "ru"
+      });
+      exports.HEAVY_TROPE_OPTIONS = Object.freeze([
+        {
+          id: "ntr",
+          title: "Exclude Netorare (NTR)",
+          synonyms: [
+            "ntr",
+            "netorare",
+            "cheating",
+            "cuckold",
+            "infidelity",
+            "netori"
+          ]
+        },
+        {
+          id: "futanari",
+          title: "Exclude Futanari",
+          synonyms: [
+            "futanari",
+            "futa",
+            "dickgirl",
+            "dickgirls",
+            "full-packaged futanari",
+            "shemale"
+          ]
+        },
+        {
+          id: "guro",
+          title: "Exclude Guro / Gore",
+          synonyms: [
+            "guro",
+            "gore",
+            "blood",
+            "amputee",
+            "cannibalism",
+            "torture",
+            "decapitation"
+          ]
+        },
+        {
+          id: "scat",
+          title: "Exclude Scat",
+          synonyms: ["scat", "coprophagia", "feces", "diaper"]
+        },
+        {
+          id: "yaoi",
+          title: "Exclude Yaoi / Male Only",
+          synonyms: [
+            "yaoi",
+            "males only",
+            "male only",
+            "boys love",
+            "bara",
+            "josou seme",
+            "tomgirl"
+          ]
+        },
+        {
+          id: "snuff",
+          title: "Exclude Snuff",
+          synonyms: ["snuff", "death", "necrophilia", "asphyxiation"]
+        }
+      ]);
+      exports.HEAVY_TROPE_SYNONYM_MAP = new Map(exports.HEAVY_TROPE_OPTIONS.map((opt) => [opt.id, opt.synonyms]));
+      exports.TITLE_PREFERENCE_OPTIONS = Object.freeze([
+        { id: "english", title: "English Title (Japanese in Subtitle)" },
+        { id: "japanese", title: "Japanese Title (English in Subtitle)" }
+      ]);
+      exports.DEFAULT_TITLE_PREFERENCE = "english";
+      exports.HOME_SECTION_KEYS = {
+        SPOTLIGHT: "spotlight",
+        LATEST_DOUJINSHI: "latest_doujinshi",
+        SERIALIZED_MANGA: "serialized_manga"
+      };
+      exports.BROWSE_FEED_KEYS = {
+        DISCOVER: "discover",
+        LATEST: "latest",
+        POPULAR: "popular",
+        MANGA: "manga",
+        DOUJINSHI: "doujinshi",
+        WESTERN: "western"
+      };
+      exports.BROWSE_FEED_DEFINITIONS = Object.freeze([
+        {
+          id: exports.BROWSE_FEED_KEYS.DISCOVER,
+          title: "Discover",
+          isHomePage: true
+        },
+        {
+          id: exports.BROWSE_FEED_KEYS.LATEST,
+          title: "Latest Releases",
+          urlTemplate: "/?page={page}"
+        },
+        {
+          id: exports.BROWSE_FEED_KEYS.POPULAR,
+          title: "Popular / Top Rated",
+          urlTemplate: "/search/?lt=0&pp=1&page={page}"
+        },
+        {
+          id: exports.BROWSE_FEED_KEYS.MANGA,
+          title: "Serialized Manga",
+          urlTemplate: "/category/manga/?page={page}"
+        },
+        {
+          id: exports.BROWSE_FEED_KEYS.DOUJINSHI,
+          title: "Event Doujinshi",
+          urlTemplate: "/category/doujinshi/?page={page}"
+        },
+        {
+          id: exports.BROWSE_FEED_KEYS.WESTERN,
+          title: "Western Comics",
+          urlTemplate: "/category/western/?page={page}"
+        }
+      ]);
+      exports.IMHENTAI_SORT_OPTIONS = Object.freeze([
+        { id: "latest", title: "Date Added" },
+        { id: "popular", title: "Popularity" },
+        { id: "title", title: "Title" }
+      ]);
+      exports.IMHENTAI_FILTER_LANGUAGES = Object.freeze([
+        { id: "all", title: "All Languages" },
+        { id: "en", title: "English" },
+        { id: "jp", title: "Japanese" },
+        { id: "zh", title: "Chinese" },
+        { id: "es", title: "Spanish" },
+        { id: "fr", title: "French" },
+        { id: "de", title: "German" },
+        { id: "ru", title: "Russian" }
+      ]);
+      exports.IMHENTAI_TAGS = Object.freeze([
+        { id: "big breasts", title: "Big Breasts", namespace: "tag" },
+        { id: "sole female", title: "Sole Female", namespace: "tag" },
+        { id: "sole male", title: "Sole Male", namespace: "tag" },
+        { id: "full color", title: "Full Color", namespace: "tag" },
+        { id: "uncensored", title: "Uncensored", namespace: "tag" },
+        { id: "mosaic censorship", title: "Mosaic Censorship", namespace: "tag" },
+        { id: "stockings", title: "Stockings", namespace: "tag" },
+        { id: "nakadashi", title: "Nakadashi", namespace: "tag" },
+        { id: "blowjob", title: "Blowjob", namespace: "tag" },
+        { id: "paizuri", title: "Paizuri", namespace: "tag" },
+        { id: "glasses", title: "Glasses", namespace: "tag" },
+        { id: "schoolgirl uniform", title: "Schoolgirl Uniform", namespace: "tag" },
+        { id: "schoolboy uniform", title: "Schoolboy Uniform", namespace: "tag" },
+        { id: "swimsuit", title: "Swimsuit", namespace: "tag" },
+        { id: "bikini", title: "Bikini", namespace: "tag" },
+        { id: "maid", title: "Maid", namespace: "tag" },
+        { id: "nurse", title: "Nurse", namespace: "tag" },
+        { id: "teacher", title: "Teacher", namespace: "tag" },
+        { id: "office lady", title: "Office Lady", namespace: "tag" },
+        { id: "milf", title: "MILF", namespace: "tag" },
+        { id: "housewife", title: "Housewife", namespace: "tag" },
+        { id: "gyaru", title: "Gyaru", namespace: "tag" },
+        { id: "dark skin", title: "Dark Skin", namespace: "tag" },
+        { id: "tanlines", title: "Tanlines", namespace: "tag" },
+        { id: "tomboy", title: "Tomboy", namespace: "tag" },
+        { id: "tsundere", title: "Tsundere", namespace: "tag" },
+        { id: "yandere", title: "Yandere", namespace: "tag" },
+        { id: "kuudere", title: "Kuudere", namespace: "tag" },
+        { id: "childhood friend", title: "Childhood Friend", namespace: "tag" },
+        { id: "sister", title: "Sister", namespace: "tag" },
+        { id: "mother", title: "Mother", namespace: "tag" },
+        { id: "twins", title: "Twins", namespace: "tag" },
+        { id: "harem", title: "Harem", namespace: "tag" },
+        { id: "ffm threesome", title: "FFM Threesome", namespace: "tag" },
+        { id: "mmf threesome", title: "MMF Threesome", namespace: "tag" },
+        { id: "group", title: "Group", namespace: "tag" },
+        { id: "femdom", title: "Femdom", namespace: "tag" },
+        { id: "bondage", title: "Bondage", namespace: "tag" },
+        { id: "collar", title: "Collar", namespace: "tag" },
+        { id: "exhibitionism", title: "Exhibitionism", namespace: "tag" },
+        { id: "voyeurism", title: "Voyeurism", namespace: "tag" },
+        { id: "lingerie", title: "Lingerie", namespace: "tag" },
+        { id: "pantyhose", title: "Pantyhose", namespace: "tag" },
+        { id: "garter belt", title: "Garter Belt", namespace: "tag" },
+        { id: "kimono", title: "Kimono", namespace: "tag" },
+        { id: "miko", title: "Miko", namespace: "tag" },
+        { id: "nun", title: "Nun", namespace: "tag" },
+        { id: "cheerleader", title: "Cheerleader", namespace: "tag" },
+        { id: "bunny girl", title: "Bunny Girl", namespace: "tag" },
+        { id: "catgirl", title: "Catgirl", namespace: "tag" },
+        { id: "foxgirl", title: "Foxgirl", namespace: "tag" },
+        { id: "kemonomimi", title: "Kemonomimi", namespace: "tag" },
+        { id: "elf", title: "Elf", namespace: "tag" },
+        { id: "dark elf", title: "Dark Elf", namespace: "tag" },
+        { id: "demon girl", title: "Demon Girl", namespace: "tag" },
+        { id: "succubus", title: "Succubus", namespace: "tag" },
+        { id: "vampire", title: "Vampire", namespace: "tag" },
+        { id: "monster girl", title: "Monster Girl", namespace: "tag" },
+        { id: "angel", title: "Angel", namespace: "tag" },
+        { id: "magical girl", title: "Magical Girl", namespace: "tag" },
+        { id: "witch", title: "Witch", namespace: "tag" },
+        { id: "princess", title: "Princess", namespace: "tag" },
+        { id: "kunoichi", title: "Kunoichi", namespace: "tag" },
+        { id: "valkyrie", title: "Valkyrie", namespace: "tag" },
+        { id: "yuri", title: "Yuri", namespace: "tag" },
+        { id: "females only", title: "Females Only", namespace: "tag" },
+        { id: "romance", title: "Romance", namespace: "tag" },
+        { id: "comedy", title: "Comedy", namespace: "tag" },
+        { id: "fantasy", title: "Fantasy", namespace: "tag" },
+        { id: "sci-fi", title: "Sci-Fi", namespace: "tag" },
+        { id: "supernatural", title: "Supernatural", namespace: "tag" },
+        { id: "slice of life", title: "Slice of Life", namespace: "tag" },
+        { id: "sports", title: "Sports", namespace: "tag" },
+        { id: "martial arts", title: "Martial Arts", namespace: "tag" },
+        { id: "military", title: "Military", namespace: "tag" },
+        { id: "historical", title: "Historical", namespace: "tag" },
+        { id: "anthology", title: "Anthology", namespace: "tag" },
+        { id: "tankoubon", title: "Tankoubon", namespace: "tag" },
+        { id: "webtoon", title: "Webtoon", namespace: "tag" },
+        { id: "full censorship", title: "Full Censorship", namespace: "tag" },
+        { id: "multi-work series", title: "Multi-Work Series", namespace: "tag" },
+        { id: "story arc", title: "Story Arc", namespace: "tag" },
+        { id: "netorare", title: "Netorare (NTR)", namespace: "tag" },
+        { id: "futanari", title: "Futanari", namespace: "tag" },
+        { id: "guro", title: "Guro / Gore", namespace: "tag" },
+        { id: "scat", title: "Scat", namespace: "tag" },
+        { id: "yaoi", title: "Yaoi", namespace: "tag" },
+        { id: "males only", title: "Males Only", namespace: "tag" },
+        { id: "snuff", title: "Snuff", namespace: "tag" }
+      ]);
+      exports.IMHENTAI_POPULAR_PARODIES = Object.freeze([
+        { id: "original", title: "Original Work" },
+        { id: "blue archive", title: "Blue Archive" },
+        { id: "fate grand order", title: "Fate/Grand Order" },
+        { id: "genshin impact", title: "Genshin Impact" },
+        { id: "honkai star rail", title: "Honkai: Star Rail" },
+        { id: "azur lane", title: "Azur Lane" },
+        { id: "kantai collection", title: "Kantai Collection" },
+        { id: "granblue fantasy", title: "Granblue Fantasy" },
+        { id: "nikke", title: "Goddess of Victory: Nikke" },
+        { id: "arknights", title: "Arknights" },
+        { id: "idolmaster", title: "The iDOLM@STER" },
+        { id: "touhou project", title: "Touhou Project" },
+        { id: "hololive", title: "Hololive" },
+        { id: "chainsaw man", title: "Chainsaw Man" },
+        { id: "jujutsu kaisen", title: "Jujutsu Kaisen" },
+        { id: "one piece", title: "One Piece" },
+        { id: "naruto", title: "Naruto" },
+        { id: "bleach", title: "Bleach" },
+        { id: "my hero academia", title: "My Hero Academia" },
+        { id: "frieren", title: "Frieren: Beyond Journey's End" },
+        { id: "pokemon", title: "Pok\xE9mon" },
+        { id: "nier automata", title: "NieR:Automata" },
+        { id: "final fantasy", title: "Final Fantasy" },
+        { id: "xenoblade", title: "Xenoblade Chronicles" },
+        { id: "fire emblem", title: "Fire Emblem" },
+        { id: "street fighter", title: "Street Fighter" },
+        { id: "overwatch", title: "Overwatch" },
+        { id: "league of legends", title: "League of Legends" }
+      ]);
+      exports.EXTENSION_CODE_MAP = Object.freeze({
+        j: "jpg",
+        jpg: "jpg",
+        jpeg: "jpg",
+        p: "png",
+        png: "png",
+        w: "webp",
+        webp: "webp",
+        g: "gif",
+        gif: "gif",
+        b: "bmp",
+        bmp: "bmp",
+        a: "avif",
+        avif: "avif"
+      });
+    }
+  });
+
+  // __temp__/runners/imhentai/filters.js
+  var require_filters = __commonJS({
+    "__temp__/runners/imhentai/filters.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.FILTER_IDS = exports.FilterType = void 0;
+      exports.createTriStateFilter = createTriStateFilter;
+      exports.getSearchFilters = getSearchFilters;
+      exports.getSortOptions = getSortOptions;
+      exports.mapFiltersToExploreParams = mapFiltersToExploreParams;
+      var toolchain_1 = require_dist();
+      var constants_js_1 = require_constants();
+      var FilterType;
+      (function(FilterType2) {
+        FilterType2["TRI_STATE"] = "select";
+        FilterType2["SELECT"] = "picker";
+        FilterType2["TOGGLE"] = "toggle";
+        FilterType2["TEXT"] = "text";
+      })(FilterType || (exports.FilterType = FilterType = {}));
+      exports.FILTER_IDS = {
+        CATEGORIES: "categories",
+        TAGS: "tags",
+        LANGUAGE: "language"
+      };
+      var CATEGORY_FILTER_OPTIONS = constants_js_1.CATEGORY_OPTIONS.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      var TAG_FILTER_OPTIONS = constants_js_1.IMHENTAI_TAGS.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      var LANGUAGE_FILTER_OPTIONS = constants_js_1.IMHENTAI_FILTER_LANGUAGES.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      var SORT_OPTION_LIST = constants_js_1.IMHENTAI_SORT_OPTIONS.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      var CACHED_SORT_OPTIONS = {
+        options: SORT_OPTION_LIST,
+        disableOrdering: false
+      };
+      function createTriStateFilter(id, title, options, subtitle) {
+        const _type = FilterType.TRI_STATE;
+        void _type;
+        return (0, toolchain_1.SearchFilter)(id, title, (0, toolchain_1.SelectFilter)(options.map((opt) => ({ id: opt.id, title: opt.title })), true), subtitle);
+      }
+      var CACHED_SEARCH_FILTERS = [
+        createTriStateFilter(exports.FILTER_IDS.CATEGORIES, "Categories", CATEGORY_FILTER_OPTIONS, "Tap once to Include (+), twice to Exclude (-)"),
+        createTriStateFilter(exports.FILTER_IDS.TAGS, "Tags & Themes", TAG_FILTER_OPTIONS, "Tap once to Include (+), twice to Exclude (-)"),
+        (0, toolchain_1.SearchFilter)(exports.FILTER_IDS.LANGUAGE, "Language", (0, toolchain_1.PickerFilter)(LANGUAGE_FILTER_OPTIONS), "Filter galleries by translation language")
+      ];
+      async function getSearchFilters() {
+        return CACHED_SEARCH_FILTERS;
+      }
+      async function getSortOptions() {
+        return CACHED_SORT_OPTIONS;
+      }
+      function isRecord(value) {
+        return typeof value === "object" && value !== null && !Array.isArray(value);
+      }
+      function normalizeTriState(value) {
+        if (!isRecord(value)) {
+          return void 0;
+        }
+        const include = [];
+        if (Array.isArray(value.include)) {
+          for (let i = 0, len = value.include.length; i < len; i++) {
+            const s = String(value.include[i]).trim();
+            if (s.length > 0) {
+              include.push(s);
+            }
+          }
+        }
+        const exclude = [];
+        if (Array.isArray(value.exclude)) {
+          for (let i = 0, len = value.exclude.length; i < len; i++) {
+            const s = String(value.exclude[i]).trim();
+            if (s.length > 0) {
+              exclude.push(s);
+            }
+          }
+        }
+        if (include.length === 0 && exclude.length === 0) {
+          return void 0;
+        }
+        return { include, exclude };
+      }
+      function mapFiltersToExploreParams(filters, sort, query, page = 1) {
+        const params = {
+          query: (query == null ? void 0 : query.trim()) || void 0,
+          page
+        };
+        if (sort == null ? void 0 : sort.key) {
+          params.sortBy = sort.key;
+          params.sortAscending = sort.ascending;
+        }
+        if (!isRecord(filters)) {
+          return params;
+        }
+        const categories = normalizeTriState(filters[exports.FILTER_IDS.CATEGORIES]);
+        if (categories) {
+          params.categories = categories;
+        }
+        const tags = normalizeTriState(filters[exports.FILTER_IDS.TAGS]);
+        if (tags) {
+          params.tags = tags;
+        }
+        const lang = filters[exports.FILTER_IDS.LANGUAGE];
+        if (typeof lang === "string" && lang.trim().length > 0) {
+          params.language = lang.trim();
+        }
+        return params;
+      }
+    }
+  });
+
+  // __temp__/runners/imhentai/preferences.js
+  var require_preferences = __commonJS({
+    "__temp__/runners/imhentai/preferences.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.ImHentaiPreferenceProvider = void 0;
+      exports.invalidatePreferencesCache = invalidatePreferencesCache;
+      exports.parseStringList = parseStringList;
+      exports.normalizeCategoryToken = normalizeCategoryToken;
+      exports.normalizeCategoriesList = normalizeCategoriesList;
+      exports.normalizeLanguageToken = normalizeLanguageToken;
+      exports.normalizeTropeToken = normalizeTropeToken;
+      exports.normalizeTropesList = normalizeTropesList;
+      exports.normalizeTitlePreference = normalizeTitlePreference;
+      exports.parseCustomBlacklist = parseCustomBlacklist;
+      exports.getUserPreferences = getUserPreferences;
+      exports.compileBlacklistContext = compileBlacklistContext;
+      exports.isCardBlacklisted = isCardBlacklisted;
+      exports.buildPreferenceQueryFlags = buildPreferenceQueryFlags;
+      exports.formatGalleryTitleDisplay = formatGalleryTitleDisplay;
+      exports.buildSettingsForm = buildSettingsForm;
+      exports.updateUserPreferences = updateUserPreferences;
+      var toolchain_1 = require_dist();
+      var constants_js_1 = require_constants();
+      var UI_CATEGORY_OPTIONS = constants_js_1.CATEGORY_OPTIONS.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      var UI_LANGUAGE_OPTIONS = constants_js_1.LANGUAGE_OPTIONS.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      var UI_HEAVY_TROPE_OPTIONS = constants_js_1.HEAVY_TROPE_OPTIONS.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      var UI_TITLE_PREFERENCE_OPTIONS = constants_js_1.TITLE_PREFERENCE_OPTIONS.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      var VALID_CATEGORIES_SET = new Set(constants_js_1.ALL_CATEGORIES);
+      var VALID_TROPES_SET = new Set(constants_js_1.HEAVY_TROPE_OPTIONS.map((t) => t.id));
+      var memoryPreferences = {
+        categories: [...constants_js_1.DEFAULT_CATEGORIES],
+        language: constants_js_1.DEFAULT_LANGUAGE,
+        excludedTropes: [],
+        customBlacklist: [],
+        titlePreference: constants_js_1.DEFAULT_TITLE_PREFERENCE
+      };
+      var isHydrated = false;
+      var inflightHydration = null;
+      var blacklistContextCache = /* @__PURE__ */ new WeakMap();
+      function hasObjectStore() {
+        return typeof ObjectStore !== "undefined" && ObjectStore !== null;
+      }
+      function isRecord(value) {
+        return typeof value === "object" && value !== null && !Array.isArray(value);
+      }
+      function invalidatePreferencesCache() {
+        isHydrated = false;
+        inflightHydration = null;
+      }
+      function parseStringList(raw) {
+        var _a;
+        if (!raw)
+          return [];
+        if (Array.isArray(raw)) {
+          const result = [];
+          for (let i = 0, len = raw.length; i < len; i++) {
+            const s = String(raw[i]).trim();
+            if (s.length > 0) {
+              result.push(s);
+            }
+          }
+          return result;
+        }
+        if (isRecord(raw) && Array.isArray(raw.include)) {
+          const inc = raw.include;
+          const result = [];
+          for (let i = 0, len = inc.length; i < len; i++) {
+            const s = String(inc[i]).trim();
+            if (s.length > 0) {
+              result.push(s);
+            }
+          }
+          return result;
+        }
+        if (typeof raw === "string") {
+          const trimmed = raw.trim();
+          if (!trimmed)
+            return [];
+          if (trimmed.charCodeAt(0) === 91 && trimmed.charCodeAt(trimmed.length - 1) === 93) {
+            try {
+              const parsed = JSON.parse(trimmed);
+              if (Array.isArray(parsed)) {
+                const result2 = [];
+                for (let i = 0, len = parsed.length; i < len; i++) {
+                  const s = String(parsed[i]).trim();
+                  if (s.length > 0) {
+                    result2.push(s);
+                  }
+                }
+                return result2;
+              }
+            } catch {
+            }
+          }
+          const parts = trimmed.split(",");
+          const result = [];
+          for (let i = 0, len = parts.length; i < len; i++) {
+            const part = (_a = parts[i]) == null ? void 0 : _a.trim();
+            if (part) {
+              result.push(part);
+            }
+          }
+          return result;
+        }
+        return [];
+      }
+      function normalizeCategoryToken(raw) {
+        const lower = raw.trim().toLowerCase();
+        if (!lower)
+          return null;
+        if (lower === "doujinshi" || lower === "d")
+          return "doujinshi";
+        if (lower === "manga" || lower === "serialized manga" || lower === "m") {
+          return "manga";
+        }
+        if (lower === "western" || lower === "western adult comics" || lower === "western comics" || lower === "w") {
+          return "western";
+        }
+        if (lower === "imageset" || lower === "image set" || lower === "artist cg" || lower === "artist cg / image sets" || lower === "i") {
+          return "imageset";
+        }
+        if (lower === "cosplay" || lower === "cosplay packs" || lower === "c") {
+          return "cosplay";
+        }
+        return VALID_CATEGORIES_SET.has(lower) ? lower : null;
+      }
+      function normalizeCategoriesList(raw) {
+        const list = parseStringList(raw);
+        const unique = /* @__PURE__ */ new Set();
+        for (let i = 0, len = list.length; i < len; i++) {
+          const item = list[i];
+          if (item) {
+            const norm = normalizeCategoryToken(item);
+            if (norm) {
+              unique.add(norm);
+            }
+          }
+        }
+        return Array.from(unique);
+      }
+      function normalizeLanguageToken(raw) {
+        if (typeof raw !== "string")
+          return constants_js_1.DEFAULT_LANGUAGE;
+        const lower = raw.trim().toLowerCase();
+        if (lower === "en" || lower === "english")
+          return "en";
+        if (lower === "jp" || lower === "ja" || lower === "japanese")
+          return "jp";
+        if (lower === "zh" || lower === "chinese")
+          return "zh";
+        if (lower === "all" || lower === "all languages")
+          return "all";
+        return constants_js_1.DEFAULT_LANGUAGE;
+      }
+      function normalizeTropeToken(raw) {
+        const lower = raw.trim().toLowerCase();
+        if (!lower)
+          return null;
+        if (VALID_TROPES_SET.has(lower)) {
+          return lower;
+        }
+        if (lower.includes("ntr") || lower.includes("netorare"))
+          return "ntr";
+        if (lower.includes("futa"))
+          return "futanari";
+        if (lower.includes("guro") || lower.includes("gore"))
+          return "guro";
+        if (lower.includes("scat"))
+          return "scat";
+        if (lower.includes("yaoi") || lower.includes("male only"))
+          return "yaoi";
+        if (lower.includes("snuff"))
+          return "snuff";
+        return null;
+      }
+      function normalizeTropesList(raw) {
+        const list = parseStringList(raw);
+        const unique = /* @__PURE__ */ new Set();
+        for (let i = 0, len = list.length; i < len; i++) {
+          const item = list[i];
+          if (item) {
+            const norm = normalizeTropeToken(item);
+            if (norm) {
+              unique.add(norm);
+            }
+          }
+        }
+        return Array.from(unique);
+      }
+      function normalizeTitlePreference(raw) {
+        if (typeof raw !== "string")
+          return constants_js_1.DEFAULT_TITLE_PREFERENCE;
+        const lower = raw.trim().toLowerCase();
+        if (lower === "japanese" || lower === "jp" || lower === "ja") {
+          return "japanese";
+        }
+        return "english";
+      }
+      function parseCustomBlacklist(raw) {
+        var _a, _b;
+        const list = parseStringList(raw);
+        const unique = /* @__PURE__ */ new Set();
+        for (let i = 0, len = list.length; i < len; i++) {
+          const token = (_a = list[i]) == null ? void 0 : _a.trim().toLowerCase();
+          if (token && token.length > 0) {
+            unique.add(token);
+            if (token.includes(":")) {
+              const stripped = (_b = token.split(":").pop()) == null ? void 0 : _b.trim();
+              if (stripped) {
+                unique.add(stripped);
+              }
+            }
+          }
+        }
+        return Array.from(unique);
+      }
+      async function hydratePreferencesFromStore() {
+        if (!hasObjectStore()) {
+          isHydrated = true;
+          return memoryPreferences;
+        }
+        try {
+          const [storedCategories, storedLanguage, storedExcludedTropes, storedCustomBlacklist, storedTitlePref] = await Promise.all([
+            ObjectStore.get(constants_js_1.PREF_KEYS.CATEGORIES).catch(() => null),
+            ObjectStore.string(constants_js_1.PREF_KEYS.LANGUAGE).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.EXCLUDED_TROPES).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST).catch(() => null),
+            ObjectStore.string(constants_js_1.PREF_KEYS.TITLE_PREFERENCE).catch(() => null)
+          ]);
+          let categories = memoryPreferences.categories;
+          if (storedCategories !== null && storedCategories !== void 0) {
+            const parsed = normalizeCategoriesList(storedCategories);
+            if (parsed.length > 0) {
+              categories = parsed;
+            }
+          }
+          const language = storedLanguage !== null && storedLanguage !== void 0 ? normalizeLanguageToken(storedLanguage) : memoryPreferences.language;
+          const excludedTropes = storedExcludedTropes !== null && storedExcludedTropes !== void 0 ? normalizeTropesList(storedExcludedTropes) : memoryPreferences.excludedTropes;
+          const customBlacklist = storedCustomBlacklist !== null && storedCustomBlacklist !== void 0 ? parseCustomBlacklist(storedCustomBlacklist) : memoryPreferences.customBlacklist;
+          const titlePreference = storedTitlePref !== null && storedTitlePref !== void 0 ? normalizeTitlePreference(storedTitlePref) : memoryPreferences.titlePreference;
+          memoryPreferences = {
+            categories,
+            language,
+            excludedTropes,
+            customBlacklist,
+            titlePreference
+          };
+        } catch {
+        }
+        isHydrated = true;
+        return memoryPreferences;
+      }
+      async function getUserPreferences() {
+        if (isHydrated) {
+          return memoryPreferences;
+        }
+        if (inflightHydration) {
+          return inflightHydration;
+        }
+        inflightHydration = hydratePreferencesFromStore().finally(() => {
+          inflightHydration = null;
+        });
+        return inflightHydration;
+      }
+      function compileBlacklistContext(prefs, extraExcludedTags) {
+        var _a, _b, _c, _d, _e;
+        const hasExtra = Array.isArray(extraExcludedTags) && extraExcludedTags.length > 0;
+        if (!hasExtra) {
+          const cached = blacklistContextCache.get(prefs);
+          if (cached) {
+            return cached;
+          }
+        }
+        const blacklistSet = /* @__PURE__ */ new Set();
+        const tropes = (_a = prefs.excludedTropes) != null ? _a : [];
+        for (let i = 0, len = tropes.length; i < len; i++) {
+          const tropeId = tropes[i];
+          if (!tropeId)
+            continue;
+          const norm = tropeId.trim().toLowerCase();
+          blacklistSet.add(norm);
+          const synonyms = constants_js_1.HEAVY_TROPE_SYNONYM_MAP.get(norm);
+          if (synonyms) {
+            for (let j = 0, sLen = synonyms.length; j < sLen; j++) {
+              const syn = synonyms[j];
+              if (syn) {
+                blacklistSet.add(syn);
+                blacklistSet.add(syn.replace(/\s+/g, "-"));
+              }
+            }
+          }
+        }
+        const custom = (_b = prefs.customBlacklist) != null ? _b : [];
+        for (let i = 0, len = custom.length; i < len; i++) {
+          const rawTag = custom[i];
+          if (!rawTag)
+            continue;
+          const clean = rawTag.trim().toLowerCase();
+          if (!clean)
+            continue;
+          blacklistSet.add(clean);
+          blacklistSet.add(clean.replace(/\s+/g, "-"));
+          blacklistSet.add(clean.replace(/-/g, " "));
+          if (clean.includes(":")) {
+            const stripped = (_c = clean.split(":").pop()) == null ? void 0 : _c.trim();
+            if (stripped) {
+              blacklistSet.add(stripped);
+              blacklistSet.add(stripped.replace(/\s+/g, "-"));
+            }
+          }
+        }
+        if (hasExtra && extraExcludedTags) {
+          for (let i = 0, len = extraExcludedTags.length; i < len; i++) {
+            const rawTag = extraExcludedTags[i];
+            if (!rawTag)
+              continue;
+            const clean = rawTag.trim().toLowerCase();
+            if (!clean)
+              continue;
+            blacklistSet.add(clean);
+            blacklistSet.add(clean.replace(/\s+/g, "-"));
+            blacklistSet.add(clean.replace(/-/g, " "));
+            const synonyms = constants_js_1.HEAVY_TROPE_SYNONYM_MAP.get(clean);
+            if (synonyms) {
+              for (let j = 0, sLen = synonyms.length; j < sLen; j++) {
+                const syn = synonyms[j];
+                if (syn) {
+                  blacklistSet.add(syn);
+                  blacklistSet.add(syn.replace(/\s+/g, "-"));
+                }
+              }
+            }
+          }
+        }
+        const allowedCategoriesSet = new Set(prefs.categories && prefs.categories.length > 0 ? prefs.categories : constants_js_1.DEFAULT_CATEGORIES);
+        const compiled = {
+          blacklistSet,
+          blacklistSubstrings: Array.from(blacklistSet),
+          hasExclusions: blacklistSet.size > 0,
+          allowedCategoriesSet,
+          language: (_d = prefs.language) != null ? _d : constants_js_1.DEFAULT_LANGUAGE,
+          titlePreference: (_e = prefs.titlePreference) != null ? _e : constants_js_1.DEFAULT_TITLE_PREFERENCE
+        };
+        if (!hasExtra) {
+          blacklistContextCache.set(prefs, compiled);
+        }
+        return compiled;
+      }
+      function isCardBlacklisted(card, context) {
+        var _a;
+        if (!context.hasExclusions) {
+          return false;
+        }
+        const { blacklistSet } = context;
+        const tags = card.tags;
+        if (Array.isArray(tags)) {
+          for (let i = 0, len = tags.length; i < len; i++) {
+            const raw = tags[i];
+            if (!raw)
+              continue;
+            const normalized = raw.trim().toLowerCase();
+            if (!normalized)
+              continue;
+            if (blacklistSet.has(normalized)) {
+              return true;
+            }
+            if (normalized.includes(":")) {
+              const withoutPrefix = (_a = normalized.split(":").pop()) == null ? void 0 : _a.trim();
+              if (withoutPrefix && blacklistSet.has(withoutPrefix)) {
+                return true;
+              }
+            }
+          }
+        }
+        return false;
+      }
+      function buildPreferenceQueryFlags(prefs, overrideCategories, overrideLanguage) {
+        var _a, _b;
+        const parts = [];
+        const activeCategories = Array.isArray(overrideCategories) && overrideCategories.length > 0 ? overrideCategories : prefs.categories && prefs.categories.length > 0 ? prefs.categories : constants_js_1.DEFAULT_CATEGORIES;
+        const addedFlags = /* @__PURE__ */ new Set();
+        for (let i = 0, len = activeCategories.length; i < len; i++) {
+          const cat = (_a = activeCategories[i]) == null ? void 0 : _a.trim().toLowerCase();
+          if (!cat)
+            continue;
+          const param = constants_js_1.CATEGORY_QUERY_MAP[cat];
+          if (param && !addedFlags.has(param)) {
+            addedFlags.add(param);
+            parts.push(`&${param}=1`);
+          }
+        }
+        const lang = ((_b = overrideLanguage != null ? overrideLanguage : prefs.language) != null ? _b : constants_js_1.DEFAULT_LANGUAGE).trim().toLowerCase();
+        if (lang && lang !== "all") {
+          const langParam = constants_js_1.LANGUAGE_QUERY_MAP[lang];
+          if (langParam) {
+            parts.push(`&${langParam}=1`);
+          }
+        }
+        return parts.join("");
+      }
+      function formatGalleryTitleDisplay(englishTitle, japaneseSubtitle, prefs) {
+        const cleanEn = englishTitle.trim();
+        const cleanJp = (japaneseSubtitle != null ? japaneseSubtitle : "").trim();
+        if (prefs.titlePreference === "japanese" && cleanJp.length > 0) {
+          return {
+            title: cleanJp,
+            subtitle: cleanEn,
+            additionalTitles: cleanEn.length > 0 ? [cleanEn] : []
+          };
+        }
+        return {
+          title: cleanEn,
+          subtitle: cleanJp.length > 0 ? cleanJp : void 0,
+          additionalTitles: cleanJp.length > 0 ? [cleanJp] : []
+        };
+      }
+      async function buildSettingsForm() {
+        const prefs = await getUserPreferences();
+        const customBlacklistStr = prefs.customBlacklist.join(", ");
+        return {
+          sections: [
+            {
+              header: "Content & Format Categories",
+              footer: "Select which content categories to include in browse feeds and search queries (&d=1, &m=1, &w=1, &i=1, &c=1).",
+              views: [
+                (0, toolchain_1.UISelect)({
+                  id: constants_js_1.PREF_KEYS.CATEGORIES,
+                  title: "Enabled Content Categories",
+                  options: UI_CATEGORY_OPTIONS,
+                  exclude: false,
+                  currentValue: {
+                    include: prefs.categories.length > 0 ? prefs.categories : [...constants_js_1.DEFAULT_CATEGORIES],
+                    exclude: []
+                  },
+                  defaultValue: {
+                    include: [...constants_js_1.DEFAULT_CATEGORIES],
+                    exclude: []
+                  }
+                })
+              ]
+            },
+            {
+              header: "Language Controls",
+              footer: "Filter galleries by preferred translation language (&en=1, &jp=1, &zh=1) or display All Languages.",
+              views: [
+                (0, toolchain_1.UIPicker)({
+                  id: constants_js_1.PREF_KEYS.LANGUAGE,
+                  title: "Preferred Language",
+                  options: UI_LANGUAGE_OPTIONS,
+                  currentValue: prefs.language,
+                  defaultValue: constants_js_1.DEFAULT_LANGUAGE
+                })
+              ]
+            },
+            {
+              header: "Content Exclusions / Blacklist",
+              footer: "Silently filter out galleries matching excluded heavy tropes or custom comma-separated tags using O(1) Set lookups.",
+              views: [
+                (0, toolchain_1.UISelect)({
+                  id: constants_js_1.PREF_KEYS.EXCLUDED_TROPES,
+                  title: "Heavy Trope Exclusions",
+                  options: UI_HEAVY_TROPE_OPTIONS,
+                  exclude: false,
+                  currentValue: {
+                    include: prefs.excludedTropes,
+                    exclude: []
+                  },
+                  defaultValue: {
+                    include: [],
+                    exclude: []
+                  }
+                }),
+                (0, toolchain_1.UITextField)({
+                  id: constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST,
+                  title: "Custom Tag Blacklist",
+                  placeholder: "e.g. ugly bastard, mind break, insect",
+                  keyboardType: toolchain_1.UIKeyboardType.ALPHANUMERIC,
+                  currentValue: customBlacklistStr,
+                  defaultValue: ""
+                })
+              ]
+            },
+            {
+              header: "Display Formatting",
+              footer: "Choose whether to display the English title as the primary title (with Japanese in the subtitle) or prioritize the original Japanese title.",
+              views: [
+                (0, toolchain_1.UIPicker)({
+                  id: constants_js_1.PREF_KEYS.TITLE_PREFERENCE,
+                  title: "Title Preference",
+                  options: UI_TITLE_PREFERENCE_OPTIONS,
+                  currentValue: prefs.titlePreference,
+                  defaultValue: constants_js_1.DEFAULT_TITLE_PREFERENCE
+                })
+              ]
+            }
+          ]
+        };
+      }
+      async function updateUserPreferences(data) {
+        if (!isRecord(data)) {
+          return;
+        }
+        let { categories, language, excludedTropes, customBlacklist, titlePreference } = memoryPreferences;
+        const storeAvailable = hasObjectStore();
+        const writeTasks = [];
+        const rawCategories = data[constants_js_1.PREF_KEYS.CATEGORIES];
+        if (rawCategories !== void 0 && rawCategories !== null) {
+          const parsed = normalizeCategoriesList(rawCategories);
+          categories = parsed.length > 0 ? parsed : [...constants_js_1.DEFAULT_CATEGORIES];
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.CATEGORIES, categories).catch(() => {
+            }));
+          }
+        }
+        const rawLanguage = data[constants_js_1.PREF_KEYS.LANGUAGE];
+        if (typeof rawLanguage === "string") {
+          language = normalizeLanguageToken(rawLanguage);
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.LANGUAGE, language).catch(() => {
+            }));
+          }
+        }
+        const rawTropes = data[constants_js_1.PREF_KEYS.EXCLUDED_TROPES];
+        if (rawTropes !== void 0 && rawTropes !== null) {
+          excludedTropes = normalizeTropesList(rawTropes);
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.EXCLUDED_TROPES, excludedTropes).catch(() => {
+            }));
+          }
+        }
+        const rawCustomBlacklist = data[constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST];
+        if (rawCustomBlacklist !== void 0 && rawCustomBlacklist !== null) {
+          customBlacklist = parseCustomBlacklist(rawCustomBlacklist);
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST, typeof rawCustomBlacklist === "string" ? rawCustomBlacklist : customBlacklist.join(", ")).catch(() => {
+            }));
+          }
+        }
+        const rawTitlePref = data[constants_js_1.PREF_KEYS.TITLE_PREFERENCE];
+        if (typeof rawTitlePref === "string") {
+          titlePreference = normalizeTitlePreference(rawTitlePref);
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.TITLE_PREFERENCE, titlePreference).catch(() => {
+            }));
+          }
+        }
+        memoryPreferences = {
+          categories,
+          language,
+          excludedTropes,
+          customBlacklist,
+          titlePreference
+        };
+        isHydrated = true;
+        if (writeTasks.length > 0) {
+          await Promise.all(writeTasks);
+        }
+      }
+      var ImHentaiPreferenceProvider = class {
+        async getSettingsPage() {
+          return buildSettingsForm();
+        }
+        async getPreferenceMenu() {
+          return buildSettingsForm();
+        }
+        async onFormSubmitted(_id, data) {
+          await updateUserPreferences(data);
+        }
+      };
+      exports.ImHentaiPreferenceProvider = ImHentaiPreferenceProvider;
+    }
+  });
+
+  // node_modules/cheerio/index.js
+  var require_cheerio = __commonJS({
+    "node_modules/cheerio/index.js"(exports, module) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      var VOID_TAGS = /* @__PURE__ */ new Set([
+        "area",
+        "base",
+        "br",
+        "col",
+        "embed",
+        "hr",
+        "img",
+        "input",
+        "link",
+        "meta",
+        "param",
+        "source",
+        "track",
+        "wbr"
+      ]);
+      var RAW_TEXT_TAGS = /* @__PURE__ */ new Set(["script", "style"]);
+      var NAMED_ENTITIES = {
+        amp: "&",
+        lt: "<",
+        gt: ">",
+        quot: '"',
+        apos: "'",
+        nbsp: " ",
+        copy: "\xA9",
+        reg: "\xAE",
+        ndash: "\u2013",
+        mdash: "\u2014",
+        hellip: "\u2026",
+        hearts: "\u2665",
+        times: "\xD7"
+      };
+      function decodeEntities(str) {
+        if (!str || typeof str !== "string" || str.indexOf("&") === -1) {
+          return str || "";
+        }
+        return str.replace(/&(#(?:x[0-9a-fA-F]+|\d+)|[a-zA-Z0-9]+);/g, (full, entity) => {
+          if (entity.charCodeAt(0) === 35) {
+            const isHex = entity.charCodeAt(1) === 120 || entity.charCodeAt(1) === 88;
+            const code = parseInt(entity.slice(isHex ? 2 : 1), isHex ? 16 : 10);
+            if (!Number.isNaN(code) && code > 0 && code <= 1114111) {
+              return String.fromCodePoint(code);
+            }
+            return full;
+          }
+          const lower = entity.toLowerCase();
+          return Object.prototype.hasOwnProperty.call(NAMED_ENTITIES, lower) ? NAMED_ENTITIES[lower] : full;
+        });
+      }
+      function parseAttributes(attrString) {
+        const attribs = {};
+        if (!attrString || !attrString.trim()) {
+          return attribs;
+        }
+        const attrRegex = /([a-zA-Z0-9_:@.-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+        let match;
+        while ((match = attrRegex.exec(attrString)) !== null) {
+          const key = match[1].toLowerCase();
+          const rawVal = match[2] !== void 0 ? match[2] : match[3] !== void 0 ? match[3] : match[4] !== void 0 ? match[4] : "";
+          attribs[key] = decodeEntities(rawVal);
+        }
+        return attribs;
+      }
+      function parseHTML(html) {
+        const root = {
+          type: "root",
+          name: "root",
+          attribs: {},
+          children: [],
+          parent: null
+        };
+        if (typeof html !== "string" || html.length === 0) {
+          return root;
+        }
+        const stack = [root];
+        let pos = 0;
+        const len = html.length;
+        while (pos < len) {
+          const currentParent = stack[stack.length - 1];
+          if (currentParent.type === "tag" && RAW_TEXT_TAGS.has(currentParent.name)) {
+            const closePattern = new RegExp(`</${currentParent.name}\\s*>`, "ig");
+            closePattern.lastIndex = pos;
+            const closeMatch = closePattern.exec(html);
+            if (closeMatch) {
+              const rawText = html.slice(pos, closeMatch.index);
+              if (rawText.length > 0) {
+                currentParent.children.push({
+                  type: "text",
+                  name: "#text",
+                  data: rawText,
+                  attribs: {},
+                  children: [],
+                  parent: currentParent
+                });
+              }
+              stack.pop();
+              pos = closeMatch.index + closeMatch[0].length;
+              continue;
+            } else {
+              const rawText = html.slice(pos);
+              if (rawText.length > 0) {
+                currentParent.children.push({
+                  type: "text",
+                  name: "#text",
+                  data: rawText,
+                  attribs: {},
+                  children: [],
+                  parent: currentParent
+                });
+              }
+              break;
+            }
+          }
+          const ltIdx = html.indexOf("<", pos);
+          if (ltIdx === -1) {
+            const text = decodeEntities(html.slice(pos));
+            if (text.length > 0) {
+              currentParent.children.push({
+                type: "text",
+                name: "#text",
+                data: text,
+                attribs: {},
+                children: [],
+                parent: currentParent
+              });
+            }
+            break;
+          }
+          if (ltIdx > pos) {
+            const text = decodeEntities(html.slice(pos, ltIdx));
+            if (text.length > 0) {
+              currentParent.children.push({
+                type: "text",
+                name: "#text",
+                data: text,
+                attribs: {},
+                children: [],
+                parent: currentParent
+              });
+            }
+          }
+          if (html.startsWith("<!--", ltIdx)) {
+            const endComment = html.indexOf("-->", ltIdx + 4);
+            pos = endComment === -1 ? len : endComment + 3;
+            continue;
+          }
+          if (html.startsWith("<!", ltIdx) || html.startsWith("<?", ltIdx)) {
+            const gtIdx2 = html.indexOf(">", ltIdx + 2);
+            pos = gtIdx2 === -1 ? len : gtIdx2 + 1;
+            continue;
+          }
+          let gtIdx = ltIdx + 1;
+          let quoteChar = null;
+          while (gtIdx < len) {
+            const ch = html[gtIdx];
+            if (quoteChar) {
+              if (ch === quoteChar) {
+                quoteChar = null;
+              }
+            } else if (ch === '"' || ch === "'") {
+              quoteChar = ch;
+            } else if (ch === ">") {
+              break;
+            }
+            gtIdx++;
+          }
+          if (gtIdx >= len) {
+            break;
+          }
+          const tagContent = html.slice(ltIdx + 1, gtIdx).trim();
+          pos = gtIdx + 1;
+          if (!tagContent) {
+            continue;
+          }
+          if (tagContent.charCodeAt(0) === 47) {
+            const closeName = tagContent.slice(1).trim().split(/\s+/)[0].toLowerCase();
+            for (let i = stack.length - 1; i >= 1; i--) {
+              if (stack[i].name === closeName) {
+                stack.length = i;
+                break;
+              }
+            }
+            continue;
+          }
+          const selfClosing = tagContent.charCodeAt(tagContent.length - 1) === 47;
+          const cleanContent = selfClosing ? tagContent.slice(0, -1).trim() : tagContent;
+          const spaceMatch = /^([a-zA-Z0-9_:-]+)([\s\S]*)$/.exec(cleanContent);
+          if (!spaceMatch) {
+            continue;
+          }
+          const tagName = spaceMatch[1].toLowerCase();
+          const attrPart = spaceMatch[2] || "";
+          if ((tagName === "li" || tagName === "p" || tagName === "option") && currentParent.type === "tag" && currentParent.name === tagName && stack.length > 1) {
+            stack.pop();
+          }
+          const parentNode = stack[stack.length - 1];
+          const element = {
+            type: "tag",
+            name: tagName,
+            attribs: parseAttributes(attrPart),
+            children: [],
+            parent: parentNode
+          };
+          parentNode.children.push(element);
+          if (!selfClosing && !VOID_TAGS.has(tagName)) {
+            stack.push(element);
+          }
+        }
+        return root;
+      }
+      function getElementText(node) {
+        if (!node) return "";
+        if (node.type === "text") {
+          return node.data || "";
+        }
+        if (!Array.isArray(node.children) || node.children.length === 0) {
+          return "";
+        }
+        let out = "";
+        for (let i = 0; i < node.children.length; i++) {
+          out += getElementText(node.children[i]);
+        }
+        return out;
+      }
+      function serializeNode(node) {
+        if (!node) return "";
+        if (node.type === "text") {
+          return node.data || "";
+        }
+        if (node.type === "root") {
+          return (node.children || []).map(serializeNode).join("");
+        }
+        const attrs = Object.entries(node.attribs || {}).map(([k, v]) => `${k}="${String(v).replace(/"/g, "&quot;")}"`).join(" ");
+        const open = attrs ? `<${node.name} ${attrs}>` : `<${node.name}>`;
+        if (VOID_TAGS.has(node.name)) {
+          return open;
+        }
+        const inner = (node.children || []).map(serializeNode).join("");
+        return `${open}${inner}</${node.name}>`;
+      }
+      function serializeInnerHTML(node) {
+        if (!node || !Array.isArray(node.children)) return "";
+        return node.children.map(serializeNode).join("");
+      }
+      function cloneNode(node, parent = null) {
+        if (!node) return null;
+        const copy = {
+          type: node.type,
+          name: node.name,
+          attribs: { ...node.attribs || {} },
+          children: [],
+          parent
+        };
+        if (node.data !== void 0) {
+          copy.data = node.data;
+        }
+        if (Array.isArray(node.children)) {
+          copy.children = node.children.map((ch) => cloneNode(ch, copy));
+        }
+        return copy;
+      }
+      function splitTopLevel(selector, delimiter) {
+        const parts = [];
+        let current = "";
+        let bracketDepth = 0;
+        let parenDepth = 0;
+        let quote = null;
+        for (let i = 0; i < selector.length; i++) {
+          const ch = selector[i];
+          if (quote) {
+            current += ch;
+            if (ch === quote) quote = null;
+            continue;
+          }
+          if (ch === '"' || ch === "'") {
+            quote = ch;
+            current += ch;
+            continue;
+          }
+          if (ch === "[") {
+            bracketDepth++;
+            current += ch;
+            continue;
+          }
+          if (ch === "]") {
+            bracketDepth = Math.max(0, bracketDepth - 1);
+            current += ch;
+            continue;
+          }
+          if (ch === "(") {
+            parenDepth++;
+            current += ch;
+            continue;
+          }
+          if (ch === ")") {
+            parenDepth = Math.max(0, parenDepth - 1);
+            current += ch;
+            continue;
+          }
+          if (bracketDepth === 0 && parenDepth === 0 && ch === delimiter) {
+            if (current.trim()) {
+              parts.push(current.trim());
+            }
+            current = "";
+            continue;
+          }
+          current += ch;
+        }
+        if (current.trim()) {
+          parts.push(current.trim());
+        }
+        return parts;
+      }
+      function tokenizeCombinators(selector) {
+        const tokens = [];
+        let current = "";
+        let bracketDepth = 0;
+        let parenDepth = 0;
+        let quote = null;
+        for (let i = 0; i < selector.length; i++) {
+          const ch = selector[i];
+          if (quote) {
+            current += ch;
+            if (ch === quote) quote = null;
+            continue;
+          }
+          if (ch === '"' || ch === "'") {
+            quote = ch;
+            current += ch;
+            continue;
+          }
+          if (ch === "[") {
+            bracketDepth++;
+            current += ch;
+            continue;
+          }
+          if (ch === "]") {
+            bracketDepth = Math.max(0, bracketDepth - 1);
+            current += ch;
+            continue;
+          }
+          if (ch === "(") {
+            parenDepth++;
+            current += ch;
+            continue;
+          }
+          if (ch === ")") {
+            parenDepth = Math.max(0, parenDepth - 1);
+            current += ch;
+            continue;
+          }
+          if (bracketDepth === 0 && parenDepth === 0) {
+            if (ch === ">") {
+              if (current.trim()) {
+                tokens.push({ type: "compound", value: current.trim() });
+                current = "";
+              }
+              tokens.push({ type: "combinator", value: ">" });
+              continue;
+            }
+            if (/\s/.test(ch)) {
+              if (current.trim()) {
+                tokens.push({ type: "compound", value: current.trim() });
+                current = "";
+                let j = i + 1;
+                while (j < selector.length && /\s/.test(selector[j])) j++;
+                if (j < selector.length && selector[j] !== ">") {
+                  tokens.push({ type: "combinator", value: " " });
+                }
+                i = j - 1;
+              }
+              continue;
+            }
+          }
+          current += ch;
+        }
+        if (current.trim()) {
+          tokens.push({ type: "compound", value: current.trim() });
+        }
+        return tokens;
+      }
+      function matchesCompound(node, compound) {
+        var _a, _b, _c, _d, _e;
+        if (!node || node.type !== "tag") {
+          return false;
+        }
+        if (compound === "*") {
+          return true;
+        }
+        let rem = compound;
+        const attrChecks = [];
+        rem = rem.replace(/\[([^\]]+)\]/g, (_, inner) => {
+          attrChecks.push(inner.trim());
+          return "";
+        });
+        const pseudoChecks = [];
+        rem = rem.replace(/:([a-zA-Z-]+)(?:\(([^)]*)\))?/g, (_, name, arg) => {
+          pseudoChecks.push({ name: name.toLowerCase(), arg: arg !== void 0 ? arg.trim() : null });
+          return "";
+        });
+        let requiredId = null;
+        rem = rem.replace(/#([a-zA-Z0-9_-]+)/g, (_, id) => {
+          requiredId = id;
+          return "";
+        });
+        const requiredClasses = [];
+        rem = rem.replace(/\.([a-zA-Z0-9_-]+)/g, (_, cls) => {
+          requiredClasses.push(cls);
+          return "";
+        });
+        const tagName = rem.trim().toLowerCase();
+        if (tagName && tagName !== "*" && node.name !== tagName) {
+          return false;
+        }
+        if (requiredId !== null && (((_a = node.attribs) == null ? void 0 : _a.id) || "") !== requiredId) {
+          return false;
+        }
+        if (requiredClasses.length > 0) {
+          const classAttr = ((_b = node.attribs) == null ? void 0 : _b.class) || "";
+          if (!classAttr) return false;
+          const nodeClasses = classAttr.trim().split(/\s+/);
+          for (let i = 0; i < requiredClasses.length; i++) {
+            if (!nodeClasses.includes(requiredClasses[i])) {
+              return false;
+            }
+          }
+        }
+        for (let i = 0; i < attrChecks.length; i++) {
+          const expr = attrChecks[i];
+          const m = /^([a-zA-Z0-9_:@.-]+)\s*(?:([*^$~|]?=)\s*(?:"([^"]*)"|'([^']*)'|([^\s"']*)))?$/.exec(
+            expr
+          );
+          if (!m) return false;
+          const attrName = m[1].toLowerCase();
+          const op = m[2];
+          const expected = m[3] !== void 0 ? m[3] : m[4] !== void 0 ? m[4] : m[5] || "";
+          const hasAttr = node.attribs && Object.prototype.hasOwnProperty.call(node.attribs, attrName);
+          if (!op) {
+            if (!hasAttr) return false;
+            continue;
+          }
+          const actual = hasAttr ? String(node.attribs[attrName]) : "";
+          if (!hasAttr) return false;
+          if (op === "=" && actual !== expected) return false;
+          if (op === "*=" && !actual.includes(expected)) return false;
+          if (op === "^=" && !actual.startsWith(expected)) return false;
+          if (op === "$=" && !actual.endsWith(expected)) return false;
+          if (op === "~=" && !actual.trim().split(/\s+/).includes(expected)) return false;
+          if (op === "|=" && actual !== expected && !actual.startsWith(`${expected}-`))
+            return false;
+        }
+        for (let i = 0; i < pseudoChecks.length; i++) {
+          const { name, arg } = pseudoChecks[i];
+          if (name === "contains") {
+            const needle = (arg || "").replace(/^["']|["']$/g, "");
+            if (!getElementText(node).includes(needle)) {
+              return false;
+            }
+          } else if (name === "not" && arg) {
+            if (matchesSelector(node, arg)) {
+              return false;
+            }
+          } else if (name === "first-child" || name === "first") {
+            const siblings = (((_c = node.parent) == null ? void 0 : _c.children) || []).filter((c) => c.type === "tag");
+            if (siblings[0] !== node) return false;
+          } else if (name === "last-child" || name === "last") {
+            const siblings = (((_d = node.parent) == null ? void 0 : _d.children) || []).filter((c) => c.type === "tag");
+            if (siblings[siblings.length - 1] !== node) return false;
+          } else if (name === "nth-child" && arg) {
+            const siblings = (((_e = node.parent) == null ? void 0 : _e.children) || []).filter((c) => c.type === "tag");
+            const idx = siblings.indexOf(node) + 1;
+            const n = parseInt(arg, 10);
+            if (!Number.isNaN(n) && idx !== n) return false;
+          }
+        }
+        return true;
+      }
+      function matchesTokenSequence(node, tokens, tokenIndex) {
+        if (tokenIndex < 0) return true;
+        const token = tokens[tokenIndex];
+        if (!token || token.type !== "compound") return false;
+        if (!matchesCompound(node, token.value)) return false;
+        if (tokenIndex === 0) return true;
+        const combinator = tokens[tokenIndex - 1];
+        if (!combinator || combinator.type !== "combinator") return false;
+        if (combinator.value === ">") {
+          return node.parent !== null && node.parent.type === "tag" && matchesTokenSequence(node.parent, tokens, tokenIndex - 2);
+        }
+        let curr = node.parent;
+        while (curr && curr.type === "tag") {
+          if (matchesTokenSequence(curr, tokens, tokenIndex - 2)) {
+            return true;
+          }
+          curr = curr.parent;
+        }
+        return false;
+      }
+      function matchesSelector(node, selector) {
+        if (!node || node.type !== "tag" || !selector) return false;
+        const groups = splitTopLevel(selector, ",");
+        for (let i = 0; i < groups.length; i++) {
+          const tokens = tokenizeCombinators(groups[i]);
+          if (tokens.length > 0 && matchesTokenSequence(node, tokens, tokens.length - 1)) {
+            return true;
+          }
+        }
+        return false;
+      }
+      function collectDescendants(rootNode, out) {
+        if (!rootNode || !Array.isArray(rootNode.children)) return;
+        for (let i = 0; i < rootNode.children.length; i++) {
+          const child = rootNode.children[i];
+          if (child.type === "tag") {
+            out.push(child);
+            collectDescendants(child, out);
+          }
+        }
+      }
+      function querySelectorAll(roots, selector) {
+        if (!selector || typeof selector !== "string") return [];
+        const results = [];
+        const seen = /* @__PURE__ */ new Set();
+        const candidates = [];
+        for (let i = 0; i < roots.length; i++) {
+          collectDescendants(roots[i], candidates);
+        }
+        const groups = splitTopLevel(selector, ",");
+        const groupTokens = groups.map(tokenizeCombinators).filter((t) => t.length > 0);
+        for (let i = 0; i < candidates.length; i++) {
+          const el = candidates[i];
+          if (seen.has(el)) continue;
+          for (let g = 0; g < groupTokens.length; g++) {
+            const tokens = groupTokens[g];
+            if (matchesTokenSequence(el, tokens, tokens.length - 1)) {
+              seen.add(el);
+              results.push(el);
+              break;
+            }
+          }
+        }
+        return results;
+      }
+      var CheerioCollection = class _CheerioCollection {
+        constructor(elements = [], root = null) {
+          this._root = root;
+          const list = Array.isArray(elements) ? elements : [elements];
+          this.length = list.length;
+          for (let i = 0; i < list.length; i++) {
+            this[i] = list[i];
+          }
+        }
+        [Symbol.iterator]() {
+          let index = 0;
+          const len = this.length;
+          return {
+            next: () => {
+              if (index < len) {
+                return { value: this[index++], done: false };
+              }
+              return { value: void 0, done: true };
+            }
+          };
+        }
+        toArray() {
+          const arr = [];
+          for (let i = 0; i < this.length; i++) {
+            arr.push(this[i]);
+          }
+          return arr;
+        }
+        get(index) {
+          if (index === void 0) {
+            return this.toArray();
+          }
+          const idx = index < 0 ? this.length + index : index;
+          return this[idx];
+        }
+        eq(index) {
+          const el = this.get(index);
+          return new _CheerioCollection(el ? [el] : [], this._root);
+        }
+        first() {
+          return this.eq(0);
+        }
+        last() {
+          return this.eq(this.length - 1);
+        }
+        find(selector) {
+          return new _CheerioCollection(
+            querySelectorAll(this.toArray(), selector),
+            this._root
+          );
+        }
+        filter(predicate) {
+          const matched = [];
+          for (let i = 0; i < this.length; i++) {
+            const el = this[i];
+            if (typeof predicate === "string") {
+              if (matchesSelector(el, predicate)) {
+                matched.push(el);
+              }
+            } else if (typeof predicate === "function") {
+              if (predicate.call(el, i, el)) {
+                matched.push(el);
+              }
+            }
+          }
+          return new _CheerioCollection(matched, this._root);
+        }
+        not(predicate) {
+          const matched = [];
+          for (let i = 0; i < this.length; i++) {
+            const el = this[i];
+            if (typeof predicate === "string") {
+              if (!matchesSelector(el, predicate)) {
+                matched.push(el);
+              }
+            } else if (typeof predicate === "function") {
+              if (!predicate.call(el, i, el)) {
+                matched.push(el);
+              }
+            }
+          }
+          return new _CheerioCollection(matched, this._root);
+        }
+        children(selector) {
+          var _a;
+          const out = [];
+          const seen = /* @__PURE__ */ new Set();
+          for (let i = 0; i < this.length; i++) {
+            const children = ((_a = this[i]) == null ? void 0 : _a.children) || [];
+            for (let j = 0; j < children.length; j++) {
+              const ch = children[j];
+              if (ch.type === "tag" && !seen.has(ch)) {
+                if (!selector || matchesSelector(ch, selector)) {
+                  seen.add(ch);
+                  out.push(ch);
+                }
+              }
+            }
+          }
+          return new _CheerioCollection(out, this._root);
+        }
+        parent(selector) {
+          var _a;
+          const out = [];
+          const seen = /* @__PURE__ */ new Set();
+          for (let i = 0; i < this.length; i++) {
+            const p = (_a = this[i]) == null ? void 0 : _a.parent;
+            if (p && p.type === "tag" && !seen.has(p)) {
+              if (!selector || matchesSelector(p, selector)) {
+                seen.add(p);
+                out.push(p);
+              }
+            }
+          }
+          return new _CheerioCollection(out, this._root);
+        }
+        parents(selector) {
+          var _a;
+          const out = [];
+          const seen = /* @__PURE__ */ new Set();
+          for (let i = 0; i < this.length; i++) {
+            let p = (_a = this[i]) == null ? void 0 : _a.parent;
+            while (p && p.type === "tag") {
+              if (!seen.has(p) && (!selector || matchesSelector(p, selector))) {
+                seen.add(p);
+                out.push(p);
+              }
+              p = p.parent;
+            }
+          }
+          return new _CheerioCollection(out, this._root);
+        }
+        closest(selector) {
+          const out = [];
+          const seen = /* @__PURE__ */ new Set();
+          for (let i = 0; i < this.length; i++) {
+            let curr = this[i];
+            while (curr && curr.type === "tag") {
+              if (matchesSelector(curr, selector)) {
+                if (!seen.has(curr)) {
+                  seen.add(curr);
+                  out.push(curr);
+                }
+                break;
+              }
+              curr = curr.parent;
+            }
+          }
+          return new _CheerioCollection(out, this._root);
+        }
+        next(selector) {
+          var _a;
+          const out = [];
+          for (let i = 0; i < this.length; i++) {
+            const el = this[i];
+            const siblings = (((_a = el == null ? void 0 : el.parent) == null ? void 0 : _a.children) || []).filter((c) => c.type === "tag");
+            const idx = siblings.indexOf(el);
+            if (idx !== -1 && idx + 1 < siblings.length) {
+              const nxt = siblings[idx + 1];
+              if (!selector || matchesSelector(nxt, selector)) {
+                out.push(nxt);
+              }
+            }
+          }
+          return new _CheerioCollection(out, this._root);
+        }
+        prev(selector) {
+          var _a;
+          const out = [];
+          for (let i = 0; i < this.length; i++) {
+            const el = this[i];
+            const siblings = (((_a = el == null ? void 0 : el.parent) == null ? void 0 : _a.children) || []).filter((c) => c.type === "tag");
+            const idx = siblings.indexOf(el);
+            if (idx > 0) {
+              const prv = siblings[idx - 1];
+              if (!selector || matchesSelector(prv, selector)) {
+                out.push(prv);
+              }
+            }
+          }
+          return new _CheerioCollection(out, this._root);
+        }
+        siblings(selector) {
+          var _a;
+          const out = [];
+          const seen = /* @__PURE__ */ new Set();
+          for (let i = 0; i < this.length; i++) {
+            const el = this[i];
+            const siblings = (((_a = el == null ? void 0 : el.parent) == null ? void 0 : _a.children) || []).filter((c) => c.type === "tag");
+            for (let j = 0; j < siblings.length; j++) {
+              const s = siblings[j];
+              if (s !== el && !seen.has(s) && (!selector || matchesSelector(s, selector))) {
+                seen.add(s);
+                out.push(s);
+              }
+            }
+          }
+          return new _CheerioCollection(out, this._root);
+        }
+        each(callback) {
+          for (let i = 0; i < this.length; i++) {
+            if (callback.call(this[i], i, this[i]) === false) {
+              break;
+            }
+          }
+          return this;
+        }
+        map(callback) {
+          const mapped = [];
+          for (let i = 0; i < this.length; i++) {
+            const res = callback.call(this[i], i, this[i]);
+            if (res !== null && res !== void 0) {
+              mapped.push(res);
+            }
+          }
+          return new _CheerioCollection(mapped, this._root);
+        }
+        text() {
+          let out = "";
+          for (let i = 0; i < this.length; i++) {
+            out += getElementText(this[i]);
+          }
+          return out;
+        }
+        html() {
+          if (this.length === 0) return null;
+          return serializeInnerHTML(this[0]);
+        }
+        attr(name, value) {
+          if (!name) return void 0;
+          const key = String(name).toLowerCase();
+          if (value !== void 0) {
+            for (let i = 0; i < this.length; i++) {
+              if (this[i] && this[i].attribs) {
+                this[i].attribs[key] = String(value);
+              }
+            }
+            return this;
+          }
+          const first = this[0];
+          if (!first || !first.attribs) return void 0;
+          return Object.prototype.hasOwnProperty.call(first.attribs, key) ? first.attribs[key] : void 0;
+        }
+        data(name) {
+          var _a;
+          if (!name) return void 0;
+          const dashed = String(name).replace(/([A-Z])/g, "-$1").toLowerCase();
+          return (_a = this.attr(`data-${dashed}`)) != null ? _a : this.attr(String(name));
+        }
+        val() {
+          if (this.length === 0) return void 0;
+          const first = this[0];
+          if (!first) return void 0;
+          if (first.name === "textarea") {
+            return getElementText(first);
+          }
+          return this.attr("value");
+        }
+        hasClass(className) {
+          var _a, _b;
+          if (!className) return false;
+          for (let i = 0; i < this.length; i++) {
+            const cls = (_b = (_a = this[i]) == null ? void 0 : _a.attribs) == null ? void 0 : _b.class;
+            if (cls && cls.trim().split(/\s+/).includes(className)) {
+              return true;
+            }
+          }
+          return false;
+        }
+        is(selector) {
+          if (!selector) return false;
+          for (let i = 0; i < this.length; i++) {
+            if (matchesSelector(this[i], selector)) {
+              return true;
+            }
+          }
+          return false;
+        }
+        clone() {
+          const cloned = [];
+          for (let i = 0; i < this.length; i++) {
+            cloned.push(cloneNode(this[i], null));
+          }
+          return new _CheerioCollection(cloned, this._root);
+        }
+        remove() {
+          for (let i = 0; i < this.length; i++) {
+            const el = this[i];
+            if (el && el.parent && Array.isArray(el.parent.children)) {
+              const idx = el.parent.children.indexOf(el);
+              if (idx !== -1) {
+                el.parent.children.splice(idx, 1);
+              }
+              el.parent = null;
+            }
+          }
+          return this;
+        }
+      };
+      function load(html) {
+        const root = parseHTML(typeof html === "string" ? html : String(html != null ? html : ""));
+        function $(selector, context) {
+          if (!selector) {
+            return new CheerioCollection([], root);
+          }
+          if (selector instanceof CheerioCollection) {
+            return selector;
+          }
+          if (typeof selector === "object" && selector !== null) {
+            if (Array.isArray(selector)) {
+              return new CheerioCollection(selector, root);
+            }
+            return new CheerioCollection([selector], root);
+          }
+          if (typeof selector === "string") {
+            const trimmed = selector.trim();
+            if (trimmed.charCodeAt(0) === 60 && trimmed.charCodeAt(trimmed.length - 1) === 62) {
+              const frag = parseHTML(trimmed);
+              return new CheerioCollection(frag.children, root);
+            }
+            let searchRoots = [root];
+            if (context) {
+              if (typeof context === "string") {
+                searchRoots = querySelectorAll([root], context);
+              } else if (context instanceof CheerioCollection) {
+                searchRoots = context.toArray();
+              } else if (typeof context === "object") {
+                searchRoots = [context];
+              }
+            }
+            return new CheerioCollection(
+              querySelectorAll(searchRoots, trimmed),
+              root
+            );
+          }
+          return new CheerioCollection([], root);
+        }
+        $.load = load;
+        $.root = () => new CheerioCollection([root], root);
+        $.html = (el) => {
+          if (!el) return serializeNode(root);
+          if (el instanceof CheerioCollection) {
+            return el.toArray().map(serializeNode).join("");
+          }
+          return serializeNode(el);
+        };
+        $.text = (els) => {
+          if (!els) return getElementText(root);
+          if (els instanceof CheerioCollection) return els.text();
+          if (Array.isArray(els)) return els.map(getElementText).join("");
+          return getElementText(els);
+        };
+        return $;
+      }
+      module.exports = {
+        load,
+        default: { load }
+      };
+    }
+  });
+
+  // __temp__/runners/imhentai/scraper.js
+  var require_scraper = __commonJS({
+    "__temp__/runners/imhentai/scraper.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        var desc = Object.getOwnPropertyDescriptor(m, k);
+        if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+          desc = { enumerable: true, get: function() {
+            return m[k];
+          } };
+        }
+        Object.defineProperty(o, k2, desc);
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        o[k2] = m[k];
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
+        Object.defineProperty(o, "default", { enumerable: true, value: v });
+      }) : function(o, v) {
+        o["default"] = v;
+      });
+      var __importStar = exports && exports.__importStar || /* @__PURE__ */ (function() {
+        var ownKeys = function(o) {
+          ownKeys = Object.getOwnPropertyNames || function(o2) {
+            var ar = [];
+            for (var k in o2) if (Object.prototype.hasOwnProperty.call(o2, k)) ar[ar.length] = k;
+            return ar;
+          };
+          return ownKeys(o);
+        };
+        return function(mod) {
+          if (mod && mod.__esModule) return mod;
+          var result = {};
+          if (mod != null) {
+            for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+          }
+          __setModuleDefault(result, mod);
+          return result;
+        };
+      })();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.ImHentaiScraperClient = void 0;
+      exports.normalizeImageUrl = normalizeImageUrl;
+      exports.extractGalleryId = extractGalleryId;
+      exports.detectExtensionFromUrl = detectExtensionFromUrl;
+      exports.resolveExtensionToken = resolveExtensionToken;
+      exports.parseExtensionMapFromHtml = parseExtensionMapFromHtml;
+      exports.parseGalleryCards = parseGalleryCards;
+      exports.mapCardsToItems = mapCardsToItems;
+      exports.extractPageResolutionMeta = extractPageResolutionMeta;
+      exports.buildChapterPagesFromMeta = buildChapterPagesFromMeta;
+      exports.parseChapterPagesFromHtml = parseChapterPagesFromHtml;
+      exports.parseGalleryDetail = parseGalleryDetail;
+      exports.mapDetailToContent = mapDetailToContent;
+      exports.buildSingleGalleryChapter = buildSingleGalleryChapter;
+      var toolchain_1 = require_dist();
+      var cheerio = __importStar(require_cheerio());
+      var constants_js_1 = require_constants();
+      var preferences_js_1 = require_preferences();
+      var GALLERY_CACHE_TTL_MS = 3e4;
+      var GALLERY_CACHE_MAX_ENTRIES = 25;
+      function isCloudflareChallenge(response) {
+        var _a, _b, _c, _d, _e;
+        if (response.status !== 403 && response.status !== 503) {
+          return false;
+        }
+        const headers = (_a = response.headers) != null ? _a : {};
+        const server = String((_c = (_b = headers["server"]) != null ? _b : headers["Server"]) != null ? _c : "").toLowerCase();
+        const cfMitigated = String((_e = (_d = headers["cf-mitigated"]) != null ? _d : headers["CF-Mitigated"]) != null ? _e : "").toLowerCase();
+        const body = typeof response.data === "string" ? response.data : "";
+        return cfMitigated.includes("challenge") || server.includes("cloudflare") || body.includes("cf-browser-verification") || body.includes("Just a moment...") || body.includes("Attention Required! | Cloudflare");
+      }
+      function normalizeImageUrl(rawUrl) {
+        if (!rawUrl)
+          return constants_js_1.FALLBACK_COVER_URL;
+        const trimmed = rawUrl.trim();
+        if (!trimmed)
+          return constants_js_1.FALLBACK_COVER_URL;
+        if (trimmed.startsWith("https://") || trimmed.startsWith("http://")) {
+          return trimmed.replace(/^http:\/\//i, "https://");
+        }
+        if (trimmed.startsWith("//")) {
+          return `https:${trimmed}`;
+        }
+        if (trimmed.startsWith("/")) {
+          return `${constants_js_1.BASE_URL}${trimmed}`;
+        }
+        return `${constants_js_1.BASE_URL}/${trimmed}`;
+      }
+      function extractGalleryId(input) {
+        const trimmed = (input != null ? input : "").trim();
+        if (!trimmed)
+          return "";
+        const urlMatch = constants_js_1.GALLERY_URL_REGEX.exec(trimmed);
+        if (urlMatch == null ? void 0 : urlMatch[1]) {
+          return urlMatch[1];
+        }
+        const pathMatch = constants_js_1.GALLERY_PATH_REGEX.exec(trimmed);
+        if (pathMatch == null ? void 0 : pathMatch[1]) {
+          return pathMatch[1];
+        }
+        const viewMatch = constants_js_1.VIEW_PATH_REGEX.exec(trimmed);
+        if (viewMatch == null ? void 0 : viewMatch[1]) {
+          return viewMatch[1];
+        }
+        const clean = trimmed.replace(/^\/+|\/+$/g, "");
+        const numericMatch = /^(\d+)$/.exec(clean);
+        if (numericMatch == null ? void 0 : numericMatch[1]) {
+          return numericMatch[1];
+        }
+        return clean;
+      }
+      function detectExtensionFromUrl(url) {
+        var _a, _b, _c;
+        if (!url)
+          return constants_js_1.DEFAULT_IMAGE_EXT;
+        const clean = (_c = (_b = (_a = url.split("?")[0]) == null ? void 0 : _a.split("#")[0]) == null ? void 0 : _b.trim().toLowerCase()) != null ? _c : "";
+        const extMatch = /\.([a-z0-9]+)$/i.exec(clean);
+        if (extMatch == null ? void 0 : extMatch[1]) {
+          const mapped = constants_js_1.EXTENSION_CODE_MAP[extMatch[1].toLowerCase()];
+          if (mapped) {
+            return mapped;
+          }
+        }
+        return constants_js_1.DEFAULT_IMAGE_EXT;
+      }
+      function resolveExtensionToken(rawToken, fallbackExt = constants_js_1.DEFAULT_IMAGE_EXT) {
+        var _a, _b, _c;
+        if (typeof rawToken !== "string" || !rawToken.trim()) {
+          return fallbackExt;
+        }
+        const firstPart = (_b = (_a = rawToken.split(",")[0]) == null ? void 0 : _a.trim().toLowerCase().replace(/^\./, "")) != null ? _b : "";
+        if (!firstPart) {
+          return fallbackExt;
+        }
+        return (_c = constants_js_1.EXTENSION_CODE_MAP[firstPart]) != null ? _c : fallbackExt;
+      }
+      function parseExtensionMapFromHtml(html, $) {
+        var _a;
+        const map = {};
+        if (!html)
+          return map;
+        let rawJson;
+        if ($) {
+          const inputVal = (_a = $("#g_th").val()) == null ? void 0 : _a.trim();
+          if (inputVal && inputVal.startsWith("{")) {
+            rawJson = inputVal;
+          }
+        }
+        if (!rawJson) {
+          const parseJsonMatch = /g_th\s*=\s*(?:\$\.parseJSON|JSON\.parse)\(\s*(['"])([\s\S]*?)\1\s*\)/i.exec(html);
+          if (parseJsonMatch == null ? void 0 : parseJsonMatch[2]) {
+            rawJson = parseJsonMatch[2].replace(/\\'/g, "'").replace(/\\"/g, '"');
+          }
+        }
+        if (!rawJson) {
+          const stringMatch = /g_th\s*=\s*(['"])(\{[\s\S]*?\})\1/i.exec(html);
+          if (stringMatch == null ? void 0 : stringMatch[2]) {
+            rawJson = stringMatch[2];
+          }
+        }
+        if (!rawJson) {
+          const objMatch = /g_th\s*=\s*(\{[\s\S]*?\})\s*;/i.exec(html);
+          if (objMatch == null ? void 0 : objMatch[1]) {
+            rawJson = objMatch[1];
+          }
+        }
+        if (!rawJson) {
+          return map;
+        }
+        try {
+          const parsed = JSON.parse(rawJson);
+          if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+            for (const [pageKey, val] of Object.entries(parsed)) {
+              map[pageKey] = resolveExtensionToken(val, constants_js_1.DEFAULT_IMAGE_EXT);
+            }
+          }
+        } catch {
+          const entryRegex = /["']?(\d+)["']?\s*:\s*["']([^"']+)["']/g;
+          let m;
+          while ((m = entryRegex.exec(rawJson)) !== null) {
+            if (m[1] && m[2]) {
+              map[m[1]] = resolveExtensionToken(m[2], constants_js_1.DEFAULT_IMAGE_EXT);
+            }
+          }
+        }
+        return map;
+      }
+      function extractCleanTagText($, el) {
+        var _a;
+        const $clone = $(el).clone();
+        $clone.find(".badge, .count, span.badge, span.count").remove();
+        let raw = $clone.text().replace(/\s+/g, " ").trim();
+        raw = raw.replace(/\s+\(\d[\d,]*\)$/, "").trim();
+        let namespace;
+        const href = ((_a = $(el).attr("href")) != null ? _a : "").trim().toLowerCase();
+        if (href.includes("/artist/"))
+          namespace = "artist";
+        else if (href.includes("/group/"))
+          namespace = "group";
+        else if (href.includes("/parody/"))
+          namespace = "parody";
+        else if (href.includes("/character/"))
+          namespace = "character";
+        else if (href.includes("/category/"))
+          namespace = "category";
+        else if (href.includes("/language/"))
+          namespace = "language";
+        else if (href.includes("/tag/"))
+          namespace = "tag";
+        const colonIdx = raw.indexOf(":");
+        if (colonIdx > 0) {
+          const prefix = raw.slice(0, colonIdx).trim().toLowerCase();
+          if (prefix === "artist" || prefix === "artists" || prefix === "group" || prefix === "groups" || prefix === "circle" || prefix === "parody" || prefix === "parodies" || prefix === "character" || prefix === "characters" || prefix === "category" || prefix === "categories" || prefix === "language" || prefix === "languages" || prefix === "tag" || prefix === "tags") {
+            namespace = prefix.replace(/ies$/, "y").replace(/s$/, "");
+            if (namespace === "circle")
+              namespace = "group";
+            raw = raw.slice(colonIdx + 1).trim();
+          }
+        }
+        return { namespace, name: raw };
+      }
+      function extractTitleBracketTokens(title) {
+        var _a, _b;
+        const tokens = [];
+        const regex = /\[([^\]]+)\]|\(([^)]+)\)/g;
+        let match;
+        while ((match = regex.exec(title)) !== null) {
+          const inner = ((_b = (_a = match[1]) != null ? _a : match[2]) != null ? _b : "").trim().toLowerCase();
+          if (inner) {
+            tokens.push(inner);
+          }
+        }
+        return tokens;
+      }
+      function parseGalleryCards(html) {
+        if (!html || typeof html !== "string") {
+          return [];
+        }
+        const $ = cheerio.load(html);
+        const cards = [];
+        const seenIds = /* @__PURE__ */ new Set();
+        $(".thumb").each((_idx, el) => {
+          var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
+          const $thumb = $(el);
+          let galleryHref = (_c = (_b = (_a = $thumb.find(".caption a").attr("href")) != null ? _a : $thumb.find(".inner_thumb a").attr("href")) != null ? _b : $thumb.find('a[href*="/gallery/"]').attr("href")) != null ? _c : "";
+          const id = extractGalleryId(galleryHref) || ((_d = $thumb.attr("data-id")) != null ? _d : "").trim();
+          if (!id || seenIds.has(id)) {
+            return;
+          }
+          seenIds.add(id);
+          const $captionLink = $thumb.find(".caption a").first();
+          const rawTitle = $captionLink.text().trim() || $thumb.find(".caption").text().trim() || ((_e = $thumb.find("img").attr("alt")) == null ? void 0 : _e.trim()) || `Gallery #${id}`;
+          const japaneseTitle = $thumb.find(".subtitle").text().trim() || ((_f = $thumb.attr("data-jtitle")) == null ? void 0 : _f.trim()) || ((_g = $thumb.attr("data-subtitle")) == null ? void 0 : _g.trim()) || void 0;
+          const $lazyImg = $thumb.find("img.lazy").first();
+          const $anyImg = $lazyImg.length > 0 ? $lazyImg : $thumb.find("img").first();
+          const rawThumb = $anyImg.attr("data-src") || $anyImg.attr("data-original") || $anyImg.attr("src") || constants_js_1.FALLBACK_COVER_URL;
+          const thumbnailUrl = normalizeImageUrl(rawThumb);
+          const categoryBadge = $thumb.find(".thumb_cat, .cat, .category, a[href*='/category/']").first().text().trim() || ((_h = $thumb.attr("data-category")) == null ? void 0 : _h.trim()) || void 0;
+          let languageBadge = $thumb.find(".lang, .language, a[href*='/language/']").first().text().trim() || ((_i = $thumb.attr("data-language")) == null ? void 0 : _i.trim()) || ((_j = $thumb.attr("data-lang")) == null ? void 0 : _j.trim()) || void 0;
+          if (!languageBadge) {
+            const flagClass = (_k = $thumb.find("[class*='flag']").attr("class")) != null ? _k : "";
+            if (flagClass.includes("en") || flagClass.includes("us") || flagClass.includes("gb")) {
+              languageBadge = "English";
+            } else if (flagClass.includes("jp") || flagClass.includes("ja")) {
+              languageBadge = "Japanese";
+            } else if (flagClass.includes("zh") || flagClass.includes("cn")) {
+              languageBadge = "Chinese";
+            }
+          }
+          const tagSet = /* @__PURE__ */ new Set();
+          const dataTags = $thumb.attr("data-tags");
+          if (dataTags) {
+            const parts = dataTags.split(/[,;]/);
+            for (let i = 0; i < parts.length; i++) {
+              const p = (_l = parts[i]) == null ? void 0 : _l.trim().toLowerCase();
+              if (p)
+                tagSet.add(p);
+            }
+          }
+          $thumb.find(".tag, .tags a, a[href*='/tag/']").each((_i2, tagEl) => {
+            const { name } = extractCleanTagText($, tagEl);
+            if (name) {
+              tagSet.add(name.toLowerCase());
+            }
+          });
+          const bracketTokens = extractTitleBracketTokens(rawTitle);
+          for (let i = 0; i < bracketTokens.length; i++) {
+            const tok = bracketTokens[i];
+            if (tok) {
+              tagSet.add(tok);
+              if (!languageBadge) {
+                if (tok === "english" || tok === "eng")
+                  languageBadge = "English";
+                else if (tok === "japanese" || tok === "jp")
+                  languageBadge = "Japanese";
+                else if (tok === "chinese" || tok === "chi")
+                  languageBadge = "Chinese";
+              }
+            }
+          }
+          if (categoryBadge) {
+            tagSet.add(categoryBadge.toLowerCase());
+          }
+          if (languageBadge) {
+            tagSet.add(languageBadge.toLowerCase());
+          }
+          let serverId;
+          let loadDir;
+          const serverMatch = constants_js_1.SERVER_FROM_URL_REGEX.exec(thumbnailUrl);
+          if (serverMatch) {
+            serverId = serverMatch[1];
+            loadDir = serverMatch[2];
+          }
+          const subtitleParts = [];
+          if (categoryBadge)
+            subtitleParts.push(categoryBadge);
+          if (languageBadge)
+            subtitleParts.push(languageBadge);
+          cards.push({
+            id,
+            title: rawTitle,
+            subtitle: subtitleParts.length > 0 ? subtitleParts.join(" \u2022 ") : void 0,
+            japaneseTitle,
+            thumbnailUrl,
+            webUrl: `${constants_js_1.BASE_URL}/gallery/${id}/`,
+            category: categoryBadge,
+            language: languageBadge,
+            tags: Array.from(tagSet),
+            serverId,
+            loadDir
+          });
+        });
+        return cards;
+      }
+      function mapCardsToItems(cards, prefs, extraExcludedTags, requiredIncludedTags) {
+        var _a;
+        const context = (0, preferences_js_1.compileBlacklistContext)(prefs, extraExcludedTags);
+        const items = [];
+        const hasRequiredIncludes = Array.isArray(requiredIncludedTags) && requiredIncludedTags.length > 0;
+        const normalizedIncludes = hasRequiredIncludes ? requiredIncludedTags.map((t) => t.trim().toLowerCase()).filter(Boolean) : [];
+        for (let i = 0, len = cards.length; i < len; i++) {
+          const card = cards[i];
+          if (!card)
+            continue;
+          if ((0, preferences_js_1.isCardBlacklisted)(card, context)) {
+            continue;
+          }
+          if (normalizedIncludes.length > 0) {
+            const cardTagSet = new Set(card.tags);
+            let matchesAll = true;
+            for (let j = 0; j < normalizedIncludes.length; j++) {
+              const req = normalizedIncludes[j];
+              if (req && !cardTagSet.has(req) && !card.title.toLowerCase().includes(req)) {
+                matchesAll = false;
+                break;
+              }
+            }
+            if (!matchesAll) {
+              continue;
+            }
+          }
+          const display = (0, preferences_js_1.formatGalleryTitleDisplay)(card.title, card.japaneseTitle, prefs);
+          items.push({
+            id: card.id,
+            title: display.title,
+            subtitle: (_a = display.subtitle) != null ? _a : card.subtitle,
+            coverImage: card.thumbnailUrl,
+            webUrl: card.webUrl,
+            rating: constants_js_1.ContentRating.ADULT
+          });
+        }
+        return items;
+      }
+      function extractPageResolutionMeta(html, fallbackId = "1", $loaded) {
+        var _a, _b, _c, _d, _e, _f, _g;
+        const $ = $loaded != null ? $loaded : cheerio.load(html);
+        const $coverImg = $("#cover img, .left_cover img, .thumb img").first();
+        const rawCoverUrl = $coverImg.attr("data-src") || $coverImg.attr("data-original") || $coverImg.attr("src") || "";
+        const coverUrl = rawCoverUrl ? normalizeImageUrl(rawCoverUrl) : "";
+        const urlPartsMatch = constants_js_1.SERVER_FROM_URL_REGEX.exec(coverUrl);
+        const serverPrefixMatch = constants_js_1.SERVER_PREFIX_REGEX.exec(coverUrl || html);
+        const domGalleryId = ((_a = $("#gallery_id").val()) != null ? _a : "").trim();
+        const inlineGalleryIdMatch = /['"]?gallery_id['"]?\s*[:=]\s*['"]?(\d+)['"]?/i.exec(html);
+        const galleryId = domGalleryId || (inlineGalleryIdMatch == null ? void 0 : inlineGalleryIdMatch[1]) || (urlPartsMatch == null ? void 0 : urlPartsMatch[3]) || extractGalleryId(fallbackId) || "1";
+        const domLoadDir = ((_b = $("#load_dir").val()) != null ? _b : "").trim();
+        const inlineLoadDirMatch = /['"]?load_dir['"]?\s*[:=]\s*['"]([^'"]+)['"]/i.exec(html);
+        const loadDir = domLoadDir || ((_c = inlineLoadDirMatch == null ? void 0 : inlineLoadDirMatch[1]) == null ? void 0 : _c.trim()) || (urlPartsMatch == null ? void 0 : urlPartsMatch[2]) || "001";
+        const domLoadId = ((_e = (_d = $("#load_id").val()) != null ? _d : $("#load_server").val()) != null ? _e : "").trim();
+        const inlineLoadIdMatch = /['"]?(?:load_id|load_server|server_id)['"]?\s*[:=]\s*['"]?([^'",;\s}]+)['"]?/i.exec(html);
+        let rawServerId = domLoadId || ((_f = inlineLoadIdMatch == null ? void 0 : inlineLoadIdMatch[1]) == null ? void 0 : _f.trim()) || (urlPartsMatch == null ? void 0 : urlPartsMatch[1]) || (serverPrefixMatch == null ? void 0 : serverPrefixMatch[1]) || constants_js_1.DEFAULT_SERVER_ID;
+        if (/^m\d+$/i.test(rawServerId)) {
+          rawServerId = rawServerId.slice(1);
+        }
+        const serverId = rawServerId || constants_js_1.DEFAULT_SERVER_ID;
+        const extensionMap = parseExtensionMapFromHtml(html, $);
+        const defaultExt = detectExtensionFromUrl(coverUrl);
+        const domPagesVal = ((_g = $("#load_pages").val()) != null ? _g : "").trim();
+        let totalPages = parseInt(domPagesVal, 10);
+        if (Number.isNaN(totalPages) || totalPages <= 0) {
+          const inlinePagesMatch = /['"]?load_pages['"]?\s*[:=]\s*['"]?(\d+)['"]?/i.exec(html);
+          if (inlinePagesMatch == null ? void 0 : inlinePagesMatch[1]) {
+            totalPages = parseInt(inlinePagesMatch[1], 10);
+          }
+        }
+        if (Number.isNaN(totalPages) || totalPages <= 0) {
+          const pagesTextMatch = /Pages\s*:\s*(\d+)/i.exec($.text());
+          if (pagesTextMatch == null ? void 0 : pagesTextMatch[1]) {
+            totalPages = parseInt(pagesTextMatch[1], 10);
+          }
+        }
+        if (Number.isNaN(totalPages) || totalPages <= 0) {
+          const extKeysCount = Object.keys(extensionMap).length;
+          totalPages = extKeysCount > 0 ? extKeysCount : 1;
+        }
+        return {
+          galleryId,
+          loadDir,
+          serverId,
+          totalPages,
+          extensionMap,
+          defaultExt
+        };
+      }
+      function buildChapterPagesFromMeta(meta) {
+        var _a;
+        const count = Math.max(1, meta.totalPages);
+        const pages = new Array(count);
+        const { serverId, loadDir, galleryId, extensionMap, defaultExt } = meta;
+        for (let pageNumber = 1; pageNumber <= count; pageNumber++) {
+          const ext = (_a = extensionMap[String(pageNumber)]) != null ? _a : defaultExt;
+          const url = `https://m${serverId}.imhentai.xxx/${loadDir}/${galleryId}/${pageNumber}.${ext}`;
+          pages[pageNumber - 1] = {
+            url,
+            headers: constants_js_1.PAGE_IMAGE_HEADERS
+          };
+        }
+        return pages;
+      }
+      function parseChapterPagesFromHtml(html, fallbackId = "1") {
+        const meta = extractPageResolutionMeta(html, fallbackId);
+        return buildChapterPagesFromMeta(meta);
+      }
+      function parseGalleryDetail(html, fallbackId = "1") {
+        const $ = cheerio.load(html);
+        const pageMeta = extractPageResolutionMeta(html, fallbackId, $);
+        const id = pageMeta.galleryId || extractGalleryId(fallbackId) || "1";
+        const primaryTitle = $(".right_details h1").first().text().trim() || $("h1").first().text().trim() || `Gallery #${id}`;
+        const subtitleText = $(".right_details .subtitle").first().text().trim() || $(".subtitle").first().text().trim() || "";
+        const additionalTitles = subtitleText.length > 0 ? [subtitleText] : [];
+        const $coverImg = $("#cover img").first();
+        const rawCover = $coverImg.attr("data-src") || $coverImg.attr("data-original") || $coverImg.attr("src") || constants_js_1.FALLBACK_COVER_URL;
+        const coverImage = normalizeImageUrl(rawCover);
+        const artists = [];
+        const groups = [];
+        const parodies = [];
+        const characters = [];
+        const categories = [];
+        const languages = [];
+        const tags = [];
+        const addUnique = (arr, val) => {
+          const clean = val.trim();
+          if (clean && !arr.includes(clean)) {
+            arr.push(clean);
+          }
+        };
+        let totalPages = pageMeta.totalPages;
+        $(".right_details li, ul.galleries_info li, .galleries_info li").each((_idx, liEl) => {
+          const $li = $(liEl);
+          const fullText = $li.text().replace(/\s+/g, " ").trim();
+          if (/Pages\s*:/i.test(fullText)) {
+            const m = /Pages\s*:\s*(\d+)/i.exec(fullText);
+            if (m == null ? void 0 : m[1]) {
+              const parsedPages = parseInt(m[1], 10);
+              if (!Number.isNaN(parsedPages) && parsedPages > 0) {
+                totalPages = parsedPages;
+              }
+            }
+          }
+          const labelText = $li.find(".tags_text, span:first-child").first().text().trim().toLowerCase();
+          let rowNamespace;
+          if (labelText.startsWith("artist") || /^artists?\s*:/i.test(fullText)) {
+            rowNamespace = "artist";
+          } else if (labelText.startsWith("group") || labelText.startsWith("circle") || /^(?:groups?|circles?)\s*:/i.test(fullText)) {
+            rowNamespace = "group";
+          } else if (labelText.startsWith("parod") || /^parod(?:y|ies)\s*:/i.test(fullText)) {
+            rowNamespace = "parody";
+          } else if (labelText.startsWith("character") || /^characters?\s*:/i.test(fullText)) {
+            rowNamespace = "character";
+          } else if (labelText.startsWith("categor") || /^categor(?:y|ies)\s*:/i.test(fullText)) {
+            rowNamespace = "category";
+          } else if (labelText.startsWith("language") || /^languages?\s*:/i.test(fullText)) {
+            rowNamespace = "language";
+          } else if (labelText.startsWith("tag") || /^tags?\s*:/i.test(fullText)) {
+            rowNamespace = "tag";
+          }
+          $li.find("a").each((_aIdx, aEl) => {
+            var _a, _b;
+            const extracted = extractCleanTagText($, aEl);
+            const ns = (_b = (_a = extracted.namespace) != null ? _a : rowNamespace) != null ? _b : "tag";
+            const name = extracted.name;
+            if (!name)
+              return;
+            switch (ns) {
+              case "artist":
+                addUnique(artists, name);
+                break;
+              case "group":
+                addUnique(groups, name);
+                break;
+              case "parody":
+                addUnique(parodies, name);
+                break;
+              case "character":
+                addUnique(characters, name);
+                break;
+              case "category":
+                addUnique(categories, name);
+                break;
+              case "language":
+                addUnique(languages, name);
+                break;
+              default:
+                addUnique(tags, name);
+                break;
+            }
+          });
+        });
+        $('.right_details a.tag, .right_details a[href*="/artist/"], .right_details a[href*="/group/"], .right_details a[href*="/parody/"], .right_details a[href*="/character/"], .right_details a[href*="/category/"], .right_details a[href*="/language/"], .right_details a[href*="/tag/"]').each((_idx, aEl) => {
+          const extracted = extractCleanTagText($, aEl);
+          if (!extracted.name)
+            return;
+          switch (extracted.namespace) {
+            case "artist":
+              addUnique(artists, extracted.name);
+              break;
+            case "group":
+              addUnique(groups, extracted.name);
+              break;
+            case "parody":
+              addUnique(parodies, extracted.name);
+              break;
+            case "character":
+              addUnique(characters, extracted.name);
+              break;
+            case "category":
+              addUnique(categories, extracted.name);
+              break;
+            case "language":
+              addUnique(languages, extracted.name);
+              break;
+            default:
+              addUnique(tags, extracted.name);
+              break;
+          }
+        });
+        return {
+          ...pageMeta,
+          totalPages,
+          id,
+          title: primaryTitle,
+          japaneseTitle: subtitleText || void 0,
+          additionalTitles,
+          coverImage,
+          webUrl: `${constants_js_1.BASE_URL}/gallery/${id}/`,
+          artists,
+          groups,
+          parodies,
+          characters,
+          categories,
+          languages,
+          tags
+        };
+      }
+      function mapDetailToContent(detail, prefs) {
+        var _a, _b;
+        const display = (0, preferences_js_1.formatGalleryTitleDisplay)(detail.title, detail.japaneseTitle, prefs);
+        const credits = detail.artists.map((artist) => ({
+          name: artist,
+          role: "Artist"
+        }));
+        const genres = detail.tags.map((tag) => ({
+          id: tag.toLowerCase().replace(/\s+/g, "-"),
+          title: tag,
+          rating: constants_js_1.ContentRating.ADULT
+        }));
+        const properties = [];
+        if (detail.artists.length > 0) {
+          properties.push({
+            id: "artist",
+            title: "Artist",
+            tags: detail.artists.map((a) => ({
+              id: `artist:${a.toLowerCase()}`,
+              title: a
+            }))
+          });
+        }
+        if (detail.groups.length > 0) {
+          properties.push({
+            id: "group",
+            title: "Circle / Group",
+            tags: detail.groups.map((g) => ({
+              id: `group:${g.toLowerCase()}`,
+              title: g
+            }))
+          });
+        }
+        if (detail.parodies.length > 0) {
+          properties.push({
+            id: "parody",
+            title: "Parody",
+            tags: detail.parodies.map((p) => ({
+              id: `parody:${p.toLowerCase()}`,
+              title: p
+            }))
+          });
+        }
+        if (detail.characters.length > 0) {
+          properties.push({
+            id: "character",
+            title: "Character",
+            tags: detail.characters.map((c) => ({
+              id: `character:${c.toLowerCase()}`,
+              title: c
+            }))
+          });
+        }
+        if (detail.categories.length > 0) {
+          properties.push({
+            id: "category",
+            title: "Category",
+            tags: detail.categories.map((cat) => ({
+              id: `category:${cat.toLowerCase()}`,
+              title: cat
+            }))
+          });
+        }
+        if (detail.languages.length > 0) {
+          properties.push({
+            id: "language",
+            title: "Language",
+            tags: detail.languages.map((lang) => ({
+              id: `language:${lang.toLowerCase()}`,
+              title: lang
+            }))
+          });
+        }
+        const primaryCategory = (_b = (_a = detail.categories[0]) == null ? void 0 : _a.toLowerCase()) != null ? _b : "";
+        const isWestern = primaryCategory.includes("western");
+        const contentType = isWestern ? toolchain_1.ContentType.COMIC : toolchain_1.ContentType.MANGA;
+        const readingMode = isWestern ? toolchain_1.ReadingMode.PAGED_COMIC : toolchain_1.ReadingMode.PAGED_MANGA;
+        const summaryLines = [];
+        if (detail.categories.length > 0) {
+          summaryLines.push(`Category: ${detail.categories.join(", ")}`);
+        }
+        if (detail.parodies.length > 0) {
+          summaryLines.push(`Parody: ${detail.parodies.join(", ")}`);
+        }
+        if (detail.characters.length > 0) {
+          summaryLines.push(`Characters: ${detail.characters.join(", ")}`);
+        }
+        if (detail.groups.length > 0) {
+          summaryLines.push(`Circle / Group: ${detail.groups.join(", ")}`);
+        }
+        if (detail.artists.length > 0) {
+          summaryLines.push(`Artist: ${detail.artists.join(", ")}`);
+        }
+        if (detail.languages.length > 0) {
+          summaryLines.push(`Language: ${detail.languages.join(", ")}`);
+        }
+        summaryLines.push(`Pages: ${detail.totalPages}`);
+        const additionalDetails = {
+          Pages: String(detail.totalPages)
+        };
+        if (detail.categories.length > 0) {
+          additionalDetails.Category = detail.categories.join(", ");
+        }
+        if (detail.languages.length > 0) {
+          additionalDetails.Language = detail.languages.join(", ");
+        }
+        const content = {
+          title: display.title,
+          coverImage: detail.coverImage,
+          webUrl: detail.webUrl,
+          rating: constants_js_1.ContentRating.ADULT,
+          status: toolchain_1.ContentStatus.COMPLETED,
+          contentType,
+          readingMode,
+          summary: summaryLines.join("\n"),
+          additionalDetails,
+          creators: detail.artists
+        };
+        if (display.additionalTitles.length > 0) {
+          content.additionalTitles = display.additionalTitles;
+        }
+        if (credits.length > 0) {
+          content.credits = credits;
+        }
+        if (genres.length > 0) {
+          content.genres = genres;
+        }
+        if (properties.length > 0) {
+          content.properties = properties;
+        }
+        if (detail.characters.length > 0) {
+          content.characters = detail.characters.map((name) => ({
+            name,
+            role: "Character"
+          }));
+        }
+        return content;
+      }
+      function buildSingleGalleryChapter(detail) {
+        var _a;
+        const id = detail.id || "1";
+        const langRaw = ((_a = detail.languages[0]) != null ? _a : "en").toLowerCase();
+        let language = "en";
+        if (langRaw.includes("jap") || langRaw === "jp" || langRaw === "ja") {
+          language = "ja";
+        } else if (langRaw.includes("chin") || langRaw === "zh") {
+          language = "zh";
+        } else if (langRaw.includes("span") || langRaw === "es") {
+          language = "es";
+        } else if (langRaw.includes("fren") || langRaw === "fr") {
+          language = "fr";
+        } else if (langRaw.includes("germ") || langRaw === "de") {
+          language = "de";
+        } else if (langRaw.includes("russ") || langRaw === "ru") {
+          language = "ru";
+        }
+        const pageLabel = detail.totalPages > 0 ? ` (${detail.totalPages} pages)` : "";
+        return {
+          id,
+          index: 0,
+          number: 1,
+          title: `Complete Gallery${pageLabel}`,
+          language,
+          date: /* @__PURE__ */ new Date(),
+          webUrl: `${constants_js_1.BASE_URL}/view/${id}/1/`
+        };
+      }
+      var ImHentaiScraperClient = class {
+        constructor() {
+          __publicField(this, "client");
+          __publicField(this, "galleryCache", /* @__PURE__ */ new Map());
+          const builder = new toolchain_1.NetworkClientBuilder().setRateLimit(constants_js_1.RATE_LIMIT_PER_SECOND, 1).addRequestInterceptor(async (request) => {
+            var _a;
+            request.headers = {
+              ...constants_js_1.DEFAULT_HEADERS,
+              ...(_a = request.headers) != null ? _a : {}
+            };
+            return request;
+          });
+          this.client = builder.build();
+        }
+        configureImageRequest(request) {
+          var _a;
+          return {
+            ...request,
+            headers: {
+              ...(_a = request.headers) != null ? _a : {},
+              ...constants_js_1.PAGE_IMAGE_HEADERS
+            }
+          };
+        }
+        async fetchHtml(url) {
+          var _a;
+          const targetUrl = url.startsWith("http") ? url : `${constants_js_1.BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+          const response = await this.client.get(targetUrl, {
+            headers: constants_js_1.DEFAULT_HEADERS
+          });
+          if (isCloudflareChallenge(response)) {
+            throw new CloudflareError(constants_js_1.CLOUDFLARE_RESOLUTION_URL);
+          }
+          return typeof response.data === "string" ? response.data : String((_a = response.data) != null ? _a : "");
+        }
+        buildFeedUrl(feedKey, page, prefs, sortBy) {
+          const safePage = Math.max(1, page || 1);
+          const prefFlags = (0, preferences_js_1.buildPreferenceQueryFlags)(prefs);
+          switch (feedKey) {
+            case constants_js_1.BROWSE_FEED_KEYS.POPULAR:
+            case constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT:
+              return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&page=${safePage}${prefFlags}`;
+            case constants_js_1.BROWSE_FEED_KEYS.MANGA:
+            case constants_js_1.HOME_SECTION_KEYS.SERIALIZED_MANGA:
+              return `${constants_js_1.BASE_URL}/category/manga/?page=${safePage}`;
+            case constants_js_1.BROWSE_FEED_KEYS.DOUJINSHI:
+            case constants_js_1.HOME_SECTION_KEYS.LATEST_DOUJINSHI:
+              return `${constants_js_1.BASE_URL}/category/doujinshi/?page=${safePage}`;
+            case constants_js_1.BROWSE_FEED_KEYS.WESTERN:
+              return `${constants_js_1.BASE_URL}/category/western/?page=${safePage}`;
+            case "imageset":
+              return `${constants_js_1.BASE_URL}/category/imageset/?page=${safePage}`;
+            case "cosplay":
+              return `${constants_js_1.BASE_URL}/category/cosplay/?page=${safePage}`;
+            case constants_js_1.BROWSE_FEED_KEYS.LATEST:
+            case constants_js_1.BROWSE_FEED_KEYS.DISCOVER:
+            default: {
+              if (sortBy === "popular") {
+                return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&page=${safePage}${prefFlags}`;
+              }
+              return `${constants_js_1.BASE_URL}/?page=${safePage}`;
+            }
+          }
+        }
+        buildSearchUrl(params, prefs) {
+          var _a, _b, _c;
+          const safePage = Math.max(1, (_a = params.page) != null ? _a : 1);
+          const queryParts = [];
+          if (params.query) {
+            queryParts.push(params.query.trim());
+          }
+          if (((_b = params.tags) == null ? void 0 : _b.include) && params.tags.include.length > 0) {
+            for (let i = 0; i < params.tags.include.length; i++) {
+              const tag = (_c = params.tags.include[i]) == null ? void 0 : _c.trim();
+              if (tag) {
+                queryParts.push(tag);
+              }
+            }
+          }
+          const searchKey = encodeURIComponent(queryParts.join(" ").trim());
+          const sortFlag = params.sortBy === "popular" || params.sortBy === "pp" ? "&lt=0&pp=1" : "&lt=1&pp=0";
+          let overrideCategories;
+          if (params.categories) {
+            const { include, exclude } = params.categories;
+            if (include.length > 0) {
+              overrideCategories = include;
+            } else if (exclude.length > 0) {
+              const excludedSet = new Set(exclude.map((c) => (0, preferences_js_1.normalizeCategoryToken)(c)).filter((c) => c !== null));
+              const baseCats = prefs.categories && prefs.categories.length > 0 ? prefs.categories : ["doujinshi", "manga"];
+              overrideCategories = baseCats.filter((c) => !excludedSet.has(c));
+            }
+          }
+          const prefFlags = (0, preferences_js_1.buildPreferenceQueryFlags)(prefs, overrideCategories, params.language);
+          return `${constants_js_1.BASE_URL}/search/?key=${searchKey}${sortFlag}&page=${safePage}${prefFlags}`;
+        }
+        async fetchFeedItems(feedKey, page, prefs, sortBy, sortAscending) {
+          const resolvedPrefs = prefs != null ? prefs : await (0, preferences_js_1.getUserPreferences)();
+          const url = this.buildFeedUrl(feedKey, page, resolvedPrefs, sortBy);
+          const html = await this.fetchHtml(url);
+          const cards = parseGalleryCards(html);
+          const items = mapCardsToItems(cards, resolvedPrefs);
+          if (sortBy === "title") {
+            const dir = sortAscending === false ? -1 : 1;
+            items.sort((a, b) => a.title.localeCompare(b.title) * dir);
+          }
+          const hasNextPage = html.includes(`page=${(page || 1) + 1}`) || html.includes('class="next"') || cards.length >= 20;
+          return {
+            items,
+            isLastPage: !hasNextPage
+          };
+        }
+        async fetchSearchResults(params, prefs) {
+          var _a, _b, _c, _d, _e;
+          const resolvedPrefs = prefs != null ? prefs : await (0, preferences_js_1.getUserPreferences)();
+          const url = this.buildSearchUrl(params, resolvedPrefs);
+          const html = await this.fetchHtml(url);
+          const cards = parseGalleryCards(html);
+          const extraExcludedTags = (_b = (_a = params.tags) == null ? void 0 : _a.exclude) != null ? _b : [];
+          const requiredIncludedTags = (_d = (_c = params.tags) == null ? void 0 : _c.include) != null ? _d : [];
+          const items = mapCardsToItems(cards, resolvedPrefs, extraExcludedTags, requiredIncludedTags);
+          if (params.sortBy === "title") {
+            const dir = params.sortAscending === false ? -1 : 1;
+            items.sort((a, b) => a.title.localeCompare(b.title) * dir);
+          }
+          const page = (_e = params.page) != null ? _e : 1;
+          const hasNextPage = html.includes(`page=${page + 1}`) || html.includes('class="next"') || cards.length >= 20;
+          return {
+            items,
+            isLastPage: !hasNextPage
+          };
+        }
+        async fetchGalleryDetail(contentId) {
+          const id = extractGalleryId(contentId);
+          const now = Date.now();
+          const cached = this.galleryCache.get(id);
+          if (cached && now - cached.timestamp < GALLERY_CACHE_TTL_MS) {
+            return cached.detail;
+          }
+          const url = `${constants_js_1.BASE_URL}/gallery/${id}/`;
+          const html = await this.fetchHtml(url);
+          const detail = parseGalleryDetail(html, id);
+          if (this.galleryCache.size >= GALLERY_CACHE_MAX_ENTRIES) {
+            const oldestKey = this.galleryCache.keys().next().value;
+            if (oldestKey !== void 0) {
+              this.galleryCache.delete(oldestKey);
+            }
+          }
+          this.galleryCache.set(id, { timestamp: now, detail });
+          return detail;
+        }
+        async fetchContent(contentId) {
+          const [detail, prefs] = await Promise.all([
+            this.fetchGalleryDetail(contentId),
+            (0, preferences_js_1.getUserPreferences)()
+          ]);
+          return mapDetailToContent(detail, prefs);
+        }
+        async fetchChapters(contentId) {
+          const id = extractGalleryId(contentId);
+          const cached = this.galleryCache.get(id);
+          if (cached) {
+            return [buildSingleGalleryChapter(cached.detail)];
+          }
+          const detail = await this.fetchGalleryDetail(id);
+          return [buildSingleGalleryChapter(detail)];
+        }
+        async fetchChapterPages(contentId, chapterId) {
+          const id = extractGalleryId(contentId || chapterId);
+          const cached = this.galleryCache.get(id);
+          if (cached && cached.detail.totalPages > 0 && cached.detail.loadDir) {
+            return buildChapterPagesFromMeta(cached.detail);
+          }
+          const detail = await this.fetchGalleryDetail(id);
+          return buildChapterPagesFromMeta(detail);
+        }
+      };
+      exports.ImHentaiScraperClient = ImHentaiScraperClient;
+    }
+  });
+
+  // __temp__/runners/imhentai/index.js
+  var require_imhentai = __commonJS({
+    "__temp__/runners/imhentai/index.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.Target = exports.parseGalleryDetail = exports.parseGalleryCards = exports.parseChapterPagesFromHtml = exports.extractPageResolutionMeta = exports.buildChapterPagesFromMeta = void 0;
+      var toolchain_1 = require_dist();
+      var constants_js_1 = require_constants();
+      var filters_js_1 = require_filters();
+      var preferences_js_1 = require_preferences();
+      var scraper_js_1 = require_scraper();
+      var SPOTLIGHT_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.POPULAR }, "Popular / Top Rated");
+      var LATEST_DOUJINSHI_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.DOUJINSHI }, "Event Doujinshi");
+      var SERIALIZED_MANGA_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.MANGA }, "Serialized Manga");
+      var STATIC_CUSTOM_FEEDS = [
+        {
+          id: constants_js_1.BROWSE_FEED_KEYS.DISCOVER,
+          title: "Discover",
+          content: {
+            page: "home"
+          }
+        },
+        {
+          id: constants_js_1.BROWSE_FEED_KEYS.LATEST,
+          title: "Latest Releases",
+          content: {
+            list: {
+              key: constants_js_1.BROWSE_FEED_KEYS.LATEST
+            }
+          }
+        },
+        {
+          id: constants_js_1.BROWSE_FEED_KEYS.POPULAR,
+          title: "Popular / Top Rated",
+          content: {
+            list: {
+              key: constants_js_1.BROWSE_FEED_KEYS.POPULAR
+            }
+          }
+        },
+        {
+          id: constants_js_1.BROWSE_FEED_KEYS.MANGA,
+          title: "Serialized Manga",
+          content: {
+            list: {
+              key: constants_js_1.BROWSE_FEED_KEYS.MANGA
+            }
+          }
+        },
+        {
+          id: constants_js_1.BROWSE_FEED_KEYS.DOUJINSHI,
+          title: "Event Doujinshi",
+          content: {
+            list: {
+              key: constants_js_1.BROWSE_FEED_KEYS.DOUJINSHI
+            }
+          }
+        },
+        {
+          id: constants_js_1.BROWSE_FEED_KEYS.WESTERN,
+          title: "Western Comics",
+          content: {
+            list: {
+              key: constants_js_1.BROWSE_FEED_KEYS.WESTERN
+            }
+          }
+        }
+      ];
+      var STATIC_HOME_PAGE = {
+        feeds: STATIC_CUSTOM_FEEDS
+      };
+      var _Target = class _Target {
+        constructor(scraper) {
+          __publicField(this, "info", _Target.info);
+          __publicField(this, "scraper");
+          this.scraper = scraper instanceof scraper_js_1.ImHentaiScraperClient ? scraper : new scraper_js_1.ImHentaiScraperClient();
+        }
+        getConfiguration() {
+          return constants_js_1.STATIC_CONFIGURATION;
+        }
+        async willRequestImage(request) {
+          return this.scraper.configureImageRequest(request);
+        }
+        // =========================================================================
+        // HomeProvider
+        // =========================================================================
+        async getHomePage() {
+          return STATIC_HOME_PAGE;
+        }
+        async getItemPage(key, page) {
+          if (page > 1 && key === "home") {
+            return {
+              sections: [],
+              isLastPage: true
+            };
+          }
+          const prefs = await (0, preferences_js_1.getUserPreferences)();
+          const [spotlightRes, doujinshiRes, mangaRes] = await Promise.all([
+            this.scraper.fetchFeedItems(constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT, 1, prefs),
+            this.scraper.fetchFeedItems(constants_js_1.HOME_SECTION_KEYS.LATEST_DOUJINSHI, 1, prefs),
+            this.scraper.fetchFeedItems(constants_js_1.HOME_SECTION_KEYS.SERIALIZED_MANGA, 1, prefs)
+          ]);
+          const sections = [
+            {
+              id: constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT,
+              title: "Spotlight / Popular",
+              subtitle: "Top rated popular releases on IMHentai",
+              style: toolchain_1.PageSectionStyle.BANNER,
+              items: spotlightRes.items,
+              destination: SPOTLIGHT_DESTINATION
+            },
+            {
+              id: constants_js_1.HOME_SECTION_KEYS.LATEST_DOUJINSHI,
+              title: "Latest Doujinshi",
+              subtitle: "Recent event doujinshi releases",
+              style: toolchain_1.PageSectionStyle.DEFAULT,
+              items: doujinshiRes.items,
+              destination: LATEST_DOUJINSHI_DESTINATION
+            },
+            {
+              id: constants_js_1.HOME_SECTION_KEYS.SERIALIZED_MANGA,
+              title: "Serialized Manga",
+              subtitle: "Recent tank\u014Dbon and commercial manga releases",
+              style: toolchain_1.PageSectionStyle.DEFAULT,
+              items: mangaRes.items,
+              destination: SERIALIZED_MANGA_DESTINATION
+            }
+          ];
+          return {
+            sections,
+            isLastPage: true
+          };
+        }
+        async getPageSectionItems(sectionKey, _pageKey) {
+          const prefs = await (0, preferences_js_1.getUserPreferences)();
+          const res = await this.scraper.fetchFeedItems(sectionKey, 1, prefs);
+          return res.items;
+        }
+        // =========================================================================
+        // DirectoryHandler
+        // =========================================================================
+        async getCustomFeeds() {
+          return STATIC_CUSTOM_FEEDS;
+        }
+        async getItemList(request, page) {
+          var _a, _b, _c;
+          const key = (_a = request.key) != null ? _a : constants_js_1.BROWSE_FEED_KEYS.LATEST;
+          const sortBy = (_b = request.sort) == null ? void 0 : _b.key;
+          const sortAscending = (_c = request.sort) == null ? void 0 : _c.ascending;
+          const prefs = await (0, preferences_js_1.getUserPreferences)();
+          return this.scraper.fetchFeedItems(key, page, prefs, sortBy, sortAscending);
+        }
+        // =========================================================================
+        // Searchable & Filterable
+        // =========================================================================
+        async getSearchFilters() {
+          return (0, filters_js_1.getSearchFilters)();
+        }
+        async getSortOptions() {
+          return (0, filters_js_1.getSortOptions)();
+        }
+        async getSearchResults(request, page) {
+          const exploreParams = (0, filters_js_1.mapFiltersToExploreParams)(request.filters, request.sort, request.query, page);
+          const prefs = await (0, preferences_js_1.getUserPreferences)();
+          return this.scraper.fetchSearchResults(exploreParams, prefs);
+        }
+        // =========================================================================
+        // ContentResolver
+        // =========================================================================
+        canResolveUrl(url) {
+          const trimmed = (url != null ? url : "").trim();
+          return constants_js_1.GALLERY_URL_REGEX.test(trimmed);
+        }
+        async resolveUrl(url) {
+          return this.getContent(url);
+        }
+        async getContent(contentId) {
+          return this.scraper.fetchContent(contentId);
+        }
+        // =========================================================================
+        // ChapterProvider
+        // =========================================================================
+        async getChapters(contentId) {
+          return this.scraper.fetchChapters(contentId);
+        }
+        async getChapterPages(contentId, chapterId) {
+          return this.scraper.fetchChapterPages(contentId, chapterId);
+        }
+        // =========================================================================
+        // PreferenceProvider
+        // =========================================================================
+        async getSettingsPage() {
+          return (0, preferences_js_1.buildSettingsForm)();
+        }
+        async getPreferenceMenu() {
+          return (0, preferences_js_1.buildSettingsForm)();
+        }
+        async onFormSubmitted(_id, data) {
+          await (0, preferences_js_1.updateUserPreferences)(data);
+        }
+      };
+      __publicField(_Target, "info", {
+        id: constants_js_1.SOURCE_ID,
+        name: constants_js_1.SOURCE_NAME,
+        version: constants_js_1.SOURCE_VERSION,
+        website: constants_js_1.BASE_URL,
+        rating: constants_js_1.ContentRating.ADULT,
+        thumbnail: constants_js_1.THUMBNAIL_FILENAME,
+        languages: [...constants_js_1.SOURCE_LANGUAGES]
+      });
+      var Target = _Target;
+      exports.default = Target;
+      exports.Target = Target;
+      Target.info.version = 1;
+      var scraper_js_2 = require_scraper();
+      Object.defineProperty(exports, "buildChapterPagesFromMeta", { enumerable: true, get: function() {
+        return scraper_js_2.buildChapterPagesFromMeta;
+      } });
+      Object.defineProperty(exports, "extractPageResolutionMeta", { enumerable: true, get: function() {
+        return scraper_js_2.extractPageResolutionMeta;
+      } });
+      Object.defineProperty(exports, "parseChapterPagesFromHtml", { enumerable: true, get: function() {
+        return scraper_js_2.parseChapterPagesFromHtml;
+      } });
+      Object.defineProperty(exports, "parseGalleryCards", { enumerable: true, get: function() {
+        return scraper_js_2.parseGalleryCards;
+      } });
+      Object.defineProperty(exports, "parseGalleryDetail", { enumerable: true, get: function() {
+        return scraper_js_2.parseGalleryDetail;
+      } });
+    }
+  });
+
+  // __temp__/sources/org.imhentai/index.js
+  var require_org = __commonJS({
+    "__temp__/sources/org.imhentai/index.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      var __importDefault = exports && exports.__importDefault || function(mod) {
+        return mod && mod.__esModule ? mod : { "default": mod };
+      };
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.Target = void 0;
+      var index_js_1 = __importDefault(require_imhentai());
+      exports.Target = index_js_1.default;
+      exports.default = index_js_1.default;
+    }
+  });
+
+  // __temp__/wrappers/org.imhentai.js
+  var require_org_imhentai = __commonJS({
+    "__temp__/wrappers/org.imhentai.js"(exports) {
+      init_Buffer();
+      init_process();
+      var runtime = require_runtime();
+      var sourceModule = require_org();
+      var cls = runtime.resolveDefaultExport(sourceModule);
+      exports.SourceMetadata = { "id": "org.imhentai", "name": "IMHentai", "version": 1, "website": "https://imhentai.xxx", "rating": 2, "thumbnail": "imhentai.png", "languages": ["en", "ja", "zh", "es", "fr", "de", "ru"] };
+      exports.SourceConfiguration = null;
+      exports.bootstrap = function bootstrap() {
+        var args = null;
+        return runtime.instantiateSource(cls, args ? { args } : void 0);
+      };
+    }
+  });
+  return require_org_imhentai();
+})();
