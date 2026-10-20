@@ -840,7 +840,7 @@ var SourcePackage = (() => {
       exports.ContentRating = toolchain_1.ContentRating;
       exports.SOURCE_ID = "org.imhentai";
       exports.SOURCE_NAME = "IMHentai";
-      exports.SOURCE_VERSION = 1;
+      exports.SOURCE_VERSION = 1.1;
       exports.BASE_URL = "https://imhentai.xxx";
       exports.VARIANT_ID = "org.imhentai";
       exports.THUMBNAIL_FILENAME = "imhentai.png";
@@ -1353,6 +1353,8 @@ var SourcePackage = (() => {
       exports.getUserPreferences = getUserPreferences;
       exports.compileBlacklistContext = compileBlacklistContext;
       exports.isCardBlacklisted = isCardBlacklisted;
+      exports.isCardMatchingLanguage = isCardMatchingLanguage;
+      exports.shouldKeepCard = shouldKeepCard;
       exports.buildPreferenceQueryFlags = buildPreferenceQueryFlags;
       exports.formatGalleryTitleDisplay = formatGalleryTitleDisplay;
       exports.buildSettingsForm = buildSettingsForm;
@@ -1455,6 +1457,8 @@ var SourcePackage = (() => {
         return [];
       }
       function normalizeCategoryToken(raw) {
+        if (!raw || typeof raw !== "string")
+          return null;
         const lower = raw.trim().toLowerCase();
         if (!lower)
           return null;
@@ -1683,9 +1687,10 @@ var SourcePackage = (() => {
           }
         }
         const allowedCategoriesSet = new Set(prefs.categories && prefs.categories.length > 0 ? prefs.categories : constants_js_1.DEFAULT_CATEGORIES);
+        const blacklistTerms = Array.from(blacklistSet);
         const compiled = {
           blacklistSet,
-          blacklistSubstrings: Array.from(blacklistSet),
+          blacklistTerms,
           hasExclusions: blacklistSet.size > 0,
           allowedCategoriesSet,
           language: (_d = prefs.language) != null ? _d : constants_js_1.DEFAULT_LANGUAGE,
@@ -1696,12 +1701,12 @@ var SourcePackage = (() => {
         }
         return compiled;
       }
-      function isCardBlacklisted(card, context) {
-        var _a;
-        if (!context.hasExclusions) {
+      function isCardBlacklisted(card, context, extraExcludedTags) {
+        var _a, _b;
+        if (!context.hasExclusions && (!extraExcludedTags || extraExcludedTags.length === 0)) {
           return false;
         }
-        const { blacklistSet } = context;
+        const { blacklistSet, blacklistTerms } = context;
         const tags = card.tags;
         if (Array.isArray(tags)) {
           for (let i = 0, len = tags.length; i < len; i++) {
@@ -1722,7 +1727,109 @@ var SourcePackage = (() => {
             }
           }
         }
+        const title = ((_b = card.title) != null ? _b : "").trim().toLowerCase();
+        if (title) {
+          const tokens = title.split(/[\s,._\-[\]()]+/);
+          for (let i = 0, len = tokens.length; i < len; i++) {
+            const tok = tokens[i];
+            if (tok && blacklistSet.has(tok)) {
+              return true;
+            }
+          }
+          for (let i = 0, len = blacklistTerms.length; i < len; i++) {
+            const term = blacklistTerms[i];
+            if (term && term.includes(" ") && title.includes(term)) {
+              return true;
+            }
+          }
+        }
         return false;
+      }
+      function isCardMatchingLanguage(card, preferredLanguage) {
+        var _a;
+        if (!preferredLanguage || preferredLanguage === "all") {
+          return true;
+        }
+        const targetLang = normalizeLanguageToken(preferredLanguage);
+        if (targetLang === "all") {
+          return true;
+        }
+        if (card.language) {
+          const cardLang = normalizeLanguageToken(card.language);
+          if (cardLang !== targetLang) {
+            return false;
+          }
+        }
+        const tags = card.tags;
+        if (Array.isArray(tags)) {
+          for (let i = 0, len = tags.length; i < len; i++) {
+            const raw = tags[i];
+            if (!raw)
+              continue;
+            const tagLower = raw.trim().toLowerCase();
+            if (targetLang === "en") {
+              if (tagLower === "japanese" || tagLower === "raw" || tagLower === "untranslated" || tagLower === "chinese" || tagLower === "spanish" || tagLower === "french" || tagLower === "german" || tagLower === "russian") {
+                return false;
+              }
+            } else if (targetLang === "jp") {
+              if (tagLower === "english" || tagLower === "chinese" || tagLower === "spanish" || tagLower === "french" || tagLower === "german" || tagLower === "russian") {
+                return false;
+              }
+            } else if (targetLang === "zh") {
+              if (tagLower === "english" || tagLower === "japanese" || tagLower === "spanish" || tagLower === "french" || tagLower === "german" || tagLower === "russian") {
+                return false;
+              }
+            }
+          }
+        }
+        const title = ((_a = card.title) != null ? _a : "").toLowerCase();
+        if (targetLang === "en") {
+          if (title.includes("[japanese]") || title.includes("(japanese)") || title.includes("[jp]") || title.includes("[raw]") || title.includes("(raw)") || title.includes("[chinese]") || title.includes("(chinese)") || title.includes("[chi]") || title.includes("[zh]") || title.includes("[spanish]") || title.includes("[french]") || title.includes("[german]") || title.includes("[russian]")) {
+            return false;
+          }
+        } else if (targetLang === "jp") {
+          if (title.includes("[english]") || title.includes("(english)") || title.includes("[eng]") || title.includes("[chinese]") || title.includes("(chinese)")) {
+            return false;
+          }
+        } else if (targetLang === "zh") {
+          if (title.includes("[english]") || title.includes("(english)") || title.includes("[eng]") || title.includes("[japanese]") || title.includes("(japanese)") || title.includes("[jp]") || title.includes("[raw]")) {
+            return false;
+          }
+        }
+        return true;
+      }
+      function shouldKeepCard(card, context, options) {
+        var _a, _b, _c;
+        const allowedCategories = (_a = options == null ? void 0 : options.overrideCategories) != null ? _a : context.allowedCategoriesSet;
+        if (allowedCategories && allowedCategories.size > 0) {
+          const cardCat = normalizeCategoryToken(card.category);
+          if (cardCat && !allowedCategories.has(cardCat)) {
+            return false;
+          }
+        }
+        if (context.hasExclusions || (options == null ? void 0 : options.extraExcludedTags) && options.extraExcludedTags.length > 0) {
+          if (isCardBlacklisted(card, context, options == null ? void 0 : options.extraExcludedTags)) {
+            return false;
+          }
+        }
+        const activeLanguage = (_b = options == null ? void 0 : options.overrideLanguage) != null ? _b : context.language;
+        if (activeLanguage && activeLanguage !== "all") {
+          if (!isCardMatchingLanguage(card, activeLanguage)) {
+            return false;
+          }
+        }
+        const reqIncludes = options == null ? void 0 : options.requiredIncludedTags;
+        if (Array.isArray(reqIncludes) && reqIncludes.length > 0) {
+          const cardTagSet = new Set(card.tags.map((t) => t.toLowerCase()));
+          const lowerTitle = card.title.toLowerCase();
+          for (let i = 0, len = reqIncludes.length; i < len; i++) {
+            const req = (_c = reqIncludes[i]) == null ? void 0 : _c.trim().toLowerCase();
+            if (req && !cardTagSet.has(req) && !lowerTitle.includes(req)) {
+              return false;
+            }
+          }
+        }
+        return true;
       }
       function buildPreferenceQueryFlags(prefs, overrideCategories, overrideLanguage) {
         var _a, _b;
@@ -2830,6 +2937,152 @@ var SourcePackage = (() => {
     }
   });
 
+  // __temp__/runners/imhentai/api.js
+  var require_api = __commonJS({
+    "__temp__/runners/imhentai/api.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.normalizeImageUrl = normalizeImageUrl;
+      exports.buildCategoryQueryParam = buildCategoryQueryParam;
+      exports.buildLanguageQueryParam = buildLanguageQueryParam;
+      exports.buildPreferenceQueryFlags = buildPreferenceQueryFlags;
+      exports.buildFeedUrl = buildFeedUrl;
+      exports.buildSearchUrl = buildSearchUrl;
+      exports.buildGalleryUrl = buildGalleryUrl;
+      exports.buildReaderUrl = buildReaderUrl;
+      exports.buildImageUrl = buildImageUrl;
+      var constants_js_1 = require_constants();
+      var preferences_js_1 = require_preferences();
+      function normalizeImageUrl(rawUrl) {
+        if (!rawUrl)
+          return constants_js_1.FALLBACK_COVER_URL;
+        const trimmed = rawUrl.trim();
+        if (!trimmed)
+          return constants_js_1.FALLBACK_COVER_URL;
+        if (trimmed.startsWith("https://") || trimmed.startsWith("http://")) {
+          return trimmed.replace(/^http:\/\//i, "https://");
+        }
+        if (trimmed.startsWith("//")) {
+          return `https:${trimmed}`;
+        }
+        if (trimmed.startsWith("/")) {
+          return `${constants_js_1.BASE_URL}${trimmed}`;
+        }
+        return `${constants_js_1.BASE_URL}/${trimmed}`;
+      }
+      function buildCategoryQueryParam(category) {
+        const norm = (0, preferences_js_1.normalizeCategoryToken)(category);
+        return norm ? constants_js_1.CATEGORY_QUERY_MAP[norm] : void 0;
+      }
+      function buildLanguageQueryParam(language) {
+        const lower = language.trim().toLowerCase();
+        return constants_js_1.LANGUAGE_QUERY_MAP[lower];
+      }
+      function buildPreferenceQueryFlags(prefs, overrideCategories, overrideLanguage) {
+        var _a, _b;
+        const parts = [];
+        const activeCategories = Array.isArray(overrideCategories) && overrideCategories.length > 0 ? overrideCategories : prefs.categories && prefs.categories.length > 0 ? prefs.categories : constants_js_1.DEFAULT_CATEGORIES;
+        const addedFlags = /* @__PURE__ */ new Set();
+        for (let i = 0, len = activeCategories.length; i < len; i++) {
+          const cat = (_a = activeCategories[i]) == null ? void 0 : _a.trim().toLowerCase();
+          if (!cat)
+            continue;
+          const param = buildCategoryQueryParam(cat);
+          if (param && !addedFlags.has(param)) {
+            addedFlags.add(param);
+            parts.push(`&${param}=1`);
+          }
+        }
+        const lang = ((_b = overrideLanguage != null ? overrideLanguage : prefs.language) != null ? _b : constants_js_1.DEFAULT_LANGUAGE).trim().toLowerCase();
+        if (lang && lang !== "all") {
+          const langParam = buildLanguageQueryParam(lang);
+          if (langParam) {
+            parts.push(`&${langParam}=1`);
+          }
+        }
+        return parts.join("");
+      }
+      function buildFeedUrl(feedKey, page, prefs, sortBy) {
+        const safePage = Math.max(1, page || 1);
+        const prefFlags = buildPreferenceQueryFlags(prefs);
+        switch (feedKey) {
+          case constants_js_1.BROWSE_FEED_KEYS.POPULAR:
+          case constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT:
+            return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&page=${safePage}${prefFlags}`;
+          case constants_js_1.BROWSE_FEED_KEYS.MANGA:
+          case constants_js_1.HOME_SECTION_KEYS.SERIALIZED_MANGA:
+            return `${constants_js_1.BASE_URL}/category/manga/?page=${safePage}`;
+          case constants_js_1.BROWSE_FEED_KEYS.DOUJINSHI:
+          case constants_js_1.HOME_SECTION_KEYS.LATEST_DOUJINSHI:
+            return `${constants_js_1.BASE_URL}/category/doujinshi/?page=${safePage}`;
+          case constants_js_1.BROWSE_FEED_KEYS.WESTERN:
+            return `${constants_js_1.BASE_URL}/category/western/?page=${safePage}`;
+          case "imageset":
+            return `${constants_js_1.BASE_URL}/category/imageset/?page=${safePage}`;
+          case "cosplay":
+            return `${constants_js_1.BASE_URL}/category/cosplay/?page=${safePage}`;
+          case constants_js_1.BROWSE_FEED_KEYS.LATEST:
+          case constants_js_1.BROWSE_FEED_KEYS.DISCOVER:
+          default: {
+            if (sortBy === "popular") {
+              return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&page=${safePage}${prefFlags}`;
+            }
+            return `${constants_js_1.BASE_URL}/?page=${safePage}`;
+          }
+        }
+      }
+      function buildSearchUrl(params, prefs) {
+        var _a, _b, _c;
+        const safePage = Math.max(1, (_a = params.page) != null ? _a : 1);
+        const queryParts = [];
+        if (params.query) {
+          queryParts.push(params.query.trim());
+        }
+        if (((_b = params.tags) == null ? void 0 : _b.include) && params.tags.include.length > 0) {
+          for (let i = 0; i < params.tags.include.length; i++) {
+            const tag = (_c = params.tags.include[i]) == null ? void 0 : _c.trim();
+            if (tag) {
+              queryParts.push(tag);
+            }
+          }
+        }
+        const searchKey = encodeURIComponent(queryParts.join(" ").trim());
+        const sortFlag = params.sortBy === "popular" || params.sortBy === "pp" ? "&lt=0&pp=1" : "&lt=1&pp=0";
+        let overrideCategories;
+        if (params.categories) {
+          const { include, exclude } = params.categories;
+          if (include.length > 0) {
+            overrideCategories = include;
+          } else if (exclude.length > 0) {
+            const excludedSet = new Set(exclude.map((c) => (0, preferences_js_1.normalizeCategoryToken)(c)).filter((c) => c !== null));
+            const baseCats = prefs.categories && prefs.categories.length > 0 ? prefs.categories : constants_js_1.DEFAULT_CATEGORIES;
+            overrideCategories = baseCats.filter((c) => !excludedSet.has(c));
+          }
+        }
+        const prefFlags = buildPreferenceQueryFlags(prefs, overrideCategories, params.language);
+        return `${constants_js_1.BASE_URL}/search/?key=${searchKey}${sortFlag}&page=${safePage}${prefFlags}`;
+      }
+      function buildGalleryUrl(id) {
+        const cleanId = id.replace(/^\/+|\/+$/g, "");
+        return `${constants_js_1.BASE_URL}/gallery/${cleanId}/`;
+      }
+      function buildReaderUrl(id, page = 1) {
+        const cleanId = id.replace(/^\/+|\/+$/g, "");
+        return `${constants_js_1.BASE_URL}/view/${cleanId}/${page}/`;
+      }
+      function buildImageUrl(serverId, loadDir, galleryId, pageNumber, ext) {
+        const cleanServerId = (serverId || constants_js_1.DEFAULT_SERVER_ID).toString().replace(/^m/i, "").trim() || constants_js_1.DEFAULT_SERVER_ID;
+        const cleanLoadDir = (loadDir || "").toString().replace(/^\/+|\/+$/g, "").trim() || "001";
+        const cleanGalleryId = (galleryId || "1").toString().replace(/^\/+|\/+$/g, "").trim() || "1";
+        const rawExt = (ext || constants_js_1.DEFAULT_IMAGE_EXT).toString().trim().toLowerCase().replace(/^\./, "");
+        const cleanExt = constants_js_1.EXTENSION_CODE_MAP[rawExt] || (rawExt && rawExt !== "undefined" && rawExt !== "null" ? rawExt : constants_js_1.DEFAULT_IMAGE_EXT);
+        return `https://m${cleanServerId}.imhentai.xxx/${cleanLoadDir}/${cleanGalleryId}/${pageNumber}.${cleanExt}`;
+      }
+    }
+  });
+
   // __temp__/runners/imhentai/scraper.js
   var require_scraper = __commonJS({
     "__temp__/runners/imhentai/scraper.js"(exports) {
@@ -2874,13 +3127,14 @@ var SourcePackage = (() => {
         };
       })();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.ImHentaiScraperClient = void 0;
-      exports.normalizeImageUrl = normalizeImageUrl;
+      exports.ImHentaiScraperClient = exports.normalizeImageUrl = void 0;
       exports.extractGalleryId = extractGalleryId;
       exports.detectExtensionFromUrl = detectExtensionFromUrl;
       exports.resolveExtensionToken = resolveExtensionToken;
+      exports.sanitizeImageExtension = sanitizeImageExtension;
       exports.parseExtensionMapFromHtml = parseExtensionMapFromHtml;
       exports.parseGalleryCards = parseGalleryCards;
+      exports.filterAndMapGalleryCards = filterAndMapGalleryCards;
       exports.mapCardsToItems = mapCardsToItems;
       exports.extractPageResolutionMeta = extractPageResolutionMeta;
       exports.buildChapterPagesFromMeta = buildChapterPagesFromMeta;
@@ -2890,6 +3144,7 @@ var SourcePackage = (() => {
       exports.buildSingleGalleryChapter = buildSingleGalleryChapter;
       var toolchain_1 = require_dist();
       var cheerio = __importStar(require_cheerio());
+      var api_js_1 = require_api();
       var constants_js_1 = require_constants();
       var preferences_js_1 = require_preferences();
       var GALLERY_CACHE_TTL_MS = 3e4;
@@ -2905,23 +3160,10 @@ var SourcePackage = (() => {
         const body = typeof response.data === "string" ? response.data : "";
         return cfMitigated.includes("challenge") || server.includes("cloudflare") || body.includes("cf-browser-verification") || body.includes("Just a moment...") || body.includes("Attention Required! | Cloudflare");
       }
-      function normalizeImageUrl(rawUrl) {
-        if (!rawUrl)
-          return constants_js_1.FALLBACK_COVER_URL;
-        const trimmed = rawUrl.trim();
-        if (!trimmed)
-          return constants_js_1.FALLBACK_COVER_URL;
-        if (trimmed.startsWith("https://") || trimmed.startsWith("http://")) {
-          return trimmed.replace(/^http:\/\//i, "https://");
-        }
-        if (trimmed.startsWith("//")) {
-          return `https:${trimmed}`;
-        }
-        if (trimmed.startsWith("/")) {
-          return `${constants_js_1.BASE_URL}${trimmed}`;
-        }
-        return `${constants_js_1.BASE_URL}/${trimmed}`;
-      }
+      var api_js_2 = require_api();
+      Object.defineProperty(exports, "normalizeImageUrl", { enumerable: true, get: function() {
+        return api_js_2.normalizeImageUrl;
+      } });
       function extractGalleryId(input) {
         const trimmed = (input != null ? input : "").trim();
         if (!trimmed)
@@ -2969,6 +3211,15 @@ var SourcePackage = (() => {
           return fallbackExt;
         }
         return (_c = constants_js_1.EXTENSION_CODE_MAP[firstPart]) != null ? _c : fallbackExt;
+      }
+      function sanitizeImageExtension(ext) {
+        var _a;
+        if (typeof ext !== "string")
+          return constants_js_1.DEFAULT_IMAGE_EXT;
+        const clean = ext.trim().toLowerCase().replace(/^\./, "");
+        if (!clean || clean === "undefined" || clean === "null")
+          return constants_js_1.DEFAULT_IMAGE_EXT;
+        return (_a = constants_js_1.EXTENSION_CODE_MAP[clean]) != null ? _a : clean;
       }
       function parseExtensionMapFromHtml(html, $) {
         var _a;
@@ -3090,9 +3341,9 @@ var SourcePackage = (() => {
           const $lazyImg = $thumb.find("img.lazy").first();
           const $anyImg = $lazyImg.length > 0 ? $lazyImg : $thumb.find("img").first();
           const rawThumb = $anyImg.attr("data-src") || $anyImg.attr("data-original") || $anyImg.attr("src") || constants_js_1.FALLBACK_COVER_URL;
-          const thumbnailUrl = normalizeImageUrl(rawThumb);
-          const categoryBadge = $thumb.find(".thumb_cat, .cat, .category, a[href*='/category/']").first().text().trim() || ((_h = $thumb.attr("data-category")) == null ? void 0 : _h.trim()) || void 0;
-          let languageBadge = $thumb.find(".lang, .language, a[href*='/language/']").first().text().trim() || ((_i = $thumb.attr("data-language")) == null ? void 0 : _i.trim()) || ((_j = $thumb.attr("data-lang")) == null ? void 0 : _j.trim()) || void 0;
+          const thumbnailUrl = (0, api_js_1.normalizeImageUrl)(rawThumb);
+          let categoryBadge = $thumb.find(".thumb_cat, .cat, .category, a[href*='/category/']").first().text().trim() || ((_h = $thumb.attr("data-category")) == null ? void 0 : _h.trim()) || void 0;
+          let languageBadge = $thumb.find(".lang, .language, .languages, a[href*='/language/']").first().text().trim() || ((_i = $thumb.attr("data-language")) == null ? void 0 : _i.trim()) || ((_j = $thumb.attr("data-lang")) == null ? void 0 : _j.trim()) || void 0;
           if (!languageBadge) {
             const flagClass = (_k = $thumb.find("[class*='flag']").attr("class")) != null ? _k : "";
             if (flagClass.includes("en") || flagClass.includes("us") || flagClass.includes("gb")) {
@@ -3101,6 +3352,14 @@ var SourcePackage = (() => {
               languageBadge = "Japanese";
             } else if (flagClass.includes("zh") || flagClass.includes("cn")) {
               languageBadge = "Chinese";
+            } else if (flagClass.includes("es")) {
+              languageBadge = "Spanish";
+            } else if (flagClass.includes("fr")) {
+              languageBadge = "French";
+            } else if (flagClass.includes("de")) {
+              languageBadge = "German";
+            } else if (flagClass.includes("ru")) {
+              languageBadge = "Russian";
             }
           }
           const tagSet = /* @__PURE__ */ new Set();
@@ -3127,10 +3386,24 @@ var SourcePackage = (() => {
               if (!languageBadge) {
                 if (tok === "english" || tok === "eng")
                   languageBadge = "English";
-                else if (tok === "japanese" || tok === "jp")
+                else if (tok === "japanese" || tok === "jp" || tok === "ja" || tok === "raw" || tok === "untranslated")
                   languageBadge = "Japanese";
-                else if (tok === "chinese" || tok === "chi")
+                else if (tok === "chinese" || tok === "chi" || tok === "zh")
                   languageBadge = "Chinese";
+                else if (tok === "spanish" || tok === "es")
+                  languageBadge = "Spanish";
+                else if (tok === "french" || tok === "fr")
+                  languageBadge = "French";
+                else if (tok === "german" || tok === "de")
+                  languageBadge = "German";
+                else if (tok === "russian" || tok === "ru")
+                  languageBadge = "Russian";
+              }
+              if (!categoryBadge) {
+                const normCat = (0, preferences_js_1.normalizeCategoryToken)(tok);
+                if (normCat) {
+                  categoryBadge = tok;
+                }
               }
             }
           }
@@ -3168,32 +3441,16 @@ var SourcePackage = (() => {
         });
         return cards;
       }
-      function mapCardsToItems(cards, prefs, extraExcludedTags, requiredIncludedTags) {
+      function filterAndMapGalleryCards(cards, prefs, options) {
         var _a;
-        const context = (0, preferences_js_1.compileBlacklistContext)(prefs, extraExcludedTags);
+        const context = (0, preferences_js_1.compileBlacklistContext)(prefs, options == null ? void 0 : options.extraExcludedTags);
         const items = [];
-        const hasRequiredIncludes = Array.isArray(requiredIncludedTags) && requiredIncludedTags.length > 0;
-        const normalizedIncludes = hasRequiredIncludes ? requiredIncludedTags.map((t) => t.trim().toLowerCase()).filter(Boolean) : [];
         for (let i = 0, len = cards.length; i < len; i++) {
           const card = cards[i];
           if (!card)
             continue;
-          if ((0, preferences_js_1.isCardBlacklisted)(card, context)) {
+          if (!(0, preferences_js_1.shouldKeepCard)(card, context, options)) {
             continue;
-          }
-          if (normalizedIncludes.length > 0) {
-            const cardTagSet = new Set(card.tags);
-            let matchesAll = true;
-            for (let j = 0; j < normalizedIncludes.length; j++) {
-              const req = normalizedIncludes[j];
-              if (req && !cardTagSet.has(req) && !card.title.toLowerCase().includes(req)) {
-                matchesAll = false;
-                break;
-              }
-            }
-            if (!matchesAll) {
-              continue;
-            }
           }
           const display = (0, preferences_js_1.formatGalleryTitleDisplay)(card.title, card.japaneseTitle, prefs);
           items.push({
@@ -3207,12 +3464,20 @@ var SourcePackage = (() => {
         }
         return items;
       }
+      function mapCardsToItems(cards, prefs, extraExcludedTags, requiredIncludedTags, overrideCategories, overrideLanguage) {
+        return filterAndMapGalleryCards(cards, prefs, {
+          extraExcludedTags,
+          requiredIncludedTags,
+          overrideCategories,
+          overrideLanguage
+        });
+      }
       function extractPageResolutionMeta(html, fallbackId = "1", $loaded) {
         var _a, _b, _c, _d, _e, _f, _g;
         const $ = $loaded != null ? $loaded : cheerio.load(html);
         const $coverImg = $("#cover img, .left_cover img, .thumb img").first();
         const rawCoverUrl = $coverImg.attr("data-src") || $coverImg.attr("data-original") || $coverImg.attr("src") || "";
-        const coverUrl = rawCoverUrl ? normalizeImageUrl(rawCoverUrl) : "";
+        const coverUrl = rawCoverUrl ? (0, api_js_1.normalizeImageUrl)(rawCoverUrl) : "";
         const urlPartsMatch = constants_js_1.SERVER_FROM_URL_REGEX.exec(coverUrl);
         const serverPrefixMatch = constants_js_1.SERVER_PREFIX_REGEX.exec(coverUrl || html);
         const domGalleryId = ((_a = $("#gallery_id").val()) != null ? _a : "").trim();
@@ -3229,7 +3494,18 @@ var SourcePackage = (() => {
         }
         const serverId = rawServerId || constants_js_1.DEFAULT_SERVER_ID;
         const extensionMap = parseExtensionMapFromHtml(html, $);
-        const defaultExt = detectExtensionFromUrl(coverUrl);
+        $("img[data-src*='t.'], img[src*='t.']").each((_i, imgEl) => {
+          const src = $(imgEl).attr("data-src") || $(imgEl).attr("src") || "";
+          const m = /\/(\d+)t\.([a-z0-9]+)/i.exec(src);
+          if (m && m[1] && m[2]) {
+            const pNum = m[1];
+            const ext = sanitizeImageExtension(m[2]);
+            if (!extensionMap[pNum]) {
+              extensionMap[pNum] = ext;
+            }
+          }
+        });
+        const defaultExt = sanitizeImageExtension(detectExtensionFromUrl(coverUrl));
         const domPagesVal = ((_g = $("#load_pages").val()) != null ? _g : "").trim();
         let totalPages = parseInt(domPagesVal, 10);
         if (Number.isNaN(totalPages) || totalPages <= 0) {
@@ -3262,9 +3538,11 @@ var SourcePackage = (() => {
         const count = Math.max(1, meta.totalPages);
         const pages = new Array(count);
         const { serverId, loadDir, galleryId, extensionMap, defaultExt } = meta;
+        const safeDefaultExt = sanitizeImageExtension(defaultExt);
         for (let pageNumber = 1; pageNumber <= count; pageNumber++) {
-          const ext = (_a = extensionMap[String(pageNumber)]) != null ? _a : defaultExt;
-          const url = `https://m${serverId}.imhentai.xxx/${loadDir}/${galleryId}/${pageNumber}.${ext}`;
+          const rawExt = (_a = extensionMap[String(pageNumber)]) != null ? _a : safeDefaultExt;
+          const cleanExt = sanitizeImageExtension(rawExt);
+          const url = (0, api_js_1.buildImageUrl)(serverId, loadDir, galleryId, pageNumber, cleanExt);
           pages[pageNumber - 1] = {
             url,
             headers: constants_js_1.PAGE_IMAGE_HEADERS
@@ -3285,7 +3563,7 @@ var SourcePackage = (() => {
         const additionalTitles = subtitleText.length > 0 ? [subtitleText] : [];
         const $coverImg = $("#cover img").first();
         const rawCover = $coverImg.attr("data-src") || $coverImg.attr("data-original") || $coverImg.attr("src") || constants_js_1.FALLBACK_COVER_URL;
-        const coverImage = normalizeImageUrl(rawCover);
+        const coverImage = (0, api_js_1.normalizeImageUrl)(rawCover);
         const artists = [];
         const groups = [];
         const parodies = [];
@@ -3611,7 +3889,7 @@ var SourcePackage = (() => {
         }
         buildFeedUrl(feedKey, page, prefs, sortBy) {
           const safePage = Math.max(1, page || 1);
-          const prefFlags = (0, preferences_js_1.buildPreferenceQueryFlags)(prefs);
+          const prefFlags = (0, api_js_1.buildPreferenceQueryFlags)(prefs);
           switch (feedKey) {
             case constants_js_1.BROWSE_FEED_KEYS.POPULAR:
             case constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT:
@@ -3666,7 +3944,7 @@ var SourcePackage = (() => {
               overrideCategories = baseCats.filter((c) => !excludedSet.has(c));
             }
           }
-          const prefFlags = (0, preferences_js_1.buildPreferenceQueryFlags)(prefs, overrideCategories, params.language);
+          const prefFlags = (0, api_js_1.buildPreferenceQueryFlags)(prefs, overrideCategories, params.language);
           return `${constants_js_1.BASE_URL}/search/?key=${searchKey}${sortFlag}&page=${safePage}${prefFlags}`;
         }
         async fetchFeedItems(feedKey, page, prefs, sortBy, sortAscending) {
@@ -3674,7 +3952,14 @@ var SourcePackage = (() => {
           const url = this.buildFeedUrl(feedKey, page, resolvedPrefs, sortBy);
           const html = await this.fetchHtml(url);
           const cards = parseGalleryCards(html);
-          const items = mapCardsToItems(cards, resolvedPrefs);
+          let overrideCategories;
+          const normFeedCategory = (0, preferences_js_1.normalizeCategoryToken)(feedKey);
+          if (normFeedCategory) {
+            overrideCategories = /* @__PURE__ */ new Set([normFeedCategory]);
+          }
+          const items = filterAndMapGalleryCards(cards, resolvedPrefs, {
+            overrideCategories
+          });
           if (sortBy === "title") {
             const dir = sortAscending === false ? -1 : 1;
             items.sort((a, b) => a.title.localeCompare(b.title) * dir);
@@ -3686,19 +3971,34 @@ var SourcePackage = (() => {
           };
         }
         async fetchSearchResults(params, prefs) {
-          var _a, _b, _c, _d, _e;
+          var _a, _b, _c, _d;
           const resolvedPrefs = prefs != null ? prefs : await (0, preferences_js_1.getUserPreferences)();
           const url = this.buildSearchUrl(params, resolvedPrefs);
           const html = await this.fetchHtml(url);
           const cards = parseGalleryCards(html);
-          const extraExcludedTags = (_b = (_a = params.tags) == null ? void 0 : _a.exclude) != null ? _b : [];
-          const requiredIncludedTags = (_d = (_c = params.tags) == null ? void 0 : _c.include) != null ? _d : [];
-          const items = mapCardsToItems(cards, resolvedPrefs, extraExcludedTags, requiredIncludedTags);
+          let overrideCategories;
+          if (((_a = params.categories) == null ? void 0 : _a.include) && params.categories.include.length > 0) {
+            const set = /* @__PURE__ */ new Set();
+            for (const c of params.categories.include) {
+              const norm = (0, preferences_js_1.normalizeCategoryToken)(c);
+              if (norm)
+                set.add(norm);
+            }
+            if (set.size > 0) {
+              overrideCategories = set;
+            }
+          }
+          const items = filterAndMapGalleryCards(cards, resolvedPrefs, {
+            overrideCategories,
+            overrideLanguage: params.language,
+            extraExcludedTags: (_b = params.tags) == null ? void 0 : _b.exclude,
+            requiredIncludedTags: (_c = params.tags) == null ? void 0 : _c.include
+          });
           if (params.sortBy === "title") {
             const dir = params.sortAscending === false ? -1 : 1;
             items.sort((a, b) => a.title.localeCompare(b.title) * dir);
           }
-          const page = (_e = params.page) != null ? _e : 1;
+          const page = (_d = params.page) != null ? _d : 1;
           const hasNextPage = html.includes(`page=${page + 1}`) || html.includes('class="next"') || cards.length >= 20;
           return {
             items,
@@ -3761,7 +4061,7 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.Target = exports.parseGalleryDetail = exports.parseGalleryCards = exports.parseChapterPagesFromHtml = exports.extractPageResolutionMeta = exports.buildChapterPagesFromMeta = void 0;
+      exports.Target = exports.parseGalleryDetail = exports.parseGalleryCards = exports.parseChapterPagesFromHtml = exports.mapCardsToItems = exports.filterAndMapGalleryCards = exports.extractPageResolutionMeta = exports.buildChapterPagesFromMeta = void 0;
       var toolchain_1 = require_dist();
       var constants_js_1 = require_constants();
       var filters_js_1 = require_filters();
@@ -3831,6 +4131,11 @@ var SourcePackage = (() => {
         constructor(scraper) {
           __publicField(this, "info", _Target.info);
           __publicField(this, "scraper");
+          __publicField(this, "buildChapterPagesFromMeta", scraper_js_1.buildChapterPagesFromMeta);
+          __publicField(this, "extractPageResolutionMeta", scraper_js_1.extractPageResolutionMeta);
+          __publicField(this, "parseGalleryCards", scraper_js_1.parseGalleryCards);
+          __publicField(this, "parseGalleryDetail", scraper_js_1.parseGalleryDetail);
+          __publicField(this, "filterAndMapGalleryCards", scraper_js_1.filterAndMapGalleryCards);
           this.scraper = scraper instanceof scraper_js_1.ImHentaiScraperClient ? scraper : new scraper_js_1.ImHentaiScraperClient();
         }
         getConfiguration() {
@@ -3966,16 +4271,27 @@ var SourcePackage = (() => {
         thumbnail: constants_js_1.THUMBNAIL_FILENAME,
         languages: [...constants_js_1.SOURCE_LANGUAGES]
       });
+      __publicField(_Target, "buildChapterPagesFromMeta", scraper_js_1.buildChapterPagesFromMeta);
+      __publicField(_Target, "extractPageResolutionMeta", scraper_js_1.extractPageResolutionMeta);
+      __publicField(_Target, "parseGalleryCards", scraper_js_1.parseGalleryCards);
+      __publicField(_Target, "parseGalleryDetail", scraper_js_1.parseGalleryDetail);
+      __publicField(_Target, "filterAndMapGalleryCards", scraper_js_1.filterAndMapGalleryCards);
       var Target = _Target;
       exports.default = Target;
       exports.Target = Target;
-      Target.info.version = 1;
+      Target.info.version = constants_js_1.SOURCE_VERSION;
       var scraper_js_2 = require_scraper();
       Object.defineProperty(exports, "buildChapterPagesFromMeta", { enumerable: true, get: function() {
         return scraper_js_2.buildChapterPagesFromMeta;
       } });
       Object.defineProperty(exports, "extractPageResolutionMeta", { enumerable: true, get: function() {
         return scraper_js_2.extractPageResolutionMeta;
+      } });
+      Object.defineProperty(exports, "filterAndMapGalleryCards", { enumerable: true, get: function() {
+        return scraper_js_2.filterAndMapGalleryCards;
+      } });
+      Object.defineProperty(exports, "mapCardsToItems", { enumerable: true, get: function() {
+        return scraper_js_2.mapCardsToItems;
       } });
       Object.defineProperty(exports, "parseChapterPagesFromHtml", { enumerable: true, get: function() {
         return scraper_js_2.parseChapterPagesFromHtml;
@@ -3995,13 +4311,68 @@ var SourcePackage = (() => {
       "use strict";
       init_Buffer();
       init_process();
-      var __importDefault = exports && exports.__importDefault || function(mod) {
-        return mod && mod.__esModule ? mod : { "default": mod };
-      };
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        var desc = Object.getOwnPropertyDescriptor(m, k);
+        if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+          desc = { enumerable: true, get: function() {
+            return m[k];
+          } };
+        }
+        Object.defineProperty(o, k2, desc);
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        o[k2] = m[k];
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
+        Object.defineProperty(o, "default", { enumerable: true, value: v });
+      }) : function(o, v) {
+        o["default"] = v;
+      });
+      var __importStar = exports && exports.__importStar || /* @__PURE__ */ (function() {
+        var ownKeys = function(o) {
+          ownKeys = Object.getOwnPropertyNames || function(o2) {
+            var ar = [];
+            for (var k in o2) if (Object.prototype.hasOwnProperty.call(o2, k)) ar[ar.length] = k;
+            return ar;
+          };
+          return ownKeys(o);
+        };
+        return function(mod) {
+          if (mod && mod.__esModule) return mod;
+          var result = {};
+          if (mod != null) {
+            for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+          }
+          __setModuleDefault(result, mod);
+          return result;
+        };
+      })();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.Target = void 0;
-      var index_js_1 = __importDefault(require_imhentai());
+      exports.parseGalleryDetail = exports.parseGalleryCards = exports.parseChapterPagesFromHtml = exports.mapCardsToItems = exports.filterAndMapGalleryCards = exports.extractPageResolutionMeta = exports.buildChapterPagesFromMeta = exports.Target = void 0;
+      var index_js_1 = __importStar(require_imhentai());
       exports.Target = index_js_1.default;
+      Object.defineProperty(exports, "buildChapterPagesFromMeta", { enumerable: true, get: function() {
+        return index_js_1.buildChapterPagesFromMeta;
+      } });
+      Object.defineProperty(exports, "extractPageResolutionMeta", { enumerable: true, get: function() {
+        return index_js_1.extractPageResolutionMeta;
+      } });
+      Object.defineProperty(exports, "filterAndMapGalleryCards", { enumerable: true, get: function() {
+        return index_js_1.filterAndMapGalleryCards;
+      } });
+      Object.defineProperty(exports, "mapCardsToItems", { enumerable: true, get: function() {
+        return index_js_1.mapCardsToItems;
+      } });
+      Object.defineProperty(exports, "parseChapterPagesFromHtml", { enumerable: true, get: function() {
+        return index_js_1.parseChapterPagesFromHtml;
+      } });
+      Object.defineProperty(exports, "parseGalleryCards", { enumerable: true, get: function() {
+        return index_js_1.parseGalleryCards;
+      } });
+      Object.defineProperty(exports, "parseGalleryDetail", { enumerable: true, get: function() {
+        return index_js_1.parseGalleryDetail;
+      } });
       exports.default = index_js_1.default;
     }
   });
@@ -4014,7 +4385,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_org();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "org.imhentai", "name": "IMHentai", "version": 1, "website": "https://imhentai.xxx", "rating": 2, "thumbnail": "imhentai.png", "languages": ["en", "ja", "zh", "es", "fr", "de", "ru"] };
+      exports.SourceMetadata = { "id": "org.imhentai", "name": "IMHentai", "version": 1.1, "website": "https://imhentai.xxx", "rating": 2, "thumbnail": "imhentai.png", "languages": ["en", "ja", "zh", "es", "fr", "de", "ru"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;
