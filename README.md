@@ -13,4 +13,4 @@ Self created repository hosting custom, high-performance source extensions for t
 Add this repository directly to Suwatte using the source list URL below:
 
 ```text
-[https://asianpockyz.github.io/suwatte-src/sources.json](https://asianpockyz.github.io/suwatte-src/sources.json)
+[https://asianpockyz.github.io/suwatte-src/sources.json]
