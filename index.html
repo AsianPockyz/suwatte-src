@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add to Suwatte</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 90vh;
+      margin: 0;
+      background-color: #0d1117;
+      color: #ffffff;
+      text-align: center;
+      padding: 20px;
+    }
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 32px 24px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    h2 { margin-top: 0; font-size: 1.4rem; }
+    p { color: #8b949e; font-size: 0.95rem; line-height: 1.5; }
+    .btn {
+      display: inline-block;
+      margin-top: 20px;
+      background-color: #238636;
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+  </style>
+  <script>
+    const deepLink = "suwatte://add-source-list?url=https://asianpockyz.github.io/suwatte-src/sources.json";
+    
+    // Automatically trigger deep-link prompt when opened on iOS
+    window.onload = function() {
+      window.location.href = deepLink;
+    };
+  </script>
+</head>
+<body>
+  <div class="card">
+    <h2>Suwatte Source Repository</h2>
+    <p>Opening Suwatte to install this source list...</p>
+    <a class="btn" href="suwatte://add-source-list?url=https://asianpockyz.github.io/suwatte-src/sources.json">
+      Open in Suwatte
+    </a>
+    <p style="margin-top: 24px; font-size: 0.8rem;">
+      If Suwatte didn't open automatically, tap the button above.
+    </p>
+  </div>
+</body>
+</html>
