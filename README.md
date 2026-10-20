@@ -10,6 +10,10 @@ Self created repository hosting custom, high-performance source extensions for t
 
 ## 📲 Quick Install
 
+[![Add to Suwatte](https://img.shields.io/badge/Add%20to-Suwatte-blue?style=for-the-badge&logo=apple)](https://asianpockyz.github.io/suwatte-src/)
+
+> **One-Tap Install:** Tapping the badge on your iPhone or iPad opens Suwatte directly and prompts you to add the repository.
+
 Add this repository directly to Suwatte using the source list URL below:
 
 ```text
