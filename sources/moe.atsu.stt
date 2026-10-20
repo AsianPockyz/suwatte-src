@@ -821,10 +821,10 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.ATSU_SORT_OPTIONS = exports.ATSU_STATUSES = exports.ATSU_FORMATS = exports.ATSU_THEMES = exports.ATSU_GENRES = exports.DEDUPLICATION_MODE_OPTIONS = exports.IMAGE_FORMAT_OPTIONS = exports.DEFAULT_ALLOWED_CONTENT_RATINGS = exports.CONTENT_RATING_OPTIONS = exports.PREF_KEYS = exports.IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.MANGA_URL_REGEX = exports.RATE_LIMIT_PER_SECOND = exports.DEFAULT_PAGE_SIZE = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_FALLBACK_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.CDN_STATIC_BASE = exports.STATIC_BASE = exports.SEARCH_ENDPOINT = exports.API_BASE = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = void 0;
+      exports.ATSU_SORT_OPTIONS = exports.ATSU_STATUSES = exports.ATSU_FORMATS = exports.ATSU_THEMES = exports.ATSU_GENRES = exports.DEDUPLICATION_MODE_OPTIONS = exports.IMAGE_FORMAT_OPTIONS = exports.NSFW_RATINGS_SET = exports.ALL_CONTENT_RATINGS = exports.DEFAULT_ALLOWED_CONTENT_RATINGS = exports.CONTENT_RATING_OPTIONS = exports.PREF_KEYS = exports.PAGE_IMAGE_HEADERS = exports.WEBP_ACCEPT_HEADER = exports.IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.MANGA_URL_REGEX = exports.RATE_LIMIT_PER_SECOND = exports.DEFAULT_PAGE_SIZE = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_FALLBACK_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.CDN_STATIC_BASE = exports.STATIC_BASE = exports.SEARCH_ENDPOINT = exports.API_BASE = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = void 0;
       exports.SOURCE_ID = "moe.atsu";
       exports.SOURCE_NAME = "Atsumaru";
-      exports.SOURCE_VERSION = 2;
+      exports.SOURCE_VERSION = 2.1;
       exports.BASE_URL = "https://atsu.moe";
       exports.API_BASE = "https://atsu.moe/api";
       exports.SEARCH_ENDPOINT = `${exports.BASE_URL}/collections/manga/documents/search`;
@@ -837,18 +837,23 @@ var SourcePackage = (() => {
       exports.DEFAULT_PAGE_SIZE = 40;
       exports.RATE_LIMIT_PER_SECOND = 2;
       exports.MANGA_URL_REGEX = /^https?:\/\/(?:www\.)?atsu\.moe\/manga\/([^/?#]+)/i;
-      exports.DEFAULT_HEADERS = {
+      exports.DEFAULT_HEADERS = Object.freeze({
         Referer: exports.REFERER_URL,
         Origin: exports.ORIGIN_URL,
         Accept: "application/json, text/plain, */*",
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1"
-      };
-      exports.IMAGE_HEADERS = {
+      });
+      exports.IMAGE_HEADERS = Object.freeze({
         Referer: exports.REFERER_URL,
         Origin: exports.ORIGIN_URL,
         Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
-      };
+      });
+      exports.WEBP_ACCEPT_HEADER = "image/webp,image/apng,image/*,*/*;q=0.8";
+      exports.PAGE_IMAGE_HEADERS = Object.freeze({
+        Referer: exports.REFERER_URL,
+        Origin: exports.ORIGIN_URL
+      });
       exports.PREF_KEYS = {
         IMAGE_FORMAT: "atsu_pref_image_format",
         DEDUPLICATE_CHAPTERS: "atsu_pref_deduplicate_chapters",
@@ -864,10 +869,20 @@ var SourcePackage = (() => {
         { id: "Erotica", title: "Erotica / Mature" },
         { id: "Adult", title: "Adult / Pornographic (18+)" }
       ];
-      exports.DEFAULT_ALLOWED_CONTENT_RATINGS = [
+      exports.DEFAULT_ALLOWED_CONTENT_RATINGS = Object.freeze([
         "Safe",
         "Suggestive"
-      ];
+      ]);
+      exports.ALL_CONTENT_RATINGS = Object.freeze([
+        "Safe",
+        "Suggestive",
+        "Erotica",
+        "Adult"
+      ]);
+      exports.NSFW_RATINGS_SET = /* @__PURE__ */ new Set([
+        "Erotica",
+        "Adult"
+      ]);
       exports.IMAGE_FORMAT_OPTIONS = [
         { id: "webp", title: "WebP (Bandwidth / Battery Saving)" },
         { id: "original", title: "Original / AVIF (Maximum Resolution)" }
@@ -1009,20 +1024,42 @@ var SourcePackage = (() => {
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.AtsuPreferenceProvider = void 0;
+      exports.hasNsfwRating = hasNsfwRating;
+      exports.invalidatePreferencesCache = invalidatePreferencesCache;
       exports.parseStringList = parseStringList;
+      exports.parseScanlatorWhitelist = parseScanlatorWhitelist;
+      exports.getUserPreferences = getUserPreferences;
       exports.getImageFormatPreference = getImageFormatPreference;
       exports.getDeduplicateChaptersPreference = getDeduplicateChaptersPreference;
-      exports.parseScanlatorWhitelist = parseScanlatorWhitelist;
       exports.getScanlatorWhitelistPreference = getScanlatorWhitelistPreference;
       exports.getContentRatingsPreference = getContentRatingsPreference;
       exports.getExcludedGenresPreference = getExcludedGenresPreference;
       exports.getExcludedTagsPreference = getExcludedTagsPreference;
       exports.getShowNsfwPreference = getShowNsfwPreference;
-      exports.getUserPreferences = getUserPreferences;
       exports.buildSettingsForm = buildSettingsForm;
       exports.updateUserPreferences = updateUserPreferences;
       var toolchain_1 = require_dist();
       var constants_js_1 = require_constants();
+      var UI_IMAGE_FORMAT_OPTIONS = constants_js_1.IMAGE_FORMAT_OPTIONS.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      var UI_DEDUPLICATION_MODE_OPTIONS = constants_js_1.DEDUPLICATION_MODE_OPTIONS.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      var UI_CONTENT_RATING_OPTIONS = constants_js_1.CONTENT_RATING_OPTIONS.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      var UI_GENRE_OPTIONS = constants_js_1.ATSU_GENRES.map((g) => ({
+        id: g.id,
+        title: g.title
+      }));
+      var UI_THEME_OPTIONS = constants_js_1.ATSU_THEMES.map((t) => ({
+        id: t.id,
+        title: t.title
+      }));
       var memoryPreferences = {
         imageFormat: "webp",
         deduplicateChapters: true,
@@ -1032,166 +1069,209 @@ var SourcePackage = (() => {
         excludedGenres: [],
         excludedTags: []
       };
+      var isHydrated = false;
+      var inflightHydration = null;
       function hasObjectStore() {
         return typeof ObjectStore !== "undefined" && ObjectStore !== null;
       }
+      function isRecord(value) {
+        return typeof value === "object" && value !== null && !Array.isArray(value);
+      }
+      function hasNsfwRating(ratings) {
+        for (let i = 0, len = ratings.length; i < len; i++) {
+          const r = ratings[i];
+          if (r !== void 0 && constants_js_1.NSFW_RATINGS_SET.has(r)) {
+            return true;
+          }
+        }
+        return false;
+      }
+      function invalidatePreferencesCache() {
+        isHydrated = false;
+        inflightHydration = null;
+      }
       function parseStringList(raw) {
+        var _a;
         if (!raw)
           return [];
         if (Array.isArray(raw)) {
-          return raw.map((item) => String(item).trim()).filter(Boolean);
-        }
-        if (typeof raw === "object" && raw !== null) {
-          const inc = raw.include;
-          if (Array.isArray(inc)) {
-            return inc.map((item) => String(item).trim()).filter(Boolean);
+          const result = [];
+          for (let i = 0, len = raw.length; i < len; i++) {
+            const trimmed = String(raw[i]).trim();
+            if (trimmed.length > 0) {
+              result.push(trimmed);
+            }
           }
+          return result;
+        }
+        if (isRecord(raw) && Array.isArray(raw.include)) {
+          const inc = raw.include;
+          const result = [];
+          for (let i = 0, len = inc.length; i < len; i++) {
+            const trimmed = String(inc[i]).trim();
+            if (trimmed.length > 0) {
+              result.push(trimmed);
+            }
+          }
+          return result;
         }
         if (typeof raw === "string") {
           const trimmed = raw.trim();
           if (!trimmed)
             return [];
-          if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+          if (trimmed.charCodeAt(0) === 91 && trimmed.charCodeAt(trimmed.length - 1) === 93) {
             try {
               const parsed = JSON.parse(trimmed);
               if (Array.isArray(parsed)) {
-                return parsed.map((item) => String(item).trim()).filter(Boolean);
+                const result2 = [];
+                for (let i = 0, len = parsed.length; i < len; i++) {
+                  const s = String(parsed[i]).trim();
+                  if (s.length > 0) {
+                    result2.push(s);
+                  }
+                }
+                return result2;
               }
             } catch {
             }
           }
-          return trimmed.split(",").map((s) => s.trim()).filter(Boolean);
+          const parts = trimmed.split(",");
+          const result = [];
+          for (let i = 0, len = parts.length; i < len; i++) {
+            const part = (_a = parts[i]) == null ? void 0 : _a.trim();
+            if (part) {
+              result.push(part);
+            }
+          }
+          return result;
         }
         return [];
       }
-      async function getImageFormatPreference() {
-        if (hasObjectStore()) {
-          try {
-            const stored = await ObjectStore.string(constants_js_1.PREF_KEYS.IMAGE_FORMAT);
-            if (stored === "webp" || stored === "original") {
-              memoryPreferences.imageFormat = stored;
-              return stored;
-            }
-          } catch {
-          }
-        }
-        return memoryPreferences.imageFormat;
-      }
-      async function getDeduplicateChaptersPreference() {
-        if (hasObjectStore()) {
-          try {
-            const stored = await ObjectStore.get(constants_js_1.PREF_KEYS.DEDUPLICATE_CHAPTERS);
-            if (typeof stored === "boolean") {
-              memoryPreferences.deduplicateChapters = stored;
-              return stored;
-            }
-            if (typeof stored === "string") {
-              const parsed = stored === "single" || stored === "true";
-              memoryPreferences.deduplicateChapters = parsed;
-              return parsed;
-            }
-          } catch {
-          }
-        }
-        return memoryPreferences.deduplicateChapters;
-      }
       function parseScanlatorWhitelist(raw) {
+        var _a;
         if (!raw)
           return [];
         if (Array.isArray(raw)) {
-          return raw.map((entry) => String(entry).trim()).filter((entry) => entry.length > 0);
-        }
-        return raw.split(",").map((entry) => entry.trim()).filter((entry) => entry.length > 0);
-      }
-      async function getScanlatorWhitelistPreference() {
-        if (hasObjectStore()) {
-          try {
-            const raw = await ObjectStore.get(constants_js_1.PREF_KEYS.SCANLATOR_WHITELIST);
-            if (typeof raw === "string" || Array.isArray(raw)) {
-              const parsed = parseScanlatorWhitelist(raw);
-              memoryPreferences.scanlatorWhitelist = parsed;
-              return parsed;
+          const result2 = [];
+          for (let i = 0, len = raw.length; i < len; i++) {
+            const entry = String(raw[i]).trim();
+            if (entry.length > 0) {
+              result2.push(entry);
             }
-          } catch {
+          }
+          return result2;
+        }
+        const parts = raw.split(",");
+        const result = [];
+        for (let i = 0, len = parts.length; i < len; i++) {
+          const entry = (_a = parts[i]) == null ? void 0 : _a.trim();
+          if (entry) {
+            result.push(entry);
           }
         }
-        return memoryPreferences.scanlatorWhitelist;
+        return result;
       }
-      async function getContentRatingsPreference() {
-        if (hasObjectStore()) {
-          try {
-            const stored = await ObjectStore.get(constants_js_1.PREF_KEYS.CONTENT_RATINGS);
-            const parsed = parseStringList(stored);
-            if (parsed.length > 0) {
-              const normalized = Array.from(new Set(parsed.map((r) => r === "Pornographic" ? "Adult" : r)));
-              memoryPreferences.contentRatings = normalized;
-              return normalized;
-            }
-            const legacyNsfw = await ObjectStore.boolean(constants_js_1.PREF_KEYS.SHOW_NSFW);
-            if (legacyNsfw === true) {
-              const migrated = [
-                "Safe",
-                "Suggestive",
-                "Erotica",
-                "Adult"
-              ];
-              memoryPreferences.contentRatings = migrated;
-              return migrated;
-            }
-          } catch {
+      function normalizeRatingsList(rawList) {
+        const unique = /* @__PURE__ */ new Set();
+        for (let i = 0, len = rawList.length; i < len; i++) {
+          const r = rawList[i];
+          if (r) {
+            unique.add(r === "Pornographic" ? "Adult" : r);
           }
         }
-        return memoryPreferences.contentRatings;
+        return Array.from(unique);
       }
-      async function getExcludedGenresPreference() {
-        if (hasObjectStore()) {
-          try {
-            const stored = await ObjectStore.get(constants_js_1.PREF_KEYS.EXCLUDED_GENRES);
-            const parsed = parseStringList(stored);
-            memoryPreferences.excludedGenres = parsed;
-            return parsed;
-          } catch {
-          }
+      async function hydratePreferencesFromStore() {
+        if (!hasObjectStore()) {
+          isHydrated = true;
+          return memoryPreferences;
         }
-        return memoryPreferences.excludedGenres;
-      }
-      async function getExcludedTagsPreference() {
-        if (hasObjectStore()) {
-          try {
-            const stored = await ObjectStore.get(constants_js_1.PREF_KEYS.EXCLUDED_TAGS);
-            const parsed = parseStringList(stored);
-            memoryPreferences.excludedTags = parsed;
-            return parsed;
-          } catch {
+        try {
+          const [storedFormat, storedDedup, storedWhitelist, storedRatings, storedLegacyNsfw, storedExcludedGenres, storedExcludedTags] = await Promise.all([
+            ObjectStore.string(constants_js_1.PREF_KEYS.IMAGE_FORMAT).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.DEDUPLICATE_CHAPTERS).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.SCANLATOR_WHITELIST).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.CONTENT_RATINGS).catch(() => null),
+            ObjectStore.boolean(constants_js_1.PREF_KEYS.SHOW_NSFW).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.EXCLUDED_GENRES).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.EXCLUDED_TAGS).catch(() => null)
+          ]);
+          const imageFormat = storedFormat === "webp" || storedFormat === "original" ? storedFormat : memoryPreferences.imageFormat;
+          let deduplicateChapters = memoryPreferences.deduplicateChapters;
+          if (typeof storedDedup === "boolean") {
+            deduplicateChapters = storedDedup;
+          } else if (typeof storedDedup === "string") {
+            deduplicateChapters = storedDedup === "single" || storedDedup === "true";
           }
+          let scanlatorWhitelist = memoryPreferences.scanlatorWhitelist;
+          if (typeof storedWhitelist === "string") {
+            scanlatorWhitelist = parseScanlatorWhitelist(storedWhitelist);
+          } else if (Array.isArray(storedWhitelist)) {
+            scanlatorWhitelist = parseStringList(storedWhitelist);
+          }
+          let contentRatings = memoryPreferences.contentRatings;
+          const parsedRatings = parseStringList(storedRatings);
+          if (parsedRatings.length > 0) {
+            contentRatings = normalizeRatingsList(parsedRatings);
+          } else if (storedLegacyNsfw === true) {
+            contentRatings = [...constants_js_1.ALL_CONTENT_RATINGS];
+          }
+          const excludedGenres = storedExcludedGenres !== null && storedExcludedGenres !== void 0 ? parseStringList(storedExcludedGenres) : memoryPreferences.excludedGenres;
+          const excludedTags = storedExcludedTags !== null && storedExcludedTags !== void 0 ? parseStringList(storedExcludedTags) : memoryPreferences.excludedTags;
+          const showNsfw = hasNsfwRating(contentRatings);
+          memoryPreferences = {
+            imageFormat,
+            deduplicateChapters,
+            scanlatorWhitelist,
+            showNsfw,
+            contentRatings,
+            excludedGenres,
+            excludedTags
+          };
+        } catch {
         }
-        return memoryPreferences.excludedTags;
-      }
-      async function getShowNsfwPreference() {
-        const ratings = await getContentRatingsPreference();
-        const allowsNsfw = ratings.some((r) => ["Erotica", "Adult"].includes(r));
-        memoryPreferences.showNsfw = allowsNsfw;
-        return allowsNsfw;
+        isHydrated = true;
+        return memoryPreferences;
       }
       async function getUserPreferences() {
-        const [imageFormat, deduplicateChapters, scanlatorWhitelist, contentRatings, excludedGenres, excludedTags] = await Promise.all([
-          getImageFormatPreference(),
-          getDeduplicateChaptersPreference(),
-          getScanlatorWhitelistPreference(),
-          getContentRatingsPreference(),
-          getExcludedGenresPreference(),
-          getExcludedTagsPreference()
-        ]);
-        const showNsfw = contentRatings.some((r) => ["Erotica", "Adult"].includes(r));
-        return {
-          imageFormat,
-          deduplicateChapters,
-          scanlatorWhitelist,
-          showNsfw,
-          contentRatings,
-          excludedGenres,
-          excludedTags
-        };
+        if (isHydrated) {
+          return memoryPreferences;
+        }
+        if (inflightHydration) {
+          return inflightHydration;
+        }
+        inflightHydration = hydratePreferencesFromStore().finally(() => {
+          inflightHydration = null;
+        });
+        return inflightHydration;
+      }
+      async function getImageFormatPreference() {
+        const prefs = isHydrated ? memoryPreferences : await getUserPreferences();
+        return prefs.imageFormat;
+      }
+      async function getDeduplicateChaptersPreference() {
+        const prefs = isHydrated ? memoryPreferences : await getUserPreferences();
+        return prefs.deduplicateChapters;
+      }
+      async function getScanlatorWhitelistPreference() {
+        const prefs = isHydrated ? memoryPreferences : await getUserPreferences();
+        return prefs.scanlatorWhitelist;
+      }
+      async function getContentRatingsPreference() {
+        const prefs = isHydrated ? memoryPreferences : await getUserPreferences();
+        return prefs.contentRatings;
+      }
+      async function getExcludedGenresPreference() {
+        const prefs = isHydrated ? memoryPreferences : await getUserPreferences();
+        return prefs.excludedGenres;
+      }
+      async function getExcludedTagsPreference() {
+        const prefs = isHydrated ? memoryPreferences : await getUserPreferences();
+        return prefs.excludedTags;
+      }
+      async function getShowNsfwPreference() {
+        const prefs = isHydrated ? memoryPreferences : await getUserPreferences();
+        return prefs.showNsfw;
       }
       async function buildSettingsForm() {
         const prefs = await getUserPreferences();
@@ -1205,10 +1285,7 @@ var SourcePackage = (() => {
                 (0, toolchain_1.UIPicker)({
                   id: constants_js_1.PREF_KEYS.IMAGE_FORMAT,
                   title: "Image Quality / Format",
-                  options: constants_js_1.IMAGE_FORMAT_OPTIONS.map((opt) => ({
-                    id: opt.id,
-                    title: opt.title
-                  })),
+                  options: UI_IMAGE_FORMAT_OPTIONS,
                   currentValue: prefs.imageFormat,
                   defaultValue: "webp"
                 })
@@ -1227,10 +1304,7 @@ var SourcePackage = (() => {
                 (0, toolchain_1.UIPicker)({
                   id: `${constants_js_1.PREF_KEYS.DEDUPLICATE_CHAPTERS}_mode`,
                   title: "Chapter Release Mode",
-                  options: constants_js_1.DEDUPLICATION_MODE_OPTIONS.map((opt) => ({
-                    id: opt.id,
-                    title: opt.title
-                  })),
+                  options: UI_DEDUPLICATION_MODE_OPTIONS,
                   currentValue: prefs.deduplicateChapters ? "single" : "all",
                   defaultValue: "single"
                 }),
@@ -1251,10 +1325,7 @@ var SourcePackage = (() => {
                 (0, toolchain_1.UISelect)({
                   id: constants_js_1.PREF_KEYS.CONTENT_RATINGS,
                   title: "Allowed Content Ratings",
-                  options: constants_js_1.CONTENT_RATING_OPTIONS.map((opt) => ({
-                    id: opt.id,
-                    title: opt.title
-                  })),
+                  options: UI_CONTENT_RATING_OPTIONS,
                   exclude: false,
                   currentValue: { include: prefs.contentRatings, exclude: [] },
                   defaultValue: {
@@ -1271,10 +1342,7 @@ var SourcePackage = (() => {
                 (0, toolchain_1.UISelect)({
                   id: constants_js_1.PREF_KEYS.EXCLUDED_GENRES,
                   title: "Excluded Genres",
-                  options: constants_js_1.ATSU_GENRES.map((g) => ({
-                    id: g.id,
-                    title: g.title
-                  })),
+                  options: UI_GENRE_OPTIONS,
                   exclude: false,
                   currentValue: { include: prefs.excludedGenres, exclude: [] },
                   defaultValue: { include: [], exclude: [] }
@@ -1282,10 +1350,7 @@ var SourcePackage = (() => {
                 (0, toolchain_1.UISelect)({
                   id: constants_js_1.PREF_KEYS.EXCLUDED_TAGS,
                   title: "Excluded Tags & Themes",
-                  options: constants_js_1.ATSU_THEMES.map((t) => ({
-                    id: t.id,
-                    title: t.title
-                  })),
+                  options: UI_THEME_OPTIONS,
                   exclude: false,
                   currentValue: { include: prefs.excludedTags, exclude: [] },
                   defaultValue: { include: [], exclude: [] }
@@ -1296,93 +1361,93 @@ var SourcePackage = (() => {
         };
       }
       async function updateUserPreferences(data) {
-        const raw = data;
-        const rawFormat = raw[constants_js_1.PREF_KEYS.IMAGE_FORMAT];
+        if (!isRecord(data)) {
+          return;
+        }
+        let { imageFormat, deduplicateChapters, scanlatorWhitelist, showNsfw, contentRatings, excludedGenres, excludedTags } = memoryPreferences;
+        const storeAvailable = hasObjectStore();
+        const writeTasks = [];
+        const rawFormat = data[constants_js_1.PREF_KEYS.IMAGE_FORMAT];
         if (typeof rawFormat === "string") {
-          const format = rawFormat === "original" ? "original" : "webp";
-          memoryPreferences.imageFormat = format;
-          if (hasObjectStore()) {
-            try {
-              await ObjectStore.set(constants_js_1.PREF_KEYS.IMAGE_FORMAT, format);
-            } catch {
-            }
+          imageFormat = rawFormat === "original" ? "original" : "webp";
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.IMAGE_FORMAT, imageFormat).catch(() => {
+            }));
           }
         }
         let deduplicate;
-        const rawDedup = raw[constants_js_1.PREF_KEYS.DEDUPLICATE_CHAPTERS];
-        const rawDedupMode = raw[`${constants_js_1.PREF_KEYS.DEDUPLICATE_CHAPTERS}_mode`];
+        const rawDedup = data[constants_js_1.PREF_KEYS.DEDUPLICATE_CHAPTERS];
+        const rawDedupMode = data[`${constants_js_1.PREF_KEYS.DEDUPLICATE_CHAPTERS}_mode`];
         if (typeof rawDedup === "boolean") {
           deduplicate = rawDedup;
         } else if (typeof rawDedupMode === "string") {
           deduplicate = rawDedupMode === "single";
         }
         if (typeof deduplicate === "boolean") {
-          memoryPreferences.deduplicateChapters = deduplicate;
-          if (hasObjectStore()) {
-            try {
-              await ObjectStore.set(constants_js_1.PREF_KEYS.DEDUPLICATE_CHAPTERS, deduplicate);
-            } catch {
-            }
+          deduplicateChapters = deduplicate;
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.DEDUPLICATE_CHAPTERS, deduplicate).catch(() => {
+            }));
           }
         }
-        const rawWhitelist = raw[constants_js_1.PREF_KEYS.SCANLATOR_WHITELIST];
+        const rawWhitelist = data[constants_js_1.PREF_KEYS.SCANLATOR_WHITELIST];
         if (typeof rawWhitelist === "string") {
-          memoryPreferences.scanlatorWhitelist = parseScanlatorWhitelist(rawWhitelist);
-          if (hasObjectStore()) {
-            try {
-              await ObjectStore.set(constants_js_1.PREF_KEYS.SCANLATOR_WHITELIST, rawWhitelist);
-            } catch {
-            }
+          scanlatorWhitelist = parseScanlatorWhitelist(rawWhitelist);
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.SCANLATOR_WHITELIST, rawWhitelist).catch(() => {
+            }));
           }
         }
-        const rawRatings = raw[constants_js_1.PREF_KEYS.CONTENT_RATINGS];
+        const rawRatings = data[constants_js_1.PREF_KEYS.CONTENT_RATINGS];
         if (rawRatings !== void 0 && rawRatings !== null) {
           const rawList = parseStringList(rawRatings);
-          const ratings = Array.from(new Set(rawList.map((r) => r === "Pornographic" ? "Adult" : r)));
-          memoryPreferences.contentRatings = ratings;
-          memoryPreferences.showNsfw = ratings.some((r) => ["Erotica", "Adult"].includes(r));
-          if (hasObjectStore()) {
-            try {
-              await ObjectStore.set(constants_js_1.PREF_KEYS.CONTENT_RATINGS, ratings);
-              await ObjectStore.set(constants_js_1.PREF_KEYS.SHOW_NSFW, memoryPreferences.showNsfw);
-            } catch {
-            }
+          contentRatings = normalizeRatingsList(rawList);
+          showNsfw = hasNsfwRating(contentRatings);
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.CONTENT_RATINGS, contentRatings).catch(() => {
+            }), ObjectStore.set(constants_js_1.PREF_KEYS.SHOW_NSFW, showNsfw).catch(() => {
+            }));
           }
         } else {
-          const rawShowNsfw = raw[constants_js_1.PREF_KEYS.SHOW_NSFW];
+          const rawShowNsfw = data[constants_js_1.PREF_KEYS.SHOW_NSFW];
           if (typeof rawShowNsfw === "boolean") {
-            memoryPreferences.showNsfw = rawShowNsfw;
-            memoryPreferences.contentRatings = rawShowNsfw ? ["Safe", "Suggestive", "Erotica", "Adult"] : ["Safe", "Suggestive"];
-            if (hasObjectStore()) {
-              try {
-                await ObjectStore.set(constants_js_1.PREF_KEYS.SHOW_NSFW, rawShowNsfw);
-                await ObjectStore.set(constants_js_1.PREF_KEYS.CONTENT_RATINGS, memoryPreferences.contentRatings);
-              } catch {
-              }
+            showNsfw = rawShowNsfw;
+            contentRatings = rawShowNsfw ? [...constants_js_1.ALL_CONTENT_RATINGS] : [...constants_js_1.DEFAULT_ALLOWED_CONTENT_RATINGS];
+            if (storeAvailable) {
+              writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.SHOW_NSFW, rawShowNsfw).catch(() => {
+              }), ObjectStore.set(constants_js_1.PREF_KEYS.CONTENT_RATINGS, contentRatings).catch(() => {
+              }));
             }
           }
         }
-        const rawExcludedGenres = raw[constants_js_1.PREF_KEYS.EXCLUDED_GENRES];
+        const rawExcludedGenres = data[constants_js_1.PREF_KEYS.EXCLUDED_GENRES];
         if (rawExcludedGenres !== void 0 && rawExcludedGenres !== null) {
-          const genres = parseStringList(rawExcludedGenres);
-          memoryPreferences.excludedGenres = genres;
-          if (hasObjectStore()) {
-            try {
-              await ObjectStore.set(constants_js_1.PREF_KEYS.EXCLUDED_GENRES, genres);
-            } catch {
-            }
+          excludedGenres = parseStringList(rawExcludedGenres);
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.EXCLUDED_GENRES, excludedGenres).catch(() => {
+            }));
           }
         }
-        const rawExcludedTags = raw[constants_js_1.PREF_KEYS.EXCLUDED_TAGS];
+        const rawExcludedTags = data[constants_js_1.PREF_KEYS.EXCLUDED_TAGS];
         if (rawExcludedTags !== void 0 && rawExcludedTags !== null) {
-          const tags = parseStringList(rawExcludedTags);
-          memoryPreferences.excludedTags = tags;
-          if (hasObjectStore()) {
-            try {
-              await ObjectStore.set(constants_js_1.PREF_KEYS.EXCLUDED_TAGS, tags);
-            } catch {
-            }
+          excludedTags = parseStringList(rawExcludedTags);
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.EXCLUDED_TAGS, excludedTags).catch(() => {
+            }));
           }
+        }
+        memoryPreferences = {
+          imageFormat,
+          deduplicateChapters,
+          scanlatorWhitelist,
+          showNsfw,
+          contentRatings,
+          excludedGenres,
+          excludedTags
+        };
+        isHydrated = true;
+        if (writeTasks.length > 0) {
+          await Promise.all(writeTasks);
         }
       }
       var AtsuPreferenceProvider = class {
@@ -1407,7 +1472,8 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.AtsuApiClient = void 0;
+      exports.hasNsfwRating = exports.AtsuApiClient = void 0;
+      exports.compileFilterContext = compileFilterContext;
       exports.extractMangaId = extractMangaId;
       exports.resolveImageUrl = resolveImageUrl;
       exports.resolveMangaCover = resolveMangaCover;
@@ -1418,16 +1484,96 @@ var SourcePackage = (() => {
       exports.mapReadingMode = mapReadingMode;
       exports.parseTimestampToDate = parseTimestampToDate;
       exports.mapSummaryToItem = mapSummaryToItem;
+      exports.isMangaAllowedWithContext = isMangaAllowedWithContext;
       exports.isMangaAllowed = isMangaAllowed;
       exports.normalizeAndFilterChapters = normalizeAndFilterChapters;
       var toolchain_1 = require_dist();
       var constants_js_1 = require_constants();
       var preferences_js_1 = require_preferences();
+      Object.defineProperty(exports, "hasNsfwRating", { enumerable: true, get: function() {
+        return preferences_js_1.hasNsfwRating;
+      } });
       var DEFAULT_SYNOPSIS_FALLBACK = "No synopsis available for this title.";
       var DEFAULT_SCANLATOR_ID = "atsu-unassigned";
       var DEFAULT_SCANLATOR_NAME = "Atsumaru";
+      var MANGA_CACHE_TTL_MS = 1e4;
+      var MANGA_CACHE_MAX_ENTRIES = 10;
       var GENRE_LOOKUP = new Map(constants_js_1.ATSU_GENRES.map((g) => [g.id, g.title]));
       var THEME_LOOKUP = new Map(constants_js_1.ATSU_THEMES.map((t) => [t.id, t.title]));
+      var ALL_RATINGS_SET = /* @__PURE__ */ new Set([
+        "Safe",
+        "Suggestive",
+        "Erotica",
+        "Pornographic",
+        "Adult"
+      ]);
+      var filterContextCacheStandard = /* @__PURE__ */ new WeakMap();
+      var filterContextCacheNsfwOverride = /* @__PURE__ */ new WeakMap();
+      function buildExclusionSet(rawIds, lookup) {
+        const set = /* @__PURE__ */ new Set();
+        if (!Array.isArray(rawIds) || rawIds.length === 0) {
+          return set;
+        }
+        for (let i = 0, len = rawIds.length; i < len; i++) {
+          const raw = rawIds[i];
+          if (raw === void 0 || raw === null)
+            continue;
+          const id = typeof raw === "string" ? raw.trim() : String(raw).trim();
+          if (!id)
+            continue;
+          set.add(id);
+          const title = lookup.get(id);
+          if (title) {
+            set.add(title);
+            set.add(title.toLowerCase());
+          }
+        }
+        return set;
+      }
+      function compileFilterContext(prefs, allowNsfwOverride = false) {
+        const cache = allowNsfwOverride ? filterContextCacheNsfwOverride : filterContextCacheStandard;
+        const existing = cache.get(prefs);
+        if (existing) {
+          return existing;
+        }
+        const excludedGenreSet = buildExclusionSet(prefs.excludedGenres, GENRE_LOOKUP);
+        const excludedTagSet = buildExclusionSet(prefs.excludedTags, THEME_LOOKUP);
+        let allowedRatingsSet;
+        let allowsSafe;
+        let allowsSuggestive;
+        let allowsErotica;
+        let allowsAdult;
+        if (allowNsfwOverride) {
+          allowedRatingsSet = ALL_RATINGS_SET;
+          allowsSafe = true;
+          allowsSuggestive = true;
+          allowsErotica = true;
+          allowsAdult = true;
+        } else {
+          const rawRatings = Array.isArray(prefs.contentRatings) && prefs.contentRatings.length > 0 ? prefs.contentRatings : constants_js_1.DEFAULT_ALLOWED_CONTENT_RATINGS;
+          const ratingSet = new Set(rawRatings);
+          allowsSafe = ratingSet.has("Safe");
+          allowsSuggestive = ratingSet.has("Suggestive");
+          allowsErotica = ratingSet.has("Erotica");
+          allowsAdult = ratingSet.has("Adult") || ratingSet.has("Pornographic");
+          if (allowsAdult) {
+            ratingSet.add("Adult");
+            ratingSet.add("Pornographic");
+          }
+          allowedRatingsSet = ratingSet;
+        }
+        const compiled = {
+          allowedRatingsSet,
+          excludedGenreSet,
+          excludedTagSet,
+          allowsSafe,
+          allowsSuggestive,
+          allowsErotica,
+          allowsAdult
+        };
+        cache.set(prefs, compiled);
+        return compiled;
+      }
       function isCloudflareBlocked(response) {
         var _a, _b, _c, _d, _e;
         if (response.status !== 403 && response.status !== 503) {
@@ -1489,11 +1635,12 @@ var SourcePackage = (() => {
         if (!value) {
           return fallback;
         }
-        value = value.replace(/^https?:\/\/https?:\/\//i, "https://").replace(/^(https?):\/{3,}/i, "$1://").replace(/^(https?):\/(?!\/)/i, "$1://");
-        if (value.startsWith("//")) {
+        if (value.startsWith("http")) {
+          value = value.replace(/^https?:\/\/https?:\/\//i, "https://").replace(/^(https?):\/{3,}/i, "$1://").replace(/^(https?):\/(?!\/)/i, "$1://");
+        } else if (value.startsWith("//")) {
           value = `https:${value}`;
         }
-        if (/^https?:\/\//i.test(value)) {
+        if (value.startsWith("https://") || value.startsWith("http://") || /^https?:\/\//i.test(value)) {
           const absolute = value.replace(/^http:\/\//i, "https://").replace(/^https:\/\/(?:www\.)?atsu\.moe\/static\//i, `${constants_js_1.CDN_STATIC_BASE}/`);
           const encoded = safeEncodeUrl(absolute);
           return encoded.length >= 10 ? encoded : fallback;
@@ -1526,97 +1673,166 @@ var SourcePackage = (() => {
         return resolved.length >= 10 ? resolved : void 0;
       }
       function mapContentRating(manga) {
-        var _a;
-        const mbRating = ((_a = manga.mbContentRating) != null ? _a : "").toLowerCase();
-        if (manga.isAdult === true || mbRating === "erotica" || mbRating === "pornographic") {
+        if (manga.isAdult === true) {
           return toolchain_1.ContentRating.MATURE;
         }
-        if (mbRating === "suggestive") {
-          return toolchain_1.ContentRating.SUGGESTIVE;
+        const raw = manga.mbContentRating;
+        if (!raw) {
+          return toolchain_1.ContentRating.EVERYONE;
         }
-        return toolchain_1.ContentRating.EVERYONE;
+        switch (raw) {
+          case "Erotica":
+          case "erotica":
+          case "Pornographic":
+          case "pornographic":
+          case "Adult":
+          case "adult":
+            return toolchain_1.ContentRating.MATURE;
+          case "Suggestive":
+          case "suggestive":
+            return toolchain_1.ContentRating.SUGGESTIVE;
+          case "Safe":
+          case "safe":
+            return toolchain_1.ContentRating.EVERYONE;
+          default: {
+            const lower = raw.trim().toLowerCase();
+            if (lower === "erotica" || lower === "pornographic" || lower === "adult") {
+              return toolchain_1.ContentRating.MATURE;
+            }
+            if (lower === "suggestive") {
+              return toolchain_1.ContentRating.SUGGESTIVE;
+            }
+            return toolchain_1.ContentRating.EVERYONE;
+          }
+        }
       }
       function mapContentStatus(status) {
-        const normalized = (status != null ? status : "").trim().toLowerCase();
-        switch (normalized) {
+        if (!status) {
+          return toolchain_1.ContentStatus.UNKNOWN;
+        }
+        switch (status) {
+          case "Ongoing":
           case "ongoing":
             return toolchain_1.ContentStatus.ONGOING;
+          case "Completed":
           case "completed":
             return toolchain_1.ContentStatus.COMPLETED;
+          case "Hiatus":
           case "hiatus":
             return toolchain_1.ContentStatus.HIATUS;
+          case "Canceled":
+          case "Cancelled":
           case "canceled":
           case "cancelled":
             return toolchain_1.ContentStatus.CANCELLED;
-          default:
-            return toolchain_1.ContentStatus.UNKNOWN;
+          default: {
+            const normalized = status.trim().toLowerCase();
+            switch (normalized) {
+              case "ongoing":
+                return toolchain_1.ContentStatus.ONGOING;
+              case "completed":
+                return toolchain_1.ContentStatus.COMPLETED;
+              case "hiatus":
+                return toolchain_1.ContentStatus.HIATUS;
+              case "canceled":
+              case "cancelled":
+                return toolchain_1.ContentStatus.CANCELLED;
+              default:
+                return toolchain_1.ContentStatus.UNKNOWN;
+            }
+          }
         }
       }
       function mapContentType(type, medium) {
-        if ((medium != null ? medium : "").toLowerCase() === "novel") {
+        if (medium && (medium === "Novel" || medium.toLowerCase() === "novel")) {
           return toolchain_1.ContentType.NOVEL;
         }
-        const normalized = (type != null ? type : "").trim().toLowerCase();
-        switch (normalized) {
+        if (!type) {
+          return toolchain_1.ContentType.MANGA;
+        }
+        switch (type) {
+          case "Manwha":
+          case "Manhwa":
           case "manwha":
           case "manhwa":
             return toolchain_1.ContentType.MANHWA;
+          case "Manhua":
           case "manhua":
             return toolchain_1.ContentType.MANHUA;
+          case "OEL":
+          case "Comic":
           case "oel":
           case "comic":
             return toolchain_1.ContentType.COMIC;
+          case "Manga":
           case "manga":
-          default:
             return toolchain_1.ContentType.MANGA;
+          default: {
+            const normalized = type.trim().toLowerCase();
+            switch (normalized) {
+              case "manwha":
+              case "manhwa":
+                return toolchain_1.ContentType.MANHWA;
+              case "manhua":
+                return toolchain_1.ContentType.MANHUA;
+              case "oel":
+              case "comic":
+                return toolchain_1.ContentType.COMIC;
+              default:
+                return toolchain_1.ContentType.MANGA;
+            }
+          }
         }
       }
       function mapReadingMode(type) {
-        const normalized = (type != null ? type : "").trim().toLowerCase();
+        if (!type) {
+          return toolchain_1.ReadingMode.PAGED_MANGA;
+        }
+        if (type === "Manwha" || type === "Manhwa" || type === "Manhua" || type === "manwha" || type === "manhwa" || type === "manhua") {
+          return toolchain_1.ReadingMode.VERTICAL;
+        }
+        const normalized = type.trim().toLowerCase();
         if (normalized === "manwha" || normalized === "manhwa" || normalized === "manhua") {
           return toolchain_1.ReadingMode.VERTICAL;
         }
         return toolchain_1.ReadingMode.PAGED_MANGA;
       }
-      function parseTimestampToDate(rawDate) {
+      function parseTimestampToMs(rawDate) {
         if (rawDate === null || rawDate === void 0) {
-          return void 0;
+          return 0;
         }
-        if (typeof rawDate === "number" && Number.isFinite(rawDate)) {
-          const ms = rawDate < 1e11 ? rawDate * 1e3 : rawDate;
-          const d = new Date(ms);
-          return Number.isNaN(d.getTime()) ? void 0 : d;
+        if (typeof rawDate === "number") {
+          if (!Number.isFinite(rawDate))
+            return 0;
+          return rawDate < 1e11 ? rawDate * 1e3 : rawDate;
         }
-        if (typeof rawDate === "string" && rawDate.trim().length > 0) {
+        if (typeof rawDate === "string" && rawDate.length > 0) {
           const numeric = Number(rawDate);
           if (Number.isFinite(numeric)) {
-            const ms = numeric < 1e11 ? numeric * 1e3 : numeric;
-            const d = new Date(ms);
-            if (!Number.isNaN(d.getTime())) {
-              return d;
-            }
+            return numeric < 1e11 ? numeric * 1e3 : numeric;
           }
-          const parsed = new Date(rawDate);
-          return Number.isNaN(parsed.getTime()) ? void 0 : parsed;
+          const parsed = Date.parse(rawDate);
+          return Number.isNaN(parsed) ? 0 : parsed;
         }
-        return void 0;
+        return 0;
+      }
+      function parseTimestampToDate(rawDate) {
+        const ms = parseTimestampToMs(rawDate);
+        return ms > 0 ? new Date(ms) : void 0;
       }
       function mapSummaryToItem(manga, imageFormat = "webp") {
-        var _a, _b;
-        const id = extractMangaId(manga.id);
+        var _a, _b, _c, _d;
+        const rawId = manga.id;
+        const id = rawId.includes("/") || rawId.startsWith("http") ? extractMangaId(rawId) : rawId.trim();
         const title = (manga.englishTitle || manga.title || "Untitled Series").trim();
         const coverImage = resolveMangaCover(manga, imageFormat);
         const rating = mapContentRating(manga);
-        const subtitleParts = [];
-        if (manga.type) {
-          subtitleParts.push(manga.type === "Manwha" ? "Manhwa" : manga.type);
-        }
-        if (manga.status) {
-          subtitleParts.push(manga.status);
-        }
-        const rawScore = (_a = manga.mbRating) != null ? _a : manga.avgRating;
+        const typeLabel = manga.type === "Manwha" ? "Manhwa" : (_a = manga.type) != null ? _a : void 0;
+        const statusLabel = (_b = manga.status) != null ? _b : void 0;
+        const subtitle = typeLabel && statusLabel ? `${typeLabel} \u2022 ${statusLabel}` : typeLabel || statusLabel || void 0;
+        const rawScore = (_c = manga.mbRating) != null ? _c : manga.avgRating;
         const numericScore = typeof rawScore === "number" && Number.isFinite(rawScore) ? Math.round(rawScore * 100) / 100 : void 0;
-        const rawViews = (_b = manga.views) != null ? _b : manga.popularity;
+        const rawViews = (_d = manga.views) != null ? _d : manga.popularity;
         const numericViews = typeof rawViews === "number" && Number.isFinite(rawViews) ? rawViews : typeof rawViews === "string" && Number.isFinite(Number(rawViews)) ? Number(rawViews) : void 0;
         const item = {
           id,
@@ -1625,8 +1841,8 @@ var SourcePackage = (() => {
           webUrl: `${constants_js_1.BASE_URL}/manga/${encodeURIComponent(id)}`,
           rating
         };
-        if (subtitleParts.length > 0) {
-          item.subtitle = subtitleParts.join(" \u2022 ");
+        if (subtitle) {
+          item.subtitle = subtitle;
         }
         if (numericScore !== void 0 || numericViews !== void 0) {
           item.statistics = {
@@ -1636,90 +1852,120 @@ var SourcePackage = (() => {
         }
         return item;
       }
-      function isMangaAllowed(manga, allowedRatings, excludedGenreSet, excludedTagSet, allowNsfwOverride = false) {
-        if (excludedGenreSet.size > 0) {
-          if (Array.isArray(manga.genreIds)) {
-            for (const id of manga.genreIds) {
-              if (id && excludedGenreSet.has(String(id).trim())) {
-                return false;
-              }
-            }
-          }
-          if (Array.isArray(manga.genres)) {
-            for (const g of manga.genres) {
-              if (typeof g === "string") {
-                if (excludedGenreSet.has(g.trim()))
-                  return false;
-              } else if (g && typeof g === "object") {
-                if (g.id && excludedGenreSet.has(String(g.id).trim()))
-                  return false;
-                if (g.name && excludedGenreSet.has(String(g.name).trim()))
-                  return false;
-              }
-            }
-          }
-        }
-        if (excludedTagSet.size > 0) {
-          if (Array.isArray(manga.tagIds)) {
-            for (const id of manga.tagIds) {
-              if (id && excludedTagSet.has(String(id).trim())) {
-                return false;
-              }
-            }
-          }
-          if (Array.isArray(manga.tags)) {
-            for (const t of manga.tags) {
-              if (typeof t === "string") {
-                if (excludedTagSet.has(t.trim()))
-                  return false;
-              } else if (t && typeof t === "object") {
-                if (t.id && excludedTagSet.has(String(t.id).trim()))
-                  return false;
-                if (t.name && excludedTagSet.has(String(t.name).trim()))
-                  return false;
-              }
-            }
-          }
-        }
-        if (allowNsfwOverride) {
-          return true;
-        }
-        const allowsAdult = allowedRatings.includes("Adult");
-        const allowsErotica = allowedRatings.includes("Erotica");
-        const allowsSuggestive = allowedRatings.includes("Suggestive");
-        const allowsSafe = allowedRatings.includes("Safe");
-        if (manga.isAdult === true && !allowsAdult) {
+      function setHasToken(set, raw) {
+        if (raw === void 0 || raw === null) {
           return false;
         }
-        if (manga.mbContentRating) {
-          const rawRating = manga.mbContentRating.trim().toLowerCase();
-          if (rawRating === "safe" && !allowsSafe) {
+        if (typeof raw === "string") {
+          if (raw.length === 0)
             return false;
+          if (set.has(raw))
+            return true;
+          if (raw.charCodeAt(0) <= 32 || raw.charCodeAt(raw.length - 1) <= 32) {
+            return set.has(raw.trim());
           }
-          if (rawRating === "suggestive" && !allowsSuggestive) {
-            return false;
-          }
-          if (rawRating === "erotica" && !allowsErotica) {
-            return false;
-          }
-          if (rawRating === "pornographic" && !allowsAdult) {
-            return false;
+          return false;
+        }
+        return set.has(String(raw));
+      }
+      function hasBlacklistedIdOrTag(exclusionSet, ids, entries) {
+        if (Array.isArray(ids)) {
+          for (let i = 0, len = ids.length; i < len; i++) {
+            if (setHasToken(exclusionSet, ids[i])) {
+              return true;
+            }
           }
         }
-        const ratingEnum = mapContentRating(manga);
-        if (ratingEnum === toolchain_1.ContentRating.MATURE) {
-          if (!allowsAdult && !allowsErotica) {
+        if (Array.isArray(entries)) {
+          for (let i = 0, len = entries.length; i < len; i++) {
+            const entry = entries[i];
+            if (typeof entry === "string") {
+              if (setHasToken(exclusionSet, entry)) {
+                return true;
+              }
+            } else if (entry && typeof entry === "object") {
+              if (setHasToken(exclusionSet, entry.id) || setHasToken(exclusionSet, entry.name)) {
+                return true;
+              }
+            }
+          }
+        }
+        return false;
+      }
+      function isMangaAllowedWithContext(manga, ctx, allowNsfwOverride = false) {
+        if (!allowNsfwOverride) {
+          if (manga.isAdult === true && !ctx.allowsAdult) {
             return false;
           }
+          const rawRating = manga.mbContentRating;
+          if (rawRating) {
+            switch (rawRating) {
+              case "Safe":
+              case "safe":
+                if (!ctx.allowsSafe)
+                  return false;
+                break;
+              case "Suggestive":
+              case "suggestive":
+                if (!ctx.allowsSuggestive)
+                  return false;
+                break;
+              case "Erotica":
+              case "erotica":
+                if (!ctx.allowsErotica)
+                  return false;
+                break;
+              case "Pornographic":
+              case "pornographic":
+              case "Adult":
+              case "adult":
+                if (!ctx.allowsAdult)
+                  return false;
+                break;
+              default: {
+                const normalized = rawRating.trim().toLowerCase();
+                if (normalized === "safe" && !ctx.allowsSafe)
+                  return false;
+                if (normalized === "suggestive" && !ctx.allowsSuggestive)
+                  return false;
+                if (normalized === "erotica" && !ctx.allowsErotica)
+                  return false;
+                if ((normalized === "pornographic" || normalized === "adult") && !ctx.allowsAdult) {
+                  return false;
+                }
+                break;
+              }
+            }
+          }
+        }
+        if (ctx.excludedGenreSet.size > 0 && hasBlacklistedIdOrTag(ctx.excludedGenreSet, manga.genreIds, manga.genres)) {
+          return false;
+        }
+        if (ctx.excludedTagSet.size > 0 && hasBlacklistedIdOrTag(ctx.excludedTagSet, manga.tagIds, manga.tags)) {
+          return false;
         }
         return true;
+      }
+      function isMangaAllowed(manga, allowedRatings, excludedGenreSet, excludedTagSet, allowNsfwOverride = false) {
+        const ratingSet = allowedRatings instanceof Set ? allowedRatings : new Set(allowedRatings);
+        const ctx = {
+          allowedRatingsSet: ratingSet,
+          excludedGenreSet,
+          excludedTagSet,
+          allowsSafe: ratingSet.has("Safe"),
+          allowsSuggestive: ratingSet.has("Suggestive"),
+          allowsErotica: ratingSet.has("Erotica"),
+          allowsAdult: ratingSet.has("Adult") || ratingSet.has("Pornographic")
+        };
+        return isMangaAllowedWithContext(manga, ctx, allowNsfwOverride);
       }
       function normalizeTagList(entries, idList, lookup) {
         var _a;
         const tags = [];
         const seen = /* @__PURE__ */ new Set();
         if (Array.isArray(entries)) {
-          for (const entry of entries) {
+          for (let i = 0, len = entries.length; i < len; i++) {
+            const entry = entries[i];
             if (typeof entry === "string") {
               const clean = entry.trim();
               if (!clean)
@@ -1748,13 +1994,14 @@ var SourcePackage = (() => {
           }
         }
         if (tags.length === 0 && Array.isArray(idList)) {
-          for (const rawId of idList) {
-            const id = String(rawId).trim();
+          for (let i = 0, len = idList.length; i < len; i++) {
+            const id = String(idList[i]).trim();
             if (!id)
               continue;
             const title = lookup == null ? void 0 : lookup.get(id);
-            if (title && !seen.has(id.toLowerCase())) {
-              seen.add(id.toLowerCase());
+            const key = id.toLowerCase();
+            if (title && !seen.has(key)) {
+              seen.add(key);
               tags.push({ id, title });
             }
           }
@@ -1768,11 +2015,13 @@ var SourcePackage = (() => {
         }
         const credits = [];
         const seen = /* @__PURE__ */ new Set();
-        for (const author of authors) {
+        for (let i = 0, len = authors.length; i < len; i++) {
+          const author = authors[i];
           if (typeof author === "string") {
             const name = author.trim();
-            if (name && !seen.has(name.toLowerCase())) {
-              seen.add(name.toLowerCase());
+            const key = name.toLowerCase();
+            if (name && !seen.has(key)) {
+              seen.add(key);
               credits.push({ name, role: "Author" });
             }
           } else if (author && typeof author === "object" && author.name) {
@@ -1827,38 +2076,83 @@ var SourcePackage = (() => {
         return links;
       }
       function normalizeAndFilterChapters(mangaId, rawChapters, scanlators, options) {
+        var _a, _b, _c, _d, _e;
         if (!Array.isArray(rawChapters) || rawChapters.length === 0) {
           return [];
         }
-        const scanlatorMap = /* @__PURE__ */ new Map();
+        const normalizedWhitelist = [];
+        for (let i = 0, len = options.whitelist.length; i < len; i++) {
+          const entry = (_a = options.whitelist[i]) == null ? void 0 : _a.trim().toLowerCase();
+          if (entry) {
+            normalizedWhitelist.push(entry);
+          }
+        }
+        const computeWhitelistRank = (name) => {
+          if (normalizedWhitelist.length === 0) {
+            return Number.MAX_SAFE_INTEGER;
+          }
+          const lowerName = name.toLowerCase();
+          for (let i = 0, len = normalizedWhitelist.length; i < len; i++) {
+            const target = normalizedWhitelist[i];
+            if (target && lowerName.includes(target)) {
+              return i;
+            }
+          }
+          return Number.MAX_SAFE_INTEGER;
+        };
+        const encodedMangaId = encodeURIComponent(mangaId);
+        const mangaWebUrl = `${constants_js_1.BASE_URL}/manga/${encodedMangaId}`;
+        const buildScanlatorInfo = (id, name) => ({
+          id,
+          name,
+          whitelistRank: computeWhitelistRank(name),
+          provider: {
+            id,
+            name,
+            links: [{ title: name, url: mangaWebUrl }]
+          }
+        });
+        const defaultScanlatorInfo = buildScanlatorInfo(DEFAULT_SCANLATOR_ID, DEFAULT_SCANLATOR_NAME);
+        const scanlatorInfoMap = /* @__PURE__ */ new Map();
         if (Array.isArray(scanlators)) {
-          for (const scan of scanlators) {
+          for (let i = 0, len = scanlators.length; i < len; i++) {
+            const scan = scanlators[i];
             if ((scan == null ? void 0 : scan.id) && (scan == null ? void 0 : scan.name)) {
-              scanlatorMap.set(String(scan.id), String(scan.name).trim());
+              const id = String(scan.id);
+              const name = String(scan.name).trim() || DEFAULT_SCANLATOR_NAME;
+              scanlatorInfoMap.set(id, buildScanlatorInfo(id, name));
             }
           }
         }
-        const normalizedWhitelist = options.whitelist.map((entry) => entry.trim().toLowerCase()).filter(Boolean);
         const getScanlatorInfo = (chapter) => {
-          var _a, _b;
-          const rawId = (_b = (_a = chapter.scanlationMangaId) != null ? _a : chapter.scanId) != null ? _b : "";
-          const resolvedName = rawId && scanlatorMap.get(String(rawId)) || DEFAULT_SCANLATOR_NAME;
-          const id = rawId ? String(rawId) : DEFAULT_SCANLATOR_ID;
-          const lowerName = resolvedName.toLowerCase();
-          let whitelistRank = Number.MAX_SAFE_INTEGER;
-          for (let i = 0; i < normalizedWhitelist.length; i++) {
-            const target = normalizedWhitelist[i];
-            if (target && lowerName.includes(target)) {
-              whitelistRank = i;
-              break;
-            }
+          var _a2;
+          const rawId = (_a2 = chapter.scanlationMangaId) != null ? _a2 : chapter.scanId;
+          if (!rawId) {
+            return defaultScanlatorInfo;
           }
-          return { id, name: resolvedName, whitelistRank };
+          const key = String(rawId);
+          let info = scanlatorInfoMap.get(key);
+          if (!info) {
+            info = buildScanlatorInfo(key, DEFAULT_SCANLATOR_NAME);
+            scanlatorInfoMap.set(key, info);
+          }
+          return info;
+        };
+        const timestampMap = /* @__PURE__ */ new WeakMap();
+        const getTimestampMs = (ch) => {
+          const cached = timestampMap.get(ch);
+          if (cached !== void 0) {
+            return cached;
+          }
+          const ms = parseTimestampToMs(ch.createdAt);
+          timestampMap.set(ch, ms);
+          return ms;
         };
         let selectedChapters;
         if (options.deduplicate) {
           const groupedByNumber = /* @__PURE__ */ new Map();
-          for (const ch of rawChapters) {
+          for (let i = 0, len = rawChapters.length; i < len; i++) {
+            const ch = rawChapters[i];
             if (!ch || !ch.id)
               continue;
             const numKey = typeof ch.number === "number" && Number.isFinite(ch.number) ? String(ch.number) : `id:${ch.id}`;
@@ -1871,69 +2165,79 @@ var SourcePackage = (() => {
           }
           selectedChapters = [];
           for (const candidates of groupedByNumber.values()) {
-            if (candidates.length === 1 && candidates[0]) {
+            if (candidates.length === 1) {
               selectedChapters.push(candidates[0]);
               continue;
             }
-            const sortedCandidates = [...candidates].sort((a, b) => {
-              var _a, _b, _c, _d, _e, _f;
-              const infoA = getScanlatorInfo(a);
-              const infoB = getScanlatorInfo(b);
-              if (infoA.whitelistRank !== infoB.whitelistRank) {
-                return infoA.whitelistRank - infoB.whitelistRank;
+            let best = candidates[0];
+            let bestInfo = getScanlatorInfo(best);
+            let bestPages = (_b = best.pageCount) != null ? _b : 0;
+            let bestDate = getTimestampMs(best);
+            for (let i = 1, len = candidates.length; i < len; i++) {
+              const cand = candidates[i];
+              const candInfo = getScanlatorInfo(cand);
+              if (candInfo.whitelistRank !== bestInfo.whitelistRank) {
+                if (candInfo.whitelistRank < bestInfo.whitelistRank) {
+                  best = cand;
+                  bestInfo = candInfo;
+                  bestPages = (_c = cand.pageCount) != null ? _c : 0;
+                  bestDate = getTimestampMs(cand);
+                }
+                continue;
               }
-              const pagesA = (_a = a.pageCount) != null ? _a : 0;
-              const pagesB = (_b = b.pageCount) != null ? _b : 0;
-              if (pagesA !== pagesB) {
-                return pagesB - pagesA;
+              const candPages = (_d = cand.pageCount) != null ? _d : 0;
+              if (candPages !== bestPages) {
+                if (candPages > bestPages) {
+                  best = cand;
+                  bestInfo = candInfo;
+                  bestPages = candPages;
+                  bestDate = getTimestampMs(cand);
+                }
+                continue;
               }
-              const dateA = (_d = (_c = parseTimestampToDate(a.createdAt)) == null ? void 0 : _c.getTime()) != null ? _d : 0;
-              const dateB = (_f = (_e = parseTimestampToDate(b.createdAt)) == null ? void 0 : _e.getTime()) != null ? _f : 0;
-              return dateB - dateA;
-            });
-            if (sortedCandidates[0]) {
-              selectedChapters.push(sortedCandidates[0]);
+              const candDate = getTimestampMs(cand);
+              if (candDate > bestDate) {
+                best = cand;
+                bestInfo = candInfo;
+                bestPages = candPages;
+                bestDate = candDate;
+              }
             }
+            selectedChapters.push(best);
           }
         } else {
-          selectedChapters = rawChapters.filter((ch) => Boolean(ch && ch.id));
+          selectedChapters = [];
+          for (let i = 0, len = rawChapters.length; i < len; i++) {
+            const ch = rawChapters[i];
+            if (ch && ch.id) {
+              selectedChapters.push(ch);
+            }
+          }
         }
         selectedChapters.sort((a, b) => {
-          var _a, _b, _c, _d;
           const numA = typeof a.number === "number" && Number.isFinite(a.number) ? a.number : -1;
           const numB = typeof b.number === "number" && Number.isFinite(b.number) ? b.number : -1;
           if (numA !== numB) {
             return numB - numA;
           }
-          const dateA = (_b = (_a = parseTimestampToDate(a.createdAt)) == null ? void 0 : _a.getTime()) != null ? _b : 0;
-          const dateB = (_d = (_c = parseTimestampToDate(b.createdAt)) == null ? void 0 : _c.getTime()) != null ? _d : 0;
-          return dateB - dateA;
+          return getTimestampMs(b) - getTimestampMs(a);
         });
-        return selectedChapters.map((ch, idx) => {
-          var _a;
+        const result = new Array(selectedChapters.length);
+        for (let idx = 0, len = selectedChapters.length; idx < len; idx++) {
+          const ch = selectedChapters[idx];
           const scanInfo = getScanlatorInfo(ch);
           const chapterNumber = typeof ch.number === "number" && Number.isFinite(ch.number) && ch.number >= 0 ? ch.number : -1;
-          const rawTitle = ((_a = ch.title) != null ? _a : "").trim();
-          const defaultChapterLabel = chapterNumber >= 0 ? `Chapter ${chapterNumber}` : `Chapter ${idx + 1}`;
-          const displayTitle = rawTitle || defaultChapterLabel;
-          const provider = {
-            id: scanInfo.id,
-            name: scanInfo.name,
-            links: [
-              {
-                title: scanInfo.name,
-                url: `${constants_js_1.BASE_URL}/manga/${encodeURIComponent(mangaId)}`
-              }
-            ]
-          };
+          const rawTitle = ((_e = ch.title) != null ? _e : "").trim();
+          const displayTitle = rawTitle || (chapterNumber >= 0 ? `Chapter ${chapterNumber}` : `Chapter ${idx + 1}`);
+          const chapterIdStr = String(ch.id);
           const chapter = {
-            id: String(ch.id),
+            id: chapterIdStr,
             index: idx,
             number: chapterNumber,
             title: displayTitle,
             language: "en",
-            webUrl: `${constants_js_1.BASE_URL}/read/${encodeURIComponent(mangaId)}/${encodeURIComponent(String(ch.id))}`,
-            providers: [provider],
+            webUrl: `${constants_js_1.BASE_URL}/read/${encodedMangaId}/${encodeURIComponent(chapterIdStr)}`,
+            providers: [scanInfo.provider],
             data: {
               mangaId,
               scanlatorId: scanInfo.id,
@@ -1944,16 +2248,19 @@ var SourcePackage = (() => {
           if (typeof ch.volume === "number" && Number.isFinite(ch.volume) && ch.volume > 0) {
             chapter.volume = ch.volume;
           }
-          const releaseDate = parseTimestampToDate(ch.createdAt);
-          if (releaseDate) {
-            chapter.date = releaseDate;
+          const releaseMs = getTimestampMs(ch);
+          if (releaseMs > 0) {
+            chapter.date = new Date(releaseMs);
           }
-          return chapter;
-        });
+          result[idx] = chapter;
+        }
+        return result;
       }
       var AtsuApiClient = class {
         constructor(client) {
           __publicField(this, "client");
+          __publicField(this, "mangaCache", /* @__PURE__ */ new Map());
+          __publicField(this, "inflightMangaRequests", /* @__PURE__ */ new Map());
           if (client) {
             this.client = client;
             return;
@@ -1981,10 +2288,13 @@ var SourcePackage = (() => {
           this.client = builder.build();
         }
         async getJson(url, params) {
-          const cleanParams = {};
+          let cleanParams;
           if (params) {
             for (const [key, val] of Object.entries(params)) {
               if (val !== void 0 && val !== null && val !== "") {
+                if (!cleanParams) {
+                  cleanParams = {};
+                }
                 cleanParams[key] = val;
               }
             }
@@ -1992,12 +2302,8 @@ var SourcePackage = (() => {
           let response;
           try {
             response = await this.client.get(url, {
-              params: Object.keys(cleanParams).length > 0 ? cleanParams : void 0,
-              headers: {
-                ...constants_js_1.DEFAULT_HEADERS,
-                Referer: constants_js_1.REFERER_URL,
-                Origin: constants_js_1.ORIGIN_URL
-              }
+              params: cleanParams,
+              headers: constants_js_1.DEFAULT_HEADERS
             });
           } catch (error) {
             if (error instanceof CloudflareError) {
@@ -2029,30 +2335,46 @@ var SourcePackage = (() => {
           }
         }
         /**
-         * Evaluates and filters raw manga summaries against content maturity ratings and exclusion preferences.
+         * Evaluates and filters raw manga summaries against content maturity ratings and exclusion preferences
+         * using memoized O(1) Set lookups and early-exit evaluation.
          */
         filterSummaryItems(items, prefs, allowNsfwOverride = false) {
-          var _a, _b, _c;
-          const excludedGenreSet = new Set(((_a = prefs.excludedGenres) != null ? _a : []).map((id) => String(id).trim()).filter(Boolean));
-          for (const id of Array.from(excludedGenreSet)) {
-            const name = GENRE_LOOKUP.get(id);
-            if (name)
-              excludedGenreSet.add(name);
+          if (!Array.isArray(items) || items.length === 0) {
+            return [];
           }
-          const excludedTagSet = new Set(((_b = prefs.excludedTags) != null ? _b : []).map((id) => String(id).trim()).filter(Boolean));
-          for (const id of Array.from(excludedTagSet)) {
-            const name = THEME_LOOKUP.get(id);
-            if (name)
-              excludedTagSet.add(name);
+          const ctx = compileFilterContext(prefs, allowNsfwOverride);
+          const result = [];
+          for (let i = 0, len = items.length; i < len; i++) {
+            const item = items[i];
+            if (item && isMangaAllowedWithContext(item, ctx, allowNsfwOverride)) {
+              result.push(item);
+            }
           }
-          const allowedRatings = allowNsfwOverride ? ["Safe", "Suggestive", "Erotica", "Pornographic", "Adult"] : (_c = prefs.contentRatings) != null ? _c : ["Safe", "Suggestive"];
-          return items.filter((item) => isMangaAllowed(item, allowedRatings, excludedGenreSet, excludedTagSet, allowNsfwOverride));
+          return result;
+        }
+        /**
+         * Single-pass filter and Item mapper that eliminates intermediate array allocations.
+         */
+        filterAndMapSummaries(rawDocs, prefs, allowNsfwOverride) {
+          const ctx = compileFilterContext(prefs, allowNsfwOverride);
+          const imageFormat = prefs.imageFormat;
+          const items = [];
+          for (let i = 0, len = rawDocs.length; i < len; i++) {
+            const doc = rawDocs[i];
+            if (!doc || !doc.id)
+              continue;
+            if (isMangaAllowedWithContext(doc, ctx, allowNsfwOverride)) {
+              items.push(mapSummaryToItem(doc, imageFormat));
+            }
+          }
+          return items;
         }
         /**
          * Builds the Typesense `filter_by` expression used by Atsu.moe's `/collections/manga/documents/search`.
+         * Uses O(1) Set lookups and comma-separated server-side filter lists to reduce raw network payloads.
          */
         buildTypesenseFilterBy(params, prefsOrShowNsfw) {
-          var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
+          var _a, _b, _c, _d, _e, _f, _g, _h, _i;
           const clauses = [
             "hidden:!=true",
             "medium:!=[`Novel`]",
@@ -2063,66 +2385,89 @@ var SourcePackage = (() => {
             deduplicateChapters: true,
             scanlatorWhitelist: [],
             showNsfw: Boolean(prefsOrShowNsfw),
-            contentRatings: prefsOrShowNsfw ? ["Safe", "Suggestive", "Erotica", "Adult"] : ["Safe", "Suggestive"],
+            contentRatings: prefsOrShowNsfw ? [...constants_js_1.ALL_CONTENT_RATINGS] : [...constants_js_1.DEFAULT_ALLOWED_CONTENT_RATINGS],
             excludedGenres: [],
             excludedTags: []
           };
           const isSearchNsfwOverride = params.includeNsfw === true;
-          const allowedRatings = isSearchNsfwOverride ? ["Safe", "Suggestive", "Erotica", "Adult"] : (_a = prefs.contentRatings) != null ? _a : ["Safe", "Suggestive"];
-          if (!allowedRatings.includes("Adult")) {
+          const ctx = compileFilterContext(prefs, isSearchNsfwOverride);
+          if (!ctx.allowsAdult) {
             clauses.push("isAdult:=false");
           }
           const mbRatings = [];
-          if (allowedRatings.includes("Safe"))
-            mbRatings.push("Safe");
-          if (allowedRatings.includes("Suggestive"))
-            mbRatings.push("Suggestive");
-          if (allowedRatings.includes("Erotica"))
-            mbRatings.push("Erotica");
-          if (allowedRatings.includes("Adult"))
-            mbRatings.push("Pornographic");
+          if (ctx.allowsSafe)
+            mbRatings.push("`Safe`");
+          if (ctx.allowsSuggestive)
+            mbRatings.push("`Suggestive`");
+          if (ctx.allowsErotica)
+            mbRatings.push("`Erotica`");
+          if (ctx.allowsAdult)
+            mbRatings.push("`Pornographic`");
           if (mbRatings.length > 0) {
-            const formatted = mbRatings.map((r) => `\`${r}\``).join(",");
-            clauses.push(`(mbContentRating:=[${formatted}] || mbContentRating:!=*)`);
+            clauses.push(`(mbContentRating:=[${mbRatings.join(",")}] || mbContentRating:!=*)`);
           } else {
             clauses.push("mbContentRating:=[`none`]");
           }
-          const effectiveFormat = (_b = params.format) != null ? _b : params.mode === "manga" ? "Manga" : params.mode === "manhwa" ? "Manwha" : void 0;
+          const effectiveFormat = (_a = params.format) != null ? _a : params.mode === "manga" ? "Manga" : params.mode === "manhwa" ? "Manwha" : void 0;
           if (effectiveFormat && effectiveFormat !== "all") {
-            clauses.push(`type:=[\`${effectiveFormat}\`]`);
+            if (effectiveFormat.includes(",")) {
+              const parts = effectiveFormat.split(",").map((s) => s.trim()).filter(Boolean).map((s) => `\`${s}\``).join(",");
+              if (parts) {
+                clauses.push(`type:=[${parts}]`);
+              }
+            } else {
+              clauses.push(`type:=[\`${effectiveFormat}\`]`);
+            }
           }
           if (params.status && params.status !== "all") {
-            clauses.push(`status:=[\`${params.status}\`]`);
+            if (params.status.includes(",")) {
+              const parts = params.status.split(",").map((s) => s.trim()).filter(Boolean).map((s) => `\`${s}\``).join(",");
+              if (parts) {
+                clauses.push(`status:=[${parts}]`);
+              }
+            } else {
+              clauses.push(`status:=[\`${params.status}\`]`);
+            }
           }
-          const includedGenres = new Set((_d = (_c = params.genres) == null ? void 0 : _c.include) != null ? _d : []);
-          const excludedGenres = /* @__PURE__ */ new Set([
-            ...(_e = prefs.excludedGenres) != null ? _e : [],
-            ...(_g = (_f = params.genres) == null ? void 0 : _f.exclude) != null ? _g : []
-          ]);
+          const includedGenres = new Set((_c = (_b = params.genres) == null ? void 0 : _b.include) != null ? _c : []);
+          const excludedGenres = new Set((_d = prefs.excludedGenres) != null ? _d : []);
+          if ((_e = params.genres) == null ? void 0 : _e.exclude) {
+            for (let i = 0, len = params.genres.exclude.length; i < len; i++) {
+              const g = params.genres.exclude[i];
+              if (g)
+                excludedGenres.add(g);
+            }
+          }
           for (const inc of includedGenres) {
             excludedGenres.delete(inc);
-          }
-          for (const id of includedGenres) {
-            clauses.push(`genreIds:=\`${id}\``);
+            clauses.push(`genreIds:=\`${inc}\``);
           }
           if (excludedGenres.size > 0) {
-            const formatted = Array.from(excludedGenres).map((id) => `\`${id}\``).join(",");
-            clauses.push(`genreIds:!=[${formatted}]`);
+            const formatted = [];
+            for (const id of excludedGenres) {
+              formatted.push(`\`${id}\``);
+            }
+            clauses.push(`genreIds:!=[${formatted.join(",")}]`);
           }
-          const includedTags = new Set((_i = (_h = params.tags) == null ? void 0 : _h.include) != null ? _i : []);
-          const excludedTags = /* @__PURE__ */ new Set([
-            ...(_j = prefs.excludedTags) != null ? _j : [],
-            ...(_l = (_k = params.tags) == null ? void 0 : _k.exclude) != null ? _l : []
-          ]);
+          const includedTags = new Set((_g = (_f = params.tags) == null ? void 0 : _f.include) != null ? _g : []);
+          const excludedTags = new Set((_h = prefs.excludedTags) != null ? _h : []);
+          if ((_i = params.tags) == null ? void 0 : _i.exclude) {
+            for (let i = 0, len = params.tags.exclude.length; i < len; i++) {
+              const t = params.tags.exclude[i];
+              if (t)
+                excludedTags.add(t);
+            }
+          }
           for (const inc of includedTags) {
             excludedTags.delete(inc);
-          }
-          for (const id of includedTags) {
-            clauses.push(`tagIds:=\`${id}\``);
+            clauses.push(`tagIds:=\`${inc}\``);
           }
           if (excludedTags.size > 0) {
-            const formatted = Array.from(excludedTags).map((id) => `\`${id}\``).join(",");
-            clauses.push(`tagIds:!=[${formatted}]`);
+            const formatted = [];
+            for (const id of excludedTags) {
+              formatted.push(`\`${id}\``);
+            }
+            clauses.push(`tagIds:!=[${formatted.join(",")}]`);
           }
           return clauses.join(" && ");
         }
@@ -2157,9 +2502,9 @@ var SourcePackage = (() => {
          * Queries Atsu.moe's catalog with support for text search, tri-state genre/tag filters,
          * format/status filters, sorting, and pagination.
          */
-        async fetchExplore(params = {}) {
-          var _a, _b, _c, _d, _e;
-          const prefs = await (0, preferences_js_1.getUserPreferences)();
+        async fetchExplore(params = {}, preloadedPrefs) {
+          var _a, _b, _c, _d, _e, _f;
+          const prefs = preloadedPrefs != null ? preloadedPrefs : await (0, preferences_js_1.getUserPreferences)();
           const page = Math.max(1, (_a = params.page) != null ? _a : 1);
           const perPage = (_b = params.perPage) != null ? _b : constants_js_1.DEFAULT_PAGE_SIZE;
           const isSearchNsfwOverride = params.includeNsfw === true;
@@ -2177,22 +2522,26 @@ var SourcePackage = (() => {
             searchParams.query_by = "title,englishTitle,otherNames,authors,acronyms";
             searchParams.query_by_weights = "4,4,3,2,1";
             searchParams.num_typos = "4,4,3,2,1";
-            if (params.sortBy) {
-              searchParams.sort_by = `${sortBy},_text_match:desc`;
-            } else {
-              searchParams.sort_by = "_text_match:desc,trending:desc";
-            }
+            searchParams.sort_by = params.sortBy ? `${sortBy},_text_match:desc` : "_text_match:desc,trending:desc";
           } else {
             searchParams.sort_by = sortBy;
           }
           try {
             const response = await this.getJson(constants_js_1.SEARCH_ENDPOINT, searchParams);
             const hits = Array.isArray(response == null ? void 0 : response.hits) ? response.hits : [];
-            const docs = hits.map((hit) => hit == null ? void 0 : hit.document).filter((doc) => Boolean(doc && doc.id));
-            const filteredDocs = this.filterSummaryItems(docs, prefs, isSearchNsfwOverride);
-            const items = filteredDocs.map((doc) => mapSummaryToItem(doc, prefs.imageFormat));
+            const ctx = compileFilterContext(prefs, isSearchNsfwOverride);
+            const imageFormat = prefs.imageFormat;
+            const items = [];
+            for (let i = 0, len = hits.length; i < len; i++) {
+              const doc = (_d = hits[i]) == null ? void 0 : _d.document;
+              if (!doc || !doc.id)
+                continue;
+              if (isMangaAllowedWithContext(doc, ctx, isSearchNsfwOverride)) {
+                items.push(mapSummaryToItem(doc, imageFormat));
+              }
+            }
             const total = typeof (response == null ? void 0 : response.found) === "number" ? response.found : items.length;
-            const effectivePerPage = (_e = (_d = response == null ? void 0 : response.request_params) == null ? void 0 : _d.per_page) != null ? _e : perPage;
+            const effectivePerPage = (_f = (_e = response == null ? void 0 : response.request_params) == null ? void 0 : _e.per_page) != null ? _f : perPage;
             const isLastPage = hits.length === 0 || page * effectivePerPage >= total;
             return {
               items,
@@ -2205,17 +2554,16 @@ var SourcePackage = (() => {
             }
             if (queryText === "*") {
               const fallbackEndpoint = params.mode === "latest" ? "recentlyUpdated" : params.mode === "hot_updates" ? "hotUpdates" : params.mode === "recently_added" ? "recentlyAdded" : params.mode === "top_rated" ? "topRated" : params.mode === "most_bookmarked" ? "mostBookmarked" : "popular";
-              const fallbackType = params.mode === "manhwa" ? "Manwha" : params.mode === "manga" ? "Manga" : "Manga,Manwha,Manhua,OEL";
+              const fallbackType = params.format && params.format !== "all" ? params.format : params.mode === "manhwa" ? "Manwha" : params.mode === "manga" ? "Manga" : "Manga,Manwha,Manhua,OEL";
               return this.fetchHomeEndpoint(fallbackEndpoint, page, perPage, prefs, isSearchNsfwOverride, fallbackType);
             }
             throw error;
           }
         }
         async fetchHomeEndpoint(endpoint, page = 1, limit = constants_js_1.DEFAULT_PAGE_SIZE, prefsOrAllowNsfw, isNsfwOverride = false, types = "Manga,Manwha,Manhua,OEL") {
-          var _a, _b;
           const prefs = typeof prefsOrAllowNsfw === "object" && prefsOrAllowNsfw !== null ? prefsOrAllowNsfw : await (0, preferences_js_1.getUserPreferences)();
-          const allowsAdult = (_b = (_a = prefs.contentRatings) == null ? void 0 : _a.includes("Adult")) != null ? _b : false;
-          const allowAdult = isNsfwOverride || (typeof prefsOrAllowNsfw === "boolean" ? prefsOrAllowNsfw : allowsAdult);
+          const ctx = compileFilterContext(prefs, isNsfwOverride);
+          const allowAdult = isNsfwOverride || (typeof prefsOrAllowNsfw === "boolean" ? prefsOrAllowNsfw : ctx.allowsAdult);
           const offset = Math.max(0, (page - 1) * limit);
           const params = {
             offset,
@@ -2227,9 +2575,7 @@ var SourcePackage = (() => {
           };
           const data = await this.getJson(`${constants_js_1.API_BASE}/home2/${endpoint}`, params);
           const rawItems = Array.isArray(data == null ? void 0 : data.items) ? data.items : [];
-          const validDocs = rawItems.filter((item) => Boolean(item && item.id));
-          const filteredDocs = this.filterSummaryItems(validDocs, prefs, isNsfwOverride);
-          const items = filteredDocs.map((item) => mapSummaryToItem(item, prefs.imageFormat));
+          const items = this.filterAndMapSummaries(rawItems, prefs, isNsfwOverride);
           return {
             items,
             isLastPage: rawItems.length < limit
@@ -2269,19 +2615,64 @@ var SourcePackage = (() => {
           return Array.isArray(fallbackChapters) ? fallbackChapters : [];
         }
         /**
+         * Concurrently fetches `/api/manga/page` and `/api/manga/allChapters` via `Promise.all`,
+         * deduplicating in-flight requests and caching results briefly so back-to-back
+         * `getContent` and `getChapters` calls do not duplicate network requests.
+         */
+        async fetchMangaBundle(mangaId) {
+          const now = Date.now();
+          const cached = this.mangaCache.get(mangaId);
+          if (cached && now - cached.timestamp < MANGA_CACHE_TTL_MS) {
+            return cached;
+          }
+          const inflight = this.inflightMangaRequests.get(mangaId);
+          if (inflight) {
+            return inflight;
+          }
+          const requestPromise = (async () => {
+            const [pageResponse, rawChapters] = await Promise.all([
+              this.getJson(`${constants_js_1.API_BASE}/manga/page`, {
+                id: mangaId
+              }),
+              this.fetchRawChapters(mangaId)
+            ]);
+            const detail = pageResponse == null ? void 0 : pageResponse.mangaPage;
+            if (!detail || !detail.id) {
+              throw new Error(`Manga details not found for ID "${mangaId}".`);
+            }
+            const effectiveChapters = rawChapters.length > 0 ? rawChapters : Array.isArray(detail.chapters) ? detail.chapters : [];
+            const bundle = {
+              detail,
+              rawChapters: effectiveChapters,
+              timestamp: Date.now()
+            };
+            if (this.mangaCache.size >= MANGA_CACHE_MAX_ENTRIES) {
+              const oldestKey = this.mangaCache.keys().next().value;
+              if (oldestKey !== void 0) {
+                this.mangaCache.delete(oldestKey);
+              }
+            }
+            this.mangaCache.set(mangaId, bundle);
+            return bundle;
+          })();
+          this.inflightMangaRequests.set(mangaId, requestPromise);
+          try {
+            return await requestPromise;
+          } finally {
+            this.inflightMangaRequests.delete(mangaId);
+          }
+        }
+        /**
          * Retrieves manga synopsis, metadata, tags, recommendations, and full chapter list
-         * from `/api/manga/page?id={id}` and `/api/manga/allChapters?mangaId={id}`.
+         * concurrently from `/api/manga/page?id={id}` and `/api/manga/allChapters?mangaId={id}`.
          */
         async fetchMangaDetails(idOrUrl) {
-          var _a, _b, _c, _d, _e, _f, _g;
+          var _a, _b, _c, _d, _e, _f, _g, _h, _i;
           const mangaId = extractMangaId(idOrUrl);
-          const prefs = await (0, preferences_js_1.getUserPreferences)();
-          const pageResponse = await this.getJson(`${constants_js_1.API_BASE}/manga/page`, { id: mangaId });
-          const detail = pageResponse == null ? void 0 : pageResponse.mangaPage;
-          if (!detail || !detail.id) {
-            throw new Error(`Manga details not found for ID "${mangaId}".`);
-          }
-          const rawChapters = await this.fetchRawChapters(mangaId, detail.chapters);
+          const [prefs, { detail, rawChapters }] = await Promise.all([
+            (0, preferences_js_1.getUserPreferences)(),
+            this.fetchMangaBundle(mangaId)
+          ]);
           const chapters = normalizeAndFilterChapters(mangaId, rawChapters, detail.scanlators, {
             deduplicate: prefs.deduplicateChapters,
             whitelist: prefs.scanlatorWhitelist
@@ -2293,16 +2684,19 @@ var SourcePackage = (() => {
           const summary = rawSynopsis.length > 0 ? rawSynopsis : DEFAULT_SYNOPSIS_FALLBACK;
           const additionalTitles = [];
           const seenTitles = /* @__PURE__ */ new Set([title.toLowerCase()]);
-          for (const candidate of [
+          const titleCandidates = [
             detail.title,
             detail.englishTitle,
             ...(_b = detail.otherNames) != null ? _b : [],
             ...(_c = detail.acronyms) != null ? _c : []
-          ]) {
+          ];
+          for (let i = 0, len = titleCandidates.length; i < len; i++) {
+            const candidate = titleCandidates[i];
             if (typeof candidate === "string") {
               const clean = candidate.trim();
-              if (clean && !seenTitles.has(clean.toLowerCase())) {
-                seenTitles.add(clean.toLowerCase());
+              const lower = clean.toLowerCase();
+              if (clean && !seenTitles.has(lower)) {
+                seenTitles.add(lower);
                 additionalTitles.push(clean);
               }
             }
@@ -2326,19 +2720,24 @@ var SourcePackage = (() => {
           }
           const credits = extractCredits(detail.authors);
           const links = extractExternalLinks(detail, mangaId);
-          const relatedPool = [
-            ...Array.isArray(detail.recommendations) ? detail.recommendations : [],
-            ...Array.isArray(detail.similarManga) ? detail.similarManga : []
-          ];
-          const filteredRelated = this.filterSummaryItems(relatedPool.filter((rec) => Boolean(rec && rec.id)), prefs, false);
           const relatedItems = [];
           const seenRelated = /* @__PURE__ */ new Set();
-          for (const rec of filteredRelated) {
-            if (seenRelated.has(rec.id))
-              continue;
-            seenRelated.add(rec.id);
-            relatedItems.push(mapSummaryToItem(rec, prefs.imageFormat));
-          }
+          const ctx = compileFilterContext(prefs, false);
+          const appendRelated = (list) => {
+            if (!Array.isArray(list))
+              return;
+            for (let i = 0, len = list.length; i < len; i++) {
+              const rec = list[i];
+              if (!rec || !rec.id || seenRelated.has(rec.id))
+                continue;
+              if (isMangaAllowedWithContext(rec, ctx, false)) {
+                seenRelated.add(rec.id);
+                relatedItems.push(mapSummaryToItem(rec, prefs.imageFormat));
+              }
+            }
+          };
+          appendRelated(detail.recommendations);
+          appendRelated(detail.similarManga);
           const collections = [];
           if (relatedItems.length > 0) {
             collections.push({
@@ -2352,23 +2751,30 @@ var SourcePackage = (() => {
           const rawViews = (_e = detail.views) != null ? _e : detail.popularity;
           const numericViews = typeof rawViews === "number" && Number.isFinite(rawViews) ? rawViews : typeof rawViews === "string" && Number.isFinite(Number(rawViews)) ? Number(rawViews) : void 0;
           const additionalDetails = {};
+          let hasAdditionalDetails = false;
           if (detail.type) {
             additionalDetails["Format"] = detail.type === "Manwha" ? "Manhwa" : String(detail.type);
+            hasAdditionalDetails = true;
           }
           if (detail.status) {
             additionalDetails["Status"] = String(detail.status);
+            hasAdditionalDetails = true;
           }
           const releaseYear = (_g = (_f = detail.released) != null ? _f : detail.releaseYear) != null ? _g : detail.year;
           if (releaseYear) {
             additionalDetails["Released"] = String(releaseYear);
+            hasAdditionalDetails = true;
           }
           if (Array.isArray(detail.scanlators) && detail.scanlators.length > 0) {
-            const scanNames = detail.scanlators.map((s) => {
-              var _a2;
-              return (_a2 = s == null ? void 0 : s.name) == null ? void 0 : _a2.trim();
-            }).filter(Boolean);
+            const scanNames = [];
+            for (let i = 0, len = detail.scanlators.length; i < len; i++) {
+              const name = (_i = (_h = detail.scanlators[i]) == null ? void 0 : _h.name) == null ? void 0 : _i.trim();
+              if (name)
+                scanNames.push(name);
+            }
             if (scanNames.length > 0) {
               additionalDetails["Scanlators"] = scanNames.join(", ");
+              hasAdditionalDetails = true;
             }
           }
           const content = {
@@ -2389,7 +2795,7 @@ var SourcePackage = (() => {
             } : {},
             ...credits.length > 0 ? { credits } : {},
             ...additionalTitles.length > 0 ? { additionalTitles } : {},
-            ...Object.keys(additionalDetails).length > 0 ? { additionalDetails } : {},
+            ...hasAdditionalDetails ? { additionalDetails } : {},
             ...genreTags.length > 0 ? { genres: genreTags } : {},
             ...properties.length > 0 ? { properties } : {},
             ...collections.length > 0 ? { collections } : {},
@@ -2403,25 +2809,47 @@ var SourcePackage = (() => {
           };
         }
         /**
-         * Retrieves only the deduplicated/filtered chapter list for a given manga ID.
+         * Retrieves the deduplicated/filtered chapter list concurrently using Promise.all.
          */
         async fetchChapters(idOrUrl) {
-          var _a, _b;
           const mangaId = extractMangaId(idOrUrl);
-          const prefs = await (0, preferences_js_1.getUserPreferences)();
-          let scanlators;
-          let fallbackChapters;
-          try {
-            const pageResponse = await this.getJson(`${constants_js_1.API_BASE}/manga/page`, { id: mangaId });
-            scanlators = (_a = pageResponse == null ? void 0 : pageResponse.mangaPage) == null ? void 0 : _a.scanlators;
-            fallbackChapters = (_b = pageResponse == null ? void 0 : pageResponse.mangaPage) == null ? void 0 : _b.chapters;
-          } catch (error) {
-            if (error instanceof CloudflareError) {
-              throw error;
-            }
+          const cached = this.mangaCache.get(mangaId);
+          if (cached && Date.now() - cached.timestamp < MANGA_CACHE_TTL_MS) {
+            const prefs2 = await (0, preferences_js_1.getUserPreferences)();
+            return normalizeAndFilterChapters(mangaId, cached.rawChapters, cached.detail.scanlators, {
+              deduplicate: prefs2.deduplicateChapters,
+              whitelist: prefs2.scanlatorWhitelist
+            });
           }
-          const rawChapters = await this.fetchRawChapters(mangaId, fallbackChapters);
-          return normalizeAndFilterChapters(mangaId, rawChapters, scanlators, {
+          const [prefs, pageResponse, rawChapters] = await Promise.all([
+            (0, preferences_js_1.getUserPreferences)(),
+            this.getJson(`${constants_js_1.API_BASE}/manga/page`, {
+              id: mangaId
+            }).catch((error) => {
+              if (error instanceof CloudflareError) {
+                throw error;
+              }
+              return null;
+            }),
+            this.fetchRawChapters(mangaId)
+          ]);
+          const detail = pageResponse == null ? void 0 : pageResponse.mangaPage;
+          const scanlators = detail == null ? void 0 : detail.scanlators;
+          const effectiveChapters = rawChapters.length > 0 ? rawChapters : Array.isArray(detail == null ? void 0 : detail.chapters) ? detail.chapters : [];
+          if (detail == null ? void 0 : detail.id) {
+            if (this.mangaCache.size >= MANGA_CACHE_MAX_ENTRIES) {
+              const oldestKey = this.mangaCache.keys().next().value;
+              if (oldestKey !== void 0) {
+                this.mangaCache.delete(oldestKey);
+              }
+            }
+            this.mangaCache.set(mangaId, {
+              detail,
+              rawChapters: effectiveChapters,
+              timestamp: Date.now()
+            });
+          }
+          return normalizeAndFilterChapters(mangaId, effectiveChapters, scanlators, {
             deduplicate: prefs.deduplicateChapters,
             whitelist: prefs.scanlatorWhitelist
           });
@@ -2436,11 +2864,13 @@ var SourcePackage = (() => {
           if (!cleanChapterId) {
             throw new Error("Chapter ID cannot be empty.");
           }
-          const prefs = await (0, preferences_js_1.getUserPreferences)();
-          const response = await this.getJson(`${constants_js_1.API_BASE}/read/chapter`, {
-            mangaId: cleanMangaId,
-            chapterId: cleanChapterId
-          });
+          const [imageFormat, response] = await Promise.all([
+            (0, preferences_js_1.getImageFormatPreference)(),
+            this.getJson(`${constants_js_1.API_BASE}/read/chapter`, {
+              mangaId: cleanMangaId,
+              chapterId: cleanChapterId
+            })
+          ]);
           const rawPages = (_a = response == null ? void 0 : response.readChapter) == null ? void 0 : _a.pages;
           if (!Array.isArray(rawPages) || rawPages.length === 0) {
             throw new Error(`No page images returned for manga "${cleanMangaId}" chapter "${cleanChapterId}".`);
@@ -2449,32 +2879,32 @@ var SourcePackage = (() => {
             var _a2, _b;
             return ((_a2 = a.number) != null ? _a2 : 0) - ((_b = b.number) != null ? _b : 0);
           });
-          return sortedPages.map((page) => {
-            const imageUrl = resolveImageUrl(page.image, prefs.imageFormat, constants_js_1.FALLBACK_COVER_URL);
-            return {
+          const result = new Array(sortedPages.length);
+          for (let i = 0, len = sortedPages.length; i < len; i++) {
+            const page = sortedPages[i];
+            const imageUrl = resolveImageUrl(page.image, imageFormat, constants_js_1.FALLBACK_COVER_URL);
+            result[i] = {
               url: imageUrl,
-              headers: {
-                Referer: constants_js_1.REFERER_URL,
-                Origin: constants_js_1.ORIGIN_URL
-              },
+              headers: constants_js_1.PAGE_IMAGE_HEADERS,
               context: {
                 pageId: page.id,
                 pageNumber: page.number,
-                imageFormat: prefs.imageFormat,
+                imageFormat,
                 referer: constants_js_1.REFERER_URL,
                 origin: constants_js_1.ORIGIN_URL
               }
             };
-          });
+          }
+          return result;
         }
         /**
          * Attaches `Referer: https://atsu.moe/`, `Origin: https://atsu.moe`, and image quality
-         * `Accept` headers to outgoing image requests.
+         * `Accept` headers to outgoing image requests using memoized image format preference.
          */
         async configureImageRequest(request) {
           var _a;
-          const prefs = await (0, preferences_js_1.getUserPreferences)();
-          const acceptHeader = prefs.imageFormat === "webp" ? "image/webp,image/apng,image/*,*/*;q=0.8" : constants_js_1.IMAGE_HEADERS.Accept;
+          const imageFormat = await (0, preferences_js_1.getImageFormatPreference)();
+          const acceptHeader = imageFormat === "webp" ? constants_js_1.WEBP_ACCEPT_HEADER : constants_js_1.IMAGE_HEADERS.Accept;
           request.headers = {
             ...constants_js_1.IMAGE_HEADERS,
             ...(_a = request.headers) != null ? _a : {},
@@ -2518,38 +2948,85 @@ var SourcePackage = (() => {
         STATUS: "status",
         NSFW: "nsfw"
       };
+      var ALL_GENRE_FILTER_OPTIONS = constants_js_1.ATSU_GENRES.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      var SFW_GENRE_FILTER_OPTIONS = constants_js_1.ATSU_GENRES.filter((genre) => !genre.nsfw).map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      var THEME_FILTER_OPTIONS = constants_js_1.ATSU_THEMES.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      var FORMAT_FILTER_OPTIONS = constants_js_1.ATSU_FORMATS.map((fmt) => ({
+        id: fmt.id,
+        title: fmt.title
+      }));
+      var STATUS_FILTER_OPTIONS = constants_js_1.ATSU_STATUSES.map((st) => ({
+        id: st.id,
+        title: st.title
+      }));
+      var SORT_OPTION_LIST = constants_js_1.ATSU_SORT_OPTIONS.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      var CACHED_SORT_OPTIONS = {
+        options: SORT_OPTION_LIST,
+        disableOrdering: false
+      };
       function createTriStateFilter(id, title, options, subtitle) {
         const _type = FilterType.TRI_STATE;
         void _type;
         return (0, toolchain_1.SearchFilter)(id, title, (0, toolchain_1.SelectFilter)(options.map((opt) => ({ id: opt.id, title: opt.title })), true), subtitle);
       }
+      var SHARED_STATIC_FILTERS = [
+        createTriStateFilter(exports.FILTER_IDS.THEMES, "Themes & Tags", THEME_FILTER_OPTIONS, "Tap once to Include (+), twice to Exclude (-)"),
+        (0, toolchain_1.SearchFilter)(exports.FILTER_IDS.FORMAT, "Format", (0, toolchain_1.PickerFilter)(FORMAT_FILTER_OPTIONS), "Filter by publication format"),
+        (0, toolchain_1.SearchFilter)(exports.FILTER_IDS.STATUS, "Status", (0, toolchain_1.PickerFilter)(STATUS_FILTER_OPTIONS), "Filter by publication status"),
+        (0, toolchain_1.SearchFilter)(exports.FILTER_IDS.NSFW, "Include NSFW / Mature", (0, toolchain_1.ToggleFilter)(), "Override mature/erotica content visibility for this search")
+      ];
+      var CACHED_SEARCH_FILTERS_SFW = [
+        createTriStateFilter(exports.FILTER_IDS.GENRES, "Genres", SFW_GENRE_FILTER_OPTIONS, "Tap once to Include (+), twice to Exclude (-)"),
+        ...SHARED_STATIC_FILTERS
+      ];
+      var CACHED_SEARCH_FILTERS_NSFW = [
+        createTriStateFilter(exports.FILTER_IDS.GENRES, "Genres", ALL_GENRE_FILTER_OPTIONS, "Tap once to Include (+), twice to Exclude (-)"),
+        ...SHARED_STATIC_FILTERS
+      ];
       async function getSearchFilters() {
         const showNsfw = await (0, preferences_js_1.getShowNsfwPreference)();
-        const visibleGenres = showNsfw ? constants_js_1.ATSU_GENRES : constants_js_1.ATSU_GENRES.filter((genre) => !genre.nsfw);
-        return [
-          createTriStateFilter(exports.FILTER_IDS.GENRES, "Genres", visibleGenres, "Tap once to Include (+), twice to Exclude (-)"),
-          createTriStateFilter(exports.FILTER_IDS.THEMES, "Themes & Tags", constants_js_1.ATSU_THEMES, "Tap once to Include (+), twice to Exclude (-)"),
-          (0, toolchain_1.SearchFilter)(exports.FILTER_IDS.FORMAT, "Format", (0, toolchain_1.PickerFilter)(constants_js_1.ATSU_FORMATS.map((fmt) => ({ id: fmt.id, title: fmt.title }))), "Filter by publication format"),
-          (0, toolchain_1.SearchFilter)(exports.FILTER_IDS.STATUS, "Status", (0, toolchain_1.PickerFilter)(constants_js_1.ATSU_STATUSES.map((st) => ({ id: st.id, title: st.title }))), "Filter by publication status"),
-          (0, toolchain_1.SearchFilter)(exports.FILTER_IDS.NSFW, "Include NSFW / Mature", (0, toolchain_1.ToggleFilter)(), "Override mature/erotica content visibility for this search")
-        ];
+        return showNsfw ? CACHED_SEARCH_FILTERS_NSFW : CACHED_SEARCH_FILTERS_SFW;
       }
       async function getSortOptions() {
-        return {
-          options: constants_js_1.ATSU_SORT_OPTIONS.map((opt) => ({
-            id: opt.id,
-            title: opt.title
-          })),
-          disableOrdering: false
-        };
+        return CACHED_SORT_OPTIONS;
+      }
+      function isRecord(value) {
+        return typeof value === "object" && value !== null && !Array.isArray(value);
       }
       function normalizeTriState(value) {
-        if (!value || typeof value !== "object") {
+        if (!isRecord(value)) {
           return void 0;
         }
-        const obj = value;
-        const include = Array.isArray(obj.include) ? obj.include.map((v) => String(v)).filter(Boolean) : [];
-        const exclude = Array.isArray(obj.exclude) ? obj.exclude.map((v) => String(v)).filter(Boolean) : [];
+        const include = [];
+        if (Array.isArray(value.include)) {
+          for (let i = 0, len = value.include.length; i < len; i++) {
+            const s = String(value.include[i]).trim();
+            if (s.length > 0) {
+              include.push(s);
+            }
+          }
+        }
+        const exclude = [];
+        if (Array.isArray(value.exclude)) {
+          for (let i = 0, len = value.exclude.length; i < len; i++) {
+            const s = String(value.exclude[i]).trim();
+            if (s.length > 0) {
+              exclude.push(s);
+            }
+          }
+        }
         if (include.length === 0 && exclude.length === 0) {
           return void 0;
         }
@@ -2565,7 +3042,7 @@ var SourcePackage = (() => {
           params.sortBy = sort.key;
           params.sortAscending = sort.ascending;
         }
-        if (!filters) {
+        if (!isRecord(filters)) {
           return params;
         }
         const genres = normalizeTriState(filters[exports.FILTER_IDS.GENRES]);
@@ -2621,6 +3098,128 @@ var SourcePackage = (() => {
         TOP_RATED: "top_rated",
         MOST_BOOKMARKED: "most_bookmarked"
       };
+      var STATIC_CONFIGURATION = Object.freeze({
+        imageReferer: constants_js_1.REFERER_URL,
+        cloudflareResolutionURL: constants_js_1.CLOUDFLARE_FALLBACK_URL
+      });
+      var SPOTLIGHT_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: DIRECTORY_FEED_KEYS.POPULAR }, "Spotlight & Trending");
+      var HOT_UPDATES_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: DIRECTORY_FEED_KEYS.HOT_UPDATES }, "Hot Updates");
+      var LATEST_UPDATES_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: DIRECTORY_FEED_KEYS.LATEST }, "Latest Updates");
+      var TOP_RATED_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: DIRECTORY_FEED_KEYS.TOP_RATED }, "Top Rated Series");
+      var STATIC_CUSTOM_FEEDS = [
+        {
+          id: "discover",
+          title: "Discover",
+          content: {
+            page: "home"
+          }
+        },
+        {
+          id: DIRECTORY_FEED_KEYS.TOP_RATED,
+          title: "Top Rated",
+          content: {
+            list: {
+              key: DIRECTORY_FEED_KEYS.TOP_RATED
+            }
+          }
+        },
+        {
+          id: DIRECTORY_FEED_KEYS.TRENDING,
+          title: "Trending",
+          content: {
+            list: {
+              key: DIRECTORY_FEED_KEYS.TRENDING
+            }
+          }
+        },
+        {
+          id: DIRECTORY_FEED_KEYS.POPULAR,
+          title: "Popular",
+          content: {
+            list: {
+              key: DIRECTORY_FEED_KEYS.POPULAR
+            }
+          }
+        },
+        {
+          id: DIRECTORY_FEED_KEYS.LATEST,
+          title: "Latest Updates",
+          content: {
+            list: {
+              key: DIRECTORY_FEED_KEYS.LATEST
+            }
+          }
+        },
+        {
+          id: DIRECTORY_FEED_KEYS.HOT_UPDATES,
+          title: "Hot Updates",
+          content: {
+            list: {
+              key: DIRECTORY_FEED_KEYS.HOT_UPDATES
+            }
+          }
+        },
+        {
+          id: DIRECTORY_FEED_KEYS.RECENTLY_ADDED,
+          title: "Recently Added",
+          content: {
+            list: {
+              key: DIRECTORY_FEED_KEYS.RECENTLY_ADDED
+            }
+          }
+        },
+        {
+          id: DIRECTORY_FEED_KEYS.MOST_BOOKMARKED,
+          title: "Most Bookmarked",
+          content: {
+            list: {
+              key: DIRECTORY_FEED_KEYS.MOST_BOOKMARKED
+            }
+          }
+        }
+      ];
+      var STATIC_HOME_PAGE = {
+        feeds: STATIC_CUSTOM_FEEDS
+      };
+      var SECTION_EXPLORE_PARAMS = {
+        [HOME_SECTION_KEYS.SPOTLIGHT]: { mode: "popular", page: 1, perPage: 15 },
+        [HOME_SECTION_KEYS.HOT_UPDATES]: { mode: "hot_updates", page: 1, perPage: 24 },
+        [HOME_SECTION_KEYS.POPULAR]: { mode: "latest", page: 1, perPage: 24 },
+        [HOME_SECTION_KEYS.TOP_RATED]: { mode: "top_rated", page: 1, perPage: 24 }
+      };
+      var FEED_EXPLORE_CONFIG = {
+        discover: { mode: "popular" },
+        [DIRECTORY_FEED_KEYS.TOP_RATED]: {
+          mode: "top_rated",
+          defaultSortBy: "mbRating",
+          defaultSortAscending: false
+        },
+        [DIRECTORY_FEED_KEYS.TRENDING]: {
+          mode: "trending",
+          defaultSortBy: "trending"
+        },
+        [DIRECTORY_FEED_KEYS.POPULAR]: {
+          mode: "popular"
+        },
+        [DIRECTORY_FEED_KEYS.LATEST]: {
+          mode: "latest",
+          defaultSortBy: "updatedAt",
+          defaultSortAscending: false
+        },
+        [DIRECTORY_FEED_KEYS.HOT_UPDATES]: {
+          mode: "hot_updates"
+        },
+        [DIRECTORY_FEED_KEYS.RECENTLY_ADDED]: {
+          mode: "recently_added",
+          defaultSortBy: "dateAdded",
+          defaultSortAscending: false
+        },
+        [DIRECTORY_FEED_KEYS.MOST_BOOKMARKED]: {
+          mode: "most_bookmarked",
+          defaultSortBy: "popularity",
+          defaultSortAscending: false
+        }
+      };
       var _Target = class _Target {
         constructor(api) {
           __publicField(this, "info", _Target.info);
@@ -2631,10 +3230,7 @@ var SourcePackage = (() => {
          * Provides source-level configuration including imageReferer and cloudflareResolutionURL.
          */
         getConfiguration() {
-          return {
-            imageReferer: constants_js_1.REFERER_URL,
-            cloudflareResolutionURL: constants_js_1.CLOUDFLARE_FALLBACK_URL
-          };
+          return STATIC_CONFIGURATION;
         }
         /**
          * Intercepts outgoing image requests to attach `Referer` and `Origin` headers.
@@ -2646,9 +3242,7 @@ var SourcePackage = (() => {
         // HomeProvider
         // =========================================================================
         async getHomePage() {
-          return {
-            feeds: await this.getCustomFeeds()
-          };
+          return STATIC_HOME_PAGE;
         }
         async getItemPage(key, page) {
           if (page > 1 && key === "home") {
@@ -2657,11 +3251,12 @@ var SourcePackage = (() => {
               isLastPage: true
             };
           }
+          const prefs = await (0, preferences_js_1.getUserPreferences)();
           const [spotlightRes, latestRes, hotUpdatesRes, topRatedRes] = await Promise.all([
-            this.api.fetchExplore({ mode: "popular", page: 1, perPage: 15 }),
-            this.api.fetchExplore({ mode: "latest", page: 1, perPage: 24 }),
-            this.api.fetchExplore({ mode: "hot_updates", page: 1, perPage: 24 }),
-            this.api.fetchExplore({ mode: "top_rated", page: 1, perPage: 24 })
+            this.api.fetchExplore(SECTION_EXPLORE_PARAMS[HOME_SECTION_KEYS.SPOTLIGHT], prefs),
+            this.api.fetchExplore(SECTION_EXPLORE_PARAMS[HOME_SECTION_KEYS.POPULAR], prefs),
+            this.api.fetchExplore(SECTION_EXPLORE_PARAMS[HOME_SECTION_KEYS.HOT_UPDATES], prefs),
+            this.api.fetchExplore(SECTION_EXPLORE_PARAMS[HOME_SECTION_KEYS.TOP_RATED], prefs)
           ]);
           const sections = [
             {
@@ -2670,7 +3265,7 @@ var SourcePackage = (() => {
               subtitle: "Most popular series on Atsumaru today",
               style: toolchain_1.PageSectionStyle.BANNER,
               items: spotlightRes.items,
-              destination: (0, toolchain_1.ItemListDestination)({ key: DIRECTORY_FEED_KEYS.POPULAR }, "Spotlight & Trending")
+              destination: SPOTLIGHT_DESTINATION
             },
             {
               id: HOME_SECTION_KEYS.HOT_UPDATES,
@@ -2678,7 +3273,7 @@ var SourcePackage = (() => {
               subtitle: "High momentum chapters and popular releases",
               style: toolchain_1.PageSectionStyle.DEFAULT,
               items: hotUpdatesRes.items,
-              destination: (0, toolchain_1.ItemListDestination)({ key: DIRECTORY_FEED_KEYS.HOT_UPDATES }, "Hot Updates")
+              destination: HOT_UPDATES_DESTINATION
             },
             {
               id: HOME_SECTION_KEYS.POPULAR,
@@ -2686,7 +3281,7 @@ var SourcePackage = (() => {
               subtitle: "Recently updated chapters across all scanlators",
               style: toolchain_1.PageSectionStyle.DEFAULT,
               items: latestRes.items,
-              destination: (0, toolchain_1.ItemListDestination)({ key: DIRECTORY_FEED_KEYS.LATEST }, "Latest Updates")
+              destination: LATEST_UPDATES_DESTINATION
             },
             {
               id: HOME_SECTION_KEYS.TOP_RATED,
@@ -2694,7 +3289,7 @@ var SourcePackage = (() => {
               subtitle: "Critically acclaimed manga and manhwa",
               style: toolchain_1.PageSectionStyle.DEFAULT,
               items: topRatedRes.items,
-              destination: (0, toolchain_1.ItemListDestination)({ key: DIRECTORY_FEED_KEYS.TOP_RATED }, "Top Rated Series")
+              destination: TOP_RATED_DESTINATION
             }
           ];
           return {
@@ -2703,190 +3298,32 @@ var SourcePackage = (() => {
           };
         }
         async getPageSectionItems(sectionKey, _pageKey) {
-          switch (sectionKey) {
-            case HOME_SECTION_KEYS.SPOTLIGHT: {
-              const res = await this.api.fetchExplore({
-                mode: "popular",
-                page: 1,
-                perPage: 15
-              });
-              return res.items;
-            }
-            case HOME_SECTION_KEYS.HOT_UPDATES: {
-              const res = await this.api.fetchExplore({
-                mode: "hot_updates",
-                page: 1,
-                perPage: 24
-              });
-              return res.items;
-            }
-            case HOME_SECTION_KEYS.POPULAR: {
-              const res = await this.api.fetchExplore({
-                mode: "latest",
-                page: 1,
-                perPage: 24
-              });
-              return res.items;
-            }
-            case HOME_SECTION_KEYS.TOP_RATED: {
-              const res = await this.api.fetchExplore({
-                mode: "top_rated",
-                page: 1,
-                perPage: 24
-              });
-              return res.items;
-            }
-            default: {
-              const res = await this.api.fetchExplore({ mode: "popular", page: 1 });
-              return res.items;
-            }
-          }
+          var _a;
+          const params = (_a = SECTION_EXPLORE_PARAMS[sectionKey]) != null ? _a : {
+            mode: "popular",
+            page: 1
+          };
+          const res = await this.api.fetchExplore(params);
+          return res.items;
         }
         // =========================================================================
         // DirectoryHandler
         // =========================================================================
         async getCustomFeeds() {
-          return [
-            {
-              id: "discover",
-              title: "Discover",
-              content: {
-                page: "home"
-              }
-            },
-            {
-              id: DIRECTORY_FEED_KEYS.TOP_RATED,
-              title: "Top Rated",
-              content: {
-                list: {
-                  key: DIRECTORY_FEED_KEYS.TOP_RATED
-                }
-              }
-            },
-            {
-              id: DIRECTORY_FEED_KEYS.TRENDING,
-              title: "Trending",
-              content: {
-                list: {
-                  key: DIRECTORY_FEED_KEYS.TRENDING
-                }
-              }
-            },
-            {
-              id: DIRECTORY_FEED_KEYS.POPULAR,
-              title: "Popular",
-              content: {
-                list: {
-                  key: DIRECTORY_FEED_KEYS.POPULAR
-                }
-              }
-            },
-            {
-              id: DIRECTORY_FEED_KEYS.LATEST,
-              title: "Latest Updates",
-              content: {
-                list: {
-                  key: DIRECTORY_FEED_KEYS.LATEST
-                }
-              }
-            },
-            {
-              id: DIRECTORY_FEED_KEYS.HOT_UPDATES,
-              title: "Hot Updates",
-              content: {
-                list: {
-                  key: DIRECTORY_FEED_KEYS.HOT_UPDATES
-                }
-              }
-            },
-            {
-              id: DIRECTORY_FEED_KEYS.RECENTLY_ADDED,
-              title: "Recently Added",
-              content: {
-                list: {
-                  key: DIRECTORY_FEED_KEYS.RECENTLY_ADDED
-                }
-              }
-            },
-            {
-              id: DIRECTORY_FEED_KEYS.MOST_BOOKMARKED,
-              title: "Most Bookmarked",
-              content: {
-                list: {
-                  key: DIRECTORY_FEED_KEYS.MOST_BOOKMARKED
-                }
-              }
-            }
-          ];
+          return STATIC_CUSTOM_FEEDS;
         }
         async getItemList(request, page) {
-          var _a, _b, _c;
+          var _a, _b, _c, _d, _e, _f;
           const key = (_a = request.key) != null ? _a : DIRECTORY_FEED_KEYS.TRENDING;
-          const sortBy = (_b = request.sort) == null ? void 0 : _b.key;
-          const sortAscending = (_c = request.sort) == null ? void 0 : _c.ascending;
-          switch (key) {
-            case "discover":
-              return this.api.fetchExplore({
-                mode: "popular",
-                page
-              });
-            case DIRECTORY_FEED_KEYS.TOP_RATED:
-              return this.api.fetchExplore({
-                mode: "top_rated",
-                sortBy: sortBy != null ? sortBy : "mbRating",
-                sortAscending: sortAscending != null ? sortAscending : false,
-                page
-              });
-            case DIRECTORY_FEED_KEYS.TRENDING:
-              return this.api.fetchExplore({
-                mode: "trending",
-                sortBy: sortBy != null ? sortBy : "trending",
-                sortAscending,
-                page
-              });
-            case DIRECTORY_FEED_KEYS.POPULAR:
-              return this.api.fetchExplore({
-                mode: "popular",
-                sortBy,
-                sortAscending,
-                page
-              });
-            case DIRECTORY_FEED_KEYS.LATEST:
-              return this.api.fetchExplore({
-                mode: "latest",
-                sortBy: sortBy != null ? sortBy : "updatedAt",
-                sortAscending: sortAscending != null ? sortAscending : false,
-                page
-              });
-            case DIRECTORY_FEED_KEYS.HOT_UPDATES:
-              return this.api.fetchExplore({
-                mode: "hot_updates",
-                sortBy,
-                sortAscending,
-                page
-              });
-            case DIRECTORY_FEED_KEYS.RECENTLY_ADDED:
-              return this.api.fetchExplore({
-                mode: "recently_added",
-                sortBy: sortBy != null ? sortBy : "dateAdded",
-                sortAscending: sortAscending != null ? sortAscending : false,
-                page
-              });
-            case DIRECTORY_FEED_KEYS.MOST_BOOKMARKED:
-              return this.api.fetchExplore({
-                mode: "most_bookmarked",
-                sortBy: sortBy != null ? sortBy : "popularity",
-                sortAscending: sortAscending != null ? sortAscending : false,
-                page
-              });
-            default:
-              return this.api.fetchExplore({
-                mode: "trending",
-                sortBy,
-                sortAscending,
-                page
-              });
-          }
+          const config = FEED_EXPLORE_CONFIG[key];
+          const sortBy = (_c = (_b = request.sort) == null ? void 0 : _b.key) != null ? _c : config == null ? void 0 : config.defaultSortBy;
+          const sortAscending = (_e = (_d = request.sort) == null ? void 0 : _d.ascending) != null ? _e : config == null ? void 0 : config.defaultSortAscending;
+          return this.api.fetchExplore({
+            mode: (_f = config == null ? void 0 : config.mode) != null ? _f : "trending",
+            sortBy,
+            sortAscending,
+            page
+          });
         }
         // =========================================================================
         // Searchable & Filterable
@@ -2908,26 +3345,20 @@ var SourcePackage = (() => {
           return constants_js_1.MANGA_URL_REGEX.test((url != null ? url : "").trim());
         }
         async resolveUrl(url) {
-          const match = constants_js_1.MANGA_URL_REGEX.exec((url != null ? url : "").trim());
-          const mangaId = (match == null ? void 0 : match[1]) ? decodeURIComponent(match[1]) : (0, api_js_1.extractMangaId)(url);
-          const { content } = await this.api.fetchMangaDetails(mangaId);
-          return content;
+          return this.getContent(url);
         }
         async getContent(contentId) {
-          const resolvedId = (0, api_js_1.extractMangaId)(contentId);
-          const { content } = await this.api.fetchMangaDetails(resolvedId);
+          const { content } = await this.api.fetchMangaDetails(contentId);
           return content;
         }
         // =========================================================================
         // ChapterProvider
         // =========================================================================
         async getChapters(contentId) {
-          const resolvedId = (0, api_js_1.extractMangaId)(contentId);
-          return this.api.fetchChapters(resolvedId);
+          return this.api.fetchChapters(contentId);
         }
         async getChapterPages(contentId, chapterId) {
-          const resolvedId = (0, api_js_1.extractMangaId)(contentId);
-          return this.api.fetchChapterPages(resolvedId, chapterId);
+          return this.api.fetchChapterPages(contentId, chapterId);
         }
         // =========================================================================
         // PreferenceProvider
@@ -2936,7 +3367,7 @@ var SourcePackage = (() => {
           return (0, preferences_js_1.buildSettingsForm)();
         }
         async getPreferenceMenu() {
-          return this.getSettingsPage();
+          return (0, preferences_js_1.buildSettingsForm)();
         }
         async onFormSubmitted(_id, data) {
           await (0, preferences_js_1.updateUserPreferences)(data);
@@ -2954,6 +3385,7 @@ var SourcePackage = (() => {
       var Target = _Target;
       exports.default = Target;
       exports.Target = Target;
+      Target.info.version = 2.1;
     }
   });
 
@@ -2982,7 +3414,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_moe();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "moe.atsu", "name": "Atsumaru", "version": 2, "website": "https://atsu.moe", "rating": 1, "thumbnail": "https://atsu.moe/favicon.ico", "languages": ["en"] };
+      exports.SourceMetadata = { "id": "moe.atsu", "name": "Atsumaru", "version": 2.1, "website": "https://atsu.moe", "rating": 1, "thumbnail": "https://atsu.moe/favicon.ico", "languages": ["en"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;
