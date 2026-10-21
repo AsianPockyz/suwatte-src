@@ -833,14 +833,14 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.EXTENSION_CODE_MAP = exports.IMHENTAI_POPULAR_PARODIES = exports.IMHENTAI_TAGS = exports.IMHENTAI_FILTER_LANGUAGES = exports.IMHENTAI_SORT_OPTIONS = exports.BROWSE_FEED_DEFINITIONS = exports.BROWSE_FEED_KEYS = exports.HOME_SECTION_KEYS = exports.DEFAULT_TITLE_PREFERENCE = exports.TITLE_PREFERENCE_OPTIONS = exports.HEAVY_TROPE_SYNONYM_MAP = exports.HEAVY_TROPE_OPTIONS = exports.LANGUAGE_QUERY_MAP = exports.DEFAULT_LANGUAGE = exports.LANGUAGE_OPTIONS = exports.CATEGORY_QUERY_MAP = exports.ALL_CATEGORIES = exports.DEFAULT_CATEGORIES = exports.CATEGORY_OPTIONS = exports.PREF_KEYS = exports.SERVER_PREFIX_REGEX = exports.SERVER_FROM_URL_REGEX = exports.VIEW_PATH_REGEX = exports.GALLERY_PATH_REGEX = exports.GALLERY_URL_REGEX = exports.DEFAULT_IMAGE_EXT = exports.DEFAULT_SERVER_ID = exports.RATE_LIMIT_PER_SECOND = exports.STATIC_CONFIGURATION = exports.PAGE_IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.STANDARD_HEADERS = exports.DEFAULT_USER_AGENT = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_RESOLUTION_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.SOURCE_CONTENT_RATING = exports.SOURCE_LANGUAGES = exports.SOURCE_ENVIRONMENT = exports.THUMBNAIL_FILENAME = exports.VARIANT_ID = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = exports.ContentRating = void 0;
+      exports.EXTENSION_CODE_MAP = exports.IMHENTAI_POPULAR_PARODIES = exports.IMHENTAI_TAGS = exports.IMHENTAI_FILTER_LANGUAGES = exports.IMHENTAI_SORT_OPTIONS = exports.BROWSE_FEED_DEFINITIONS = exports.BROWSE_FEED_KEYS = exports.HOME_SECTION_KEYS = exports.DEFAULT_TITLE_PREFERENCE = exports.TITLE_PREFERENCE_OPTIONS = exports.HEAVY_TROPE_SYNONYM_MAP = exports.TROPE_SERVER_NEGATIVE_MAP = exports.TROPE_ALIASES = exports.HEAVY_TROPE_OPTIONS = exports.LANGUAGE_QUERY_MAP = exports.DEFAULT_LANGUAGE = exports.LANGUAGE_OPTIONS = exports.CATEGORY_QUERY_MAP = exports.ALL_CATEGORIES = exports.DEFAULT_CATEGORIES = exports.CATEGORY_OPTIONS = exports.PREF_KEYS = exports.SERVER_PREFIX_REGEX = exports.SERVER_FROM_URL_REGEX = exports.VIEW_PATH_REGEX = exports.GALLERY_PATH_REGEX = exports.GALLERY_URL_REGEX = exports.DEFAULT_IMAGE_EXT = exports.DEFAULT_SERVER_ID = exports.RATE_LIMIT_PER_SECOND = exports.STATIC_CONFIGURATION = exports.PAGE_IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.STANDARD_HEADERS = exports.DEFAULT_USER_AGENT = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_RESOLUTION_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.SOURCE_CONTENT_RATING = exports.SOURCE_LANGUAGES = exports.SOURCE_ENVIRONMENT = exports.THUMBNAIL_FILENAME = exports.VARIANT_ID = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = exports.ContentRating = void 0;
       var toolchain_1 = require_dist();
       require_types2();
       toolchain_1.ContentRating.ADULT = toolchain_1.ContentRating.MATURE;
       exports.ContentRating = toolchain_1.ContentRating;
       exports.SOURCE_ID = "org.imhentai";
       exports.SOURCE_NAME = "IMHentai";
-      exports.SOURCE_VERSION = 1.2;
+      exports.SOURCE_VERSION = 1.3;
       exports.BASE_URL = "https://imhentai.xxx";
       exports.VARIANT_ID = "org.imhentai";
       exports.THUMBNAIL_FILENAME = "imhentai.png";
@@ -892,7 +892,9 @@ var SourcePackage = (() => {
         LANGUAGE: "imhentai_pref_language",
         EXCLUDED_TROPES: "imhentai_pref_excluded_tropes",
         CUSTOM_BLACKLIST: "imhentai_pref_custom_blacklist",
-        TITLE_PREFERENCE: "imhentai_pref_title_preference"
+        TITLE_PREFERENCE: "imhentai_pref_title_preference",
+        ALIAS_EXCLUDED_TROPES: "blacklist_heavy_tropes",
+        ALIAS_CUSTOM_BLACKLIST: "custom_blacklist_tags"
       };
       exports.CATEGORY_OPTIONS = Object.freeze([
         { id: "doujinshi", title: "Doujinshi", queryParam: "d" },
@@ -950,8 +952,8 @@ var SourcePackage = (() => {
           id: "ntr",
           title: "Exclude Netorare (NTR)",
           synonyms: [
-            "ntr",
             "netorare",
+            "ntr",
             "cheating",
             "cuckold",
             "infidelity",
@@ -963,9 +965,9 @@ var SourcePackage = (() => {
           title: "Exclude Futanari",
           synonyms: [
             "futanari",
-            "futa",
             "dickgirl",
             "dickgirls",
+            "futa",
             "full-packaged futanari",
             "shemale"
           ]
@@ -976,8 +978,10 @@ var SourcePackage = (() => {
           synonyms: [
             "guro",
             "gore",
-            "blood",
+            "amputation",
             "amputee",
+            "snuff",
+            "blood",
             "cannibalism",
             "torture",
             "decapitation"
@@ -986,7 +990,13 @@ var SourcePackage = (() => {
         {
           id: "scat",
           title: "Exclude Scat",
-          synonyms: ["scat", "coprophagia", "feces", "diaper"]
+          synonyms: [
+            "scat",
+            "coprophagia",
+            "defecation",
+            "feces",
+            "diaper"
+          ]
         },
         {
           id: "yaoi",
@@ -995,6 +1005,9 @@ var SourcePackage = (() => {
             "yaoi",
             "males only",
             "male only",
+            "shounen ai",
+            "danmei",
+            "bl",
             "boys love",
             "bara",
             "josou seme",
@@ -1007,6 +1020,72 @@ var SourcePackage = (() => {
           synonyms: ["snuff", "death", "necrophilia", "asphyxiation"]
         }
       ]);
+      exports.TROPE_ALIASES = Object.freeze({
+        yaoi: Object.freeze([
+          "yaoi",
+          "males only",
+          "male only",
+          "shounen ai",
+          "danmei",
+          "bl",
+          "boys love",
+          "bara",
+          "josou seme",
+          "tomgirl"
+        ]),
+        netorare: Object.freeze([
+          "netorare",
+          "ntr",
+          "cheating",
+          "cuckold",
+          "infidelity",
+          "netori"
+        ]),
+        ntr: Object.freeze([
+          "netorare",
+          "ntr",
+          "cheating",
+          "cuckold",
+          "infidelity",
+          "netori"
+        ]),
+        futanari: Object.freeze([
+          "futanari",
+          "dickgirl",
+          "dickgirls",
+          "futa",
+          "full-packaged futanari",
+          "shemale"
+        ]),
+        guro: Object.freeze([
+          "guro",
+          "gore",
+          "amputation",
+          "amputee",
+          "snuff",
+          "blood",
+          "cannibalism",
+          "torture",
+          "decapitation"
+        ]),
+        scat: Object.freeze([
+          "scat",
+          "coprophagia",
+          "defecation",
+          "feces",
+          "diaper"
+        ]),
+        snuff: Object.freeze(["snuff", "death", "necrophilia", "asphyxiation"])
+      });
+      exports.TROPE_SERVER_NEGATIVE_MAP = Object.freeze({
+        yaoi: Object.freeze(["-yaoi", '-"males only"']),
+        netorare: Object.freeze(["-netorare", "-ntr"]),
+        ntr: Object.freeze(["-netorare", "-ntr"]),
+        futanari: Object.freeze(["-futanari", "-dickgirl"]),
+        guro: Object.freeze(["-guro", "-gore"]),
+        scat: Object.freeze(["-scat", "-coprophagia"]),
+        snuff: Object.freeze(["-snuff"])
+      });
       exports.HEAVY_TROPE_SYNONYM_MAP = new Map(exports.HEAVY_TROPE_OPTIONS.map((opt) => [opt.id, opt.synonyms]));
       exports.TITLE_PREFERENCE_OPTIONS = Object.freeze([
         { id: "english", title: "English Title (Japanese in Subtitle)" },
@@ -1350,6 +1429,8 @@ var SourcePackage = (() => {
       exports.normalizeTropesList = normalizeTropesList;
       exports.normalizeTitlePreference = normalizeTitlePreference;
       exports.parseCustomBlacklist = parseCustomBlacklist;
+      exports.buildNegativeSearchTerms = buildNegativeSearchTerms;
+      exports.buildNegativeSearchQuery = buildNegativeSearchQuery;
       exports.getUserPreferences = getUserPreferences;
       exports.compileBlacklistContext = compileBlacklistContext;
       exports.isCardBlacklisted = isCardBlacklisted;
@@ -1513,16 +1594,17 @@ var SourcePackage = (() => {
         if (VALID_TROPES_SET.has(lower)) {
           return lower;
         }
-        if (lower.includes("ntr") || lower.includes("netorare"))
+        if (lower === "netorare" || lower.includes("ntr") || lower.includes("netorare"))
           return "ntr";
         if (lower.includes("futa"))
           return "futanari";
-        if (lower.includes("guro") || lower.includes("gore"))
+        if (lower.includes("guro") || lower.includes("gore") || lower.includes("amput"))
           return "guro";
-        if (lower.includes("scat"))
+        if (lower.includes("scat") || lower.includes("coprophagia") || lower.includes("defecat"))
           return "scat";
-        if (lower.includes("yaoi") || lower.includes("male only"))
+        if (lower.includes("yaoi") || lower.includes("male only") || lower.includes("males only") || lower === "bl" || lower.includes("shounen ai") || lower.includes("danmei")) {
           return "yaoi";
+        }
         if (lower.includes("snuff"))
           return "snuff";
         return null;
@@ -1551,22 +1633,81 @@ var SourcePackage = (() => {
         return "english";
       }
       function parseCustomBlacklist(raw) {
-        var _a, _b;
+        var _a, _b, _c;
         const list = parseStringList(raw);
         const unique = /* @__PURE__ */ new Set();
         for (let i = 0, len = list.length; i < len; i++) {
-          const token = (_a = list[i]) == null ? void 0 : _a.trim().toLowerCase();
-          if (token && token.length > 0) {
-            unique.add(token);
-            if (token.includes(":")) {
-              const stripped = (_b = token.split(":").pop()) == null ? void 0 : _b.trim();
-              if (stripped) {
-                unique.add(stripped);
+          const rawEntry = (_a = list[i]) == null ? void 0 : _a.trim().toLowerCase();
+          if (rawEntry && rawEntry.length > 0) {
+            const parts = rawEntry.split(",");
+            for (let j = 0; j < parts.length; j++) {
+              let token = (_b = parts[j]) == null ? void 0 : _b.trim().toLowerCase();
+              if (token && token.length > 0) {
+                unique.add(token);
+                if (token.includes(":")) {
+                  const stripped = (_c = token.split(":").pop()) == null ? void 0 : _c.trim();
+                  if (stripped) {
+                    unique.add(stripped);
+                  }
+                }
               }
             }
           }
         }
         return Array.from(unique);
+      }
+      function buildNegativeSearchTerms(prefs) {
+        var _a, _b, _c;
+        const terms = [];
+        const added = /* @__PURE__ */ new Set();
+        const tropes = (_a = prefs.excludedTropes) != null ? _a : [];
+        for (let i = 0, len = tropes.length; i < len; i++) {
+          const rawTrope = tropes[i];
+          if (!rawTrope)
+            continue;
+          const norm = rawTrope.trim().toLowerCase();
+          const serverNegative = constants_js_1.TROPE_SERVER_NEGATIVE_MAP[norm];
+          if (serverNegative && serverNegative.length > 0) {
+            for (let j = 0; j < serverNegative.length; j++) {
+              const neg = serverNegative[j];
+              if (neg && !added.has(neg)) {
+                added.add(neg);
+                terms.push(neg);
+              }
+            }
+          } else {
+            const clean = norm.replace(/^[-+]/, "").trim();
+            if (clean) {
+              const formatted = clean.includes(" ") ? `-"${clean}"` : `-${clean}`;
+              if (!added.has(formatted)) {
+                added.add(formatted);
+                terms.push(formatted);
+              }
+            }
+          }
+        }
+        const custom = (_b = prefs.customBlacklist) != null ? _b : [];
+        for (let i = 0, len = custom.length; i < len; i++) {
+          let raw = custom[i];
+          if (!raw)
+            continue;
+          let clean = raw.trim().toLowerCase();
+          if (clean.includes(":")) {
+            clean = ((_c = clean.split(":").pop()) == null ? void 0 : _c.trim()) || clean;
+          }
+          clean = clean.replace(/^[-+]/, "").trim();
+          if (!clean)
+            continue;
+          const formatted = clean.includes(" ") ? `-"${clean}"` : `-${clean}`;
+          if (!added.has(formatted)) {
+            added.add(formatted);
+            terms.push(formatted);
+          }
+        }
+        return terms;
+      }
+      function buildNegativeSearchQuery(prefs) {
+        return buildNegativeSearchTerms(prefs).join(" ");
       }
       async function hydratePreferencesFromStore() {
         if (!hasObjectStore()) {
@@ -1574,12 +1715,14 @@ var SourcePackage = (() => {
           return memoryPreferences;
         }
         try {
-          const [storedCategories, storedLanguage, storedExcludedTropes, storedCustomBlacklist, storedTitlePref] = await Promise.all([
+          const [storedCategories, storedLanguage, storedExcludedTropes, storedCustomBlacklist, storedTitlePref, aliasTropes, aliasBlacklist] = await Promise.all([
             ObjectStore.get(constants_js_1.PREF_KEYS.CATEGORIES).catch(() => null),
             ObjectStore.string(constants_js_1.PREF_KEYS.LANGUAGE).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.EXCLUDED_TROPES).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST).catch(() => null),
-            ObjectStore.string(constants_js_1.PREF_KEYS.TITLE_PREFERENCE).catch(() => null)
+            ObjectStore.string(constants_js_1.PREF_KEYS.TITLE_PREFERENCE).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.ALIAS_EXCLUDED_TROPES).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.ALIAS_CUSTOM_BLACKLIST).catch(() => null)
           ]);
           let categories = memoryPreferences.categories;
           if (storedCategories !== null && storedCategories !== void 0) {
@@ -1589,8 +1732,10 @@ var SourcePackage = (() => {
             }
           }
           const language = storedLanguage !== null && storedLanguage !== void 0 ? normalizeLanguageToken(storedLanguage) : memoryPreferences.language;
-          const excludedTropes = storedExcludedTropes !== null && storedExcludedTropes !== void 0 ? normalizeTropesList(storedExcludedTropes) : memoryPreferences.excludedTropes;
-          const customBlacklist = storedCustomBlacklist !== null && storedCustomBlacklist !== void 0 ? parseCustomBlacklist(storedCustomBlacklist) : memoryPreferences.customBlacklist;
+          const rawTropes = storedExcludedTropes !== null && storedExcludedTropes !== void 0 ? storedExcludedTropes : aliasTropes;
+          const excludedTropes = rawTropes !== null && rawTropes !== void 0 ? normalizeTropesList(rawTropes) : memoryPreferences.excludedTropes;
+          const rawCustom = storedCustomBlacklist !== null && storedCustomBlacklist !== void 0 ? storedCustomBlacklist : aliasBlacklist;
+          const customBlacklist = rawCustom !== null && rawCustom !== void 0 ? parseCustomBlacklist(rawCustom) : memoryPreferences.customBlacklist;
           const titlePreference = storedTitlePref !== null && storedTitlePref !== void 0 ? normalizeTitlePreference(storedTitlePref) : memoryPreferences.titlePreference;
           memoryPreferences = {
             categories,
@@ -1617,7 +1762,7 @@ var SourcePackage = (() => {
         return inflightHydration;
       }
       function compileBlacklistContext(prefs, extraExcludedTags) {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d, _e, _f;
         const hasExtra = Array.isArray(extraExcludedTags) && extraExcludedTags.length > 0;
         if (!hasExtra) {
           const cached = blacklistContextCache.get(prefs);
@@ -1633,18 +1778,19 @@ var SourcePackage = (() => {
             continue;
           const norm = tropeId.trim().toLowerCase();
           blacklistSet.add(norm);
-          const synonyms = constants_js_1.HEAVY_TROPE_SYNONYM_MAP.get(norm);
+          const synonyms = (_b = constants_js_1.TROPE_ALIASES[norm]) != null ? _b : constants_js_1.HEAVY_TROPE_SYNONYM_MAP.get(norm);
           if (synonyms) {
             for (let j = 0, sLen = synonyms.length; j < sLen; j++) {
               const syn = synonyms[j];
               if (syn) {
                 blacklistSet.add(syn);
                 blacklistSet.add(syn.replace(/\s+/g, "-"));
+                blacklistSet.add(syn.replace(/-/g, " "));
               }
             }
           }
         }
-        const custom = (_b = prefs.customBlacklist) != null ? _b : [];
+        const custom = (_c = prefs.customBlacklist) != null ? _c : [];
         for (let i = 0, len = custom.length; i < len; i++) {
           const rawTag = custom[i];
           if (!rawTag)
@@ -1656,7 +1802,7 @@ var SourcePackage = (() => {
           blacklistSet.add(clean.replace(/\s+/g, "-"));
           blacklistSet.add(clean.replace(/-/g, " "));
           if (clean.includes(":")) {
-            const stripped = (_c = clean.split(":").pop()) == null ? void 0 : _c.trim();
+            const stripped = (_d = clean.split(":").pop()) == null ? void 0 : _d.trim();
             if (stripped) {
               blacklistSet.add(stripped);
               blacklistSet.add(stripped.replace(/\s+/g, "-"));
@@ -1693,8 +1839,8 @@ var SourcePackage = (() => {
           blacklistTerms,
           hasExclusions: blacklistSet.size > 0,
           allowedCategoriesSet,
-          language: (_d = prefs.language) != null ? _d : constants_js_1.DEFAULT_LANGUAGE,
-          titlePreference: (_e = prefs.titlePreference) != null ? _e : constants_js_1.DEFAULT_TITLE_PREFERENCE
+          language: (_e = prefs.language) != null ? _e : constants_js_1.DEFAULT_LANGUAGE,
+          titlePreference: (_f = prefs.titlePreference) != null ? _f : constants_js_1.DEFAULT_TITLE_PREFERENCE
         };
         if (!hasExtra) {
           blacklistContextCache.set(prefs, compiled);
@@ -1702,7 +1848,7 @@ var SourcePackage = (() => {
         return compiled;
       }
       function isCardBlacklisted(card, context, extraExcludedTags) {
-        var _a, _b;
+        var _a, _b, _c, _d, _e, _f;
         if (!context.hasExclusions && (!extraExcludedTags || extraExcludedTags.length === 0)) {
           return false;
         }
@@ -1728,8 +1874,12 @@ var SourcePackage = (() => {
           }
         }
         const title = ((_b = card.title) != null ? _b : "").trim().toLowerCase();
-        if (title) {
-          const tokens = title.split(/[\s,._\-[\]()]+/);
+        const jTitle = ((_c = card.japaneseTitle) != null ? _c : "").trim().toLowerCase();
+        const subtitle = ((_d = card.subtitle) != null ? _d : "").trim().toLowerCase();
+        const webUrl = ((_e = card.webUrl) != null ? _e : "").trim().toLowerCase();
+        const combinedText = `${title} ${jTitle} ${subtitle} ${webUrl}`;
+        if (combinedText.trim()) {
+          const tokens = combinedText.split(/[\s,._\-[\]()/\\+:#?&=]+/);
           for (let i = 0, len = tokens.length; i < len; i++) {
             const tok = tokens[i];
             if (tok && blacklistSet.has(tok)) {
@@ -1738,7 +1888,22 @@ var SourcePackage = (() => {
           }
           for (let i = 0, len = blacklistTerms.length; i < len; i++) {
             const term = blacklistTerms[i];
-            if (term && term.includes(" ") && title.includes(term)) {
+            if (!term)
+              continue;
+            if (term.includes(" ")) {
+              if (combinedText.includes(term) || combinedText.includes(term.replace(/\s+/g, "-")) || combinedText.includes(term.replace(/\s+/g, "_"))) {
+                return true;
+              }
+            }
+          }
+        }
+        if (Array.isArray(extraExcludedTags) && extraExcludedTags.length > 0) {
+          for (let i = 0, len = extraExcludedTags.length; i < len; i++) {
+            const raw = (_f = extraExcludedTags[i]) == null ? void 0 : _f.trim().toLowerCase();
+            if (!raw)
+              continue;
+            const clean = raw.replace(/^[-+]/, "").trim();
+            if (clean && (blacklistSet.has(clean) || combinedText.includes(clean))) {
               return true;
             }
           }
@@ -1954,6 +2119,7 @@ var SourcePackage = (() => {
         };
       }
       async function updateUserPreferences(data) {
+        var _a, _b, _c, _d, _e, _f;
         if (!isRecord(data)) {
           return;
         }
@@ -1977,19 +2143,22 @@ var SourcePackage = (() => {
             }));
           }
         }
-        const rawTropes = data[constants_js_1.PREF_KEYS.EXCLUDED_TROPES];
+        const rawTropes = (_c = (_b = (_a = data[constants_js_1.PREF_KEYS.EXCLUDED_TROPES]) != null ? _a : data[constants_js_1.PREF_KEYS.ALIAS_EXCLUDED_TROPES]) != null ? _b : data["excluded_tropes"]) != null ? _c : data["heavy_tropes"];
         if (rawTropes !== void 0 && rawTropes !== null) {
           excludedTropes = normalizeTropesList(rawTropes);
           if (storeAvailable) {
             writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.EXCLUDED_TROPES, excludedTropes).catch(() => {
+            }), ObjectStore.set(constants_js_1.PREF_KEYS.ALIAS_EXCLUDED_TROPES, excludedTropes).catch(() => {
             }));
           }
         }
-        const rawCustomBlacklist = data[constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST];
+        const rawCustomBlacklist = (_f = (_e = (_d = data[constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST]) != null ? _d : data[constants_js_1.PREF_KEYS.ALIAS_CUSTOM_BLACKLIST]) != null ? _e : data["custom_blacklist"]) != null ? _f : data["blacklist_tags"];
         if (rawCustomBlacklist !== void 0 && rawCustomBlacklist !== null) {
           customBlacklist = parseCustomBlacklist(rawCustomBlacklist);
           if (storeAvailable) {
-            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST, typeof rawCustomBlacklist === "string" ? rawCustomBlacklist : customBlacklist.join(", ")).catch(() => {
+            const valToSave = typeof rawCustomBlacklist === "string" ? rawCustomBlacklist : customBlacklist.join(", ");
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST, valToSave).catch(() => {
+            }), ObjectStore.set(constants_js_1.PREF_KEYS.ALIAS_CUSTOM_BLACKLIST, valToSave).catch(() => {
             }));
           }
         }
@@ -3987,25 +4156,65 @@ var SourcePackage = (() => {
         buildFeedUrl(feedKey, page, prefs, sortBy) {
           const safePage = Math.max(1, page || 1);
           const prefFlags = (0, api_js_1.buildPreferenceQueryFlags)(prefs);
+          const negativeTerms = (0, preferences_js_1.buildNegativeSearchQuery)(prefs);
+          const hasNegative = negativeTerms.length > 0;
+          const encodedNegative = hasNegative ? encodeURIComponent(negativeTerms) : "";
           switch (feedKey) {
             case constants_js_1.BROWSE_FEED_KEYS.POPULAR:
-            case constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT:
-              return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&page=${safePage}${prefFlags}`;
+            case constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT: {
+              const keyParam = hasNegative ? `key=${encodedNegative}&` : "";
+              return `${constants_js_1.BASE_URL}/search/?${keyParam}lt=0&pp=1&page=${safePage}${prefFlags}`;
+            }
             case constants_js_1.BROWSE_FEED_KEYS.MANGA:
-            case constants_js_1.HOME_SECTION_KEYS.SERIALIZED_MANGA:
+            case constants_js_1.HOME_SECTION_KEYS.SERIALIZED_MANGA: {
+              if (hasNegative) {
+                return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&m=1&lt=1&pp=0&page=${safePage}${prefFlags}`;
+              }
               return `${constants_js_1.BASE_URL}/category/manga/?page=${safePage}`;
+            }
             case constants_js_1.BROWSE_FEED_KEYS.DOUJINSHI:
-            case constants_js_1.HOME_SECTION_KEYS.LATEST_DOUJINSHI:
+            case constants_js_1.HOME_SECTION_KEYS.LATEST_DOUJINSHI: {
+              if (hasNegative) {
+                return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&d=1&lt=1&pp=0&page=${safePage}${prefFlags}`;
+              }
               return `${constants_js_1.BASE_URL}/category/doujinshi/?page=${safePage}`;
-            case constants_js_1.BROWSE_FEED_KEYS.WESTERN:
+            }
+            case constants_js_1.BROWSE_FEED_KEYS.WESTERN: {
+              if (hasNegative) {
+                return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&w=1&lt=1&pp=0&page=${safePage}${prefFlags}`;
+              }
               return `${constants_js_1.BASE_URL}/category/western/?page=${safePage}`;
-            case "imageset":
+            }
+            case "imageset": {
+              if (hasNegative) {
+                return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&i=1&lt=1&pp=0&page=${safePage}${prefFlags}`;
+              }
               return `${constants_js_1.BASE_URL}/category/imageset/?page=${safePage}`;
-            case "cosplay":
+            }
+            case "cosplay": {
+              if (hasNegative) {
+                return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&c=1&lt=1&pp=0&page=${safePage}${prefFlags}`;
+              }
               return `${constants_js_1.BASE_URL}/category/cosplay/?page=${safePage}`;
-            case constants_js_1.BROWSE_FEED_KEYS.LATEST:
+            }
             case constants_js_1.BROWSE_FEED_KEYS.DISCOVER:
+            case "home": {
+              if (hasNegative) {
+                return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&pp=1&page=${safePage}${prefFlags}`;
+              }
+              if (sortBy === "popular") {
+                return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&page=${safePage}${prefFlags}`;
+              }
+              return `${constants_js_1.BASE_URL}/?page=${safePage}`;
+            }
+            case constants_js_1.BROWSE_FEED_KEYS.LATEST:
             default: {
+              if (hasNegative) {
+                if (sortBy === "popular") {
+                  return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&lt=0&pp=1&page=${safePage}${prefFlags}`;
+                }
+                return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&lt=1&pp=0&page=${safePage}${prefFlags}`;
+              }
               if (sortBy === "popular") {
                 return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&page=${safePage}${prefFlags}`;
               }
@@ -4014,7 +4223,7 @@ var SourcePackage = (() => {
           }
         }
         buildSearchUrl(params, prefs) {
-          var _a, _b, _c;
+          var _a, _b, _c, _d, _e;
           const safePage = Math.max(1, (_a = params.page) != null ? _a : 1);
           const queryParts = [];
           if (params.query) {
@@ -4025,6 +4234,25 @@ var SourcePackage = (() => {
               const tag = (_c = params.tags.include[i]) == null ? void 0 : _c.trim();
               if (tag) {
                 queryParts.push(tag);
+              }
+            }
+          }
+          const prefNegativeTerms = (0, preferences_js_1.buildNegativeSearchTerms)(prefs);
+          for (let i = 0; i < prefNegativeTerms.length; i++) {
+            const term = prefNegativeTerms[i];
+            if (term && !queryParts.includes(term)) {
+              queryParts.push(term);
+            }
+          }
+          if (((_d = params.tags) == null ? void 0 : _d.exclude) && params.tags.exclude.length > 0) {
+            for (let i = 0; i < params.tags.exclude.length; i++) {
+              const rawTag = (_e = params.tags.exclude[i]) == null ? void 0 : _e.trim().toLowerCase();
+              if (!rawTag)
+                continue;
+              const cleanTag = rawTag.replace(/^[-+]/, "").trim();
+              const formatted = cleanTag.includes(" ") ? `-"${cleanTag}"` : `-${cleanTag}`;
+              if (!queryParts.includes(formatted)) {
+                queryParts.push(formatted);
               }
             }
           }
@@ -4482,7 +4710,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_org();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "org.imhentai", "name": "IMHentai", "version": 1.2, "website": "https://imhentai.xxx", "rating": 2, "thumbnail": "imhentai.png", "languages": ["en", "ja", "zh", "es", "fr", "de", "ru"] };
+      exports.SourceMetadata = { "id": "org.imhentai", "name": "IMHentai", "version": 1.3, "website": "https://imhentai.xxx", "rating": 2, "thumbnail": "imhentai.png", "languages": ["en", "ja", "zh", "es", "fr", "de", "ru"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;
