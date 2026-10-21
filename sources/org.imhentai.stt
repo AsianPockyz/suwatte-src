@@ -840,7 +840,7 @@ var SourcePackage = (() => {
       exports.ContentRating = toolchain_1.ContentRating;
       exports.SOURCE_ID = "org.imhentai";
       exports.SOURCE_NAME = "IMHentai";
-      exports.SOURCE_VERSION = 1.3;
+      exports.SOURCE_VERSION = 1.4;
       exports.BASE_URL = "https://imhentai.xxx";
       exports.VARIANT_ID = "org.imhentai";
       exports.THUMBNAIL_FILENAME = "imhentai.png";
@@ -1094,13 +1094,18 @@ var SourcePackage = (() => {
       exports.DEFAULT_TITLE_PREFERENCE = "english";
       exports.HOME_SECTION_KEYS = {
         SPOTLIGHT: "spotlight",
+        TRENDING_NOW: "trending_now",
+        FRESH_RELEASES: "fresh_releases",
+        TOP_RATED: "top_rated",
         LATEST_DOUJINSHI: "latest_doujinshi",
         SERIALIZED_MANGA: "serialized_manga"
       };
       exports.BROWSE_FEED_KEYS = {
         DISCOVER: "discover",
-        LATEST: "latest",
+        TRENDING: "trending",
         POPULAR: "popular",
+        LATEST: "latest",
+        TOP_RATED: "top_rated",
         MANGA: "manga",
         DOUJINSHI: "doujinshi",
         WESTERN: "western"
@@ -1112,34 +1117,31 @@ var SourcePackage = (() => {
           isHomePage: true
         },
         {
+          id: exports.BROWSE_FEED_KEYS.TRENDING,
+          title: "Trending",
+          urlTemplate: "/search/?lt=1&pp=1&page={page}"
+        },
+        {
+          id: exports.BROWSE_FEED_KEYS.POPULAR,
+          title: "Popular",
+          urlTemplate: "/search/?lt=0&pp=1&page={page}"
+        },
+        {
           id: exports.BROWSE_FEED_KEYS.LATEST,
           title: "Latest Releases",
           urlTemplate: "/?page={page}"
         },
         {
-          id: exports.BROWSE_FEED_KEYS.POPULAR,
-          title: "Popular / Top Rated",
-          urlTemplate: "/search/?lt=0&pp=1&page={page}"
-        },
-        {
-          id: exports.BROWSE_FEED_KEYS.MANGA,
-          title: "Serialized Manga",
-          urlTemplate: "/category/manga/?page={page}"
-        },
-        {
-          id: exports.BROWSE_FEED_KEYS.DOUJINSHI,
-          title: "Event Doujinshi",
-          urlTemplate: "/category/doujinshi/?page={page}"
-        },
-        {
-          id: exports.BROWSE_FEED_KEYS.WESTERN,
-          title: "Western Comics",
-          urlTemplate: "/category/western/?page={page}"
+          id: exports.BROWSE_FEED_KEYS.TOP_RATED,
+          title: "Top Rated",
+          urlTemplate: "/search/?lt=0&pp=1&sort=top_rated&page={page}"
         }
       ]);
       exports.IMHENTAI_SORT_OPTIONS = Object.freeze([
         { id: "latest", title: "Date Added" },
         { id: "popular", title: "Popularity" },
+        { id: "trending", title: "Trending" },
+        { id: "top_rated", title: "Top Rated" },
         { id: "title", title: "Title" }
       ]);
       exports.IMHENTAI_FILTER_LANGUAGES = Object.freeze([
@@ -3205,8 +3207,17 @@ var SourcePackage = (() => {
         const prefFlags = buildPreferenceQueryFlags(prefs);
         switch (feedKey) {
           case constants_js_1.BROWSE_FEED_KEYS.POPULAR:
-          case constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT:
             return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&page=${safePage}${prefFlags}`;
+          case constants_js_1.BROWSE_FEED_KEYS.TRENDING:
+          case constants_js_1.HOME_SECTION_KEYS.TRENDING_NOW:
+          case constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT:
+            return `${constants_js_1.BASE_URL}/search/?lt=1&pp=1&page=${safePage}${prefFlags}`;
+          case constants_js_1.BROWSE_FEED_KEYS.TOP_RATED:
+          case constants_js_1.HOME_SECTION_KEYS.TOP_RATED:
+            return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&sort=top_rated&page=${safePage}${prefFlags}`;
+          case constants_js_1.BROWSE_FEED_KEYS.LATEST:
+          case constants_js_1.HOME_SECTION_KEYS.FRESH_RELEASES:
+            return `${constants_js_1.BASE_URL}/?page=${safePage}${prefFlags}`;
           case constants_js_1.BROWSE_FEED_KEYS.MANGA:
           case constants_js_1.HOME_SECTION_KEYS.SERIALIZED_MANGA:
             return `${constants_js_1.BASE_URL}/category/manga/?page=${safePage}`;
@@ -3219,13 +3230,18 @@ var SourcePackage = (() => {
             return `${constants_js_1.BASE_URL}/category/imageset/?page=${safePage}`;
           case "cosplay":
             return `${constants_js_1.BASE_URL}/category/cosplay/?page=${safePage}`;
-          case constants_js_1.BROWSE_FEED_KEYS.LATEST:
           case constants_js_1.BROWSE_FEED_KEYS.DISCOVER:
           default: {
             if (sortBy === "popular") {
               return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&page=${safePage}${prefFlags}`;
             }
-            return `${constants_js_1.BASE_URL}/?page=${safePage}`;
+            if (sortBy === "top_rated") {
+              return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&sort=top_rated&page=${safePage}${prefFlags}`;
+            }
+            if (sortBy === "trending") {
+              return `${constants_js_1.BASE_URL}/search/?lt=1&pp=1&page=${safePage}${prefFlags}`;
+            }
+            return `${constants_js_1.BASE_URL}/?page=${safePage}${prefFlags}`;
           }
         }
       }
@@ -3245,7 +3261,7 @@ var SourcePackage = (() => {
           }
         }
         const searchKey = encodeURIComponent(queryParts.join(" ").trim());
-        const sortFlag = params.sortBy === "popular" || params.sortBy === "pp" ? "&lt=0&pp=1" : "&lt=1&pp=0";
+        const sortFlag = params.sortBy === "popular" || params.sortBy === "pp" ? "&lt=0&pp=1" : params.sortBy === "top_rated" ? "&lt=0&pp=1&sort=top_rated" : params.sortBy === "trending" ? "&lt=1&pp=1" : "&lt=1&pp=0";
         let overrideCategories;
         if (params.categories) {
           const { include, exclude } = params.categories;
@@ -4159,11 +4175,26 @@ var SourcePackage = (() => {
           const negativeTerms = (0, preferences_js_1.buildNegativeSearchQuery)(prefs);
           const hasNegative = negativeTerms.length > 0;
           const encodedNegative = hasNegative ? encodeURIComponent(negativeTerms) : "";
+          const keyParam = hasNegative ? `key=${encodedNegative}&` : "";
           switch (feedKey) {
-            case constants_js_1.BROWSE_FEED_KEYS.POPULAR:
-            case constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT: {
-              const keyParam = hasNegative ? `key=${encodedNegative}&` : "";
+            case constants_js_1.BROWSE_FEED_KEYS.POPULAR: {
               return `${constants_js_1.BASE_URL}/search/?${keyParam}lt=0&pp=1&page=${safePage}${prefFlags}`;
+            }
+            case constants_js_1.BROWSE_FEED_KEYS.TRENDING:
+            case constants_js_1.HOME_SECTION_KEYS.TRENDING_NOW:
+            case constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT: {
+              return `${constants_js_1.BASE_URL}/search/?${keyParam}lt=1&pp=1&page=${safePage}${prefFlags}`;
+            }
+            case constants_js_1.BROWSE_FEED_KEYS.TOP_RATED:
+            case constants_js_1.HOME_SECTION_KEYS.TOP_RATED: {
+              return `${constants_js_1.BASE_URL}/search/?${keyParam}lt=0&pp=1&sort=top_rated&page=${safePage}${prefFlags}`;
+            }
+            case constants_js_1.BROWSE_FEED_KEYS.LATEST:
+            case constants_js_1.HOME_SECTION_KEYS.FRESH_RELEASES: {
+              if (hasNegative) {
+                return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&lt=1&pp=0&page=${safePage}${prefFlags}`;
+              }
+              return `${constants_js_1.BASE_URL}/?page=${safePage}${prefFlags}`;
             }
             case constants_js_1.BROWSE_FEED_KEYS.MANGA:
             case constants_js_1.HOME_SECTION_KEYS.SERIALIZED_MANGA: {
@@ -4205,20 +4236,37 @@ var SourcePackage = (() => {
               if (sortBy === "popular") {
                 return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&page=${safePage}${prefFlags}`;
               }
-              return `${constants_js_1.BASE_URL}/?page=${safePage}`;
+              if (sortBy === "top_rated") {
+                return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&sort=top_rated&page=${safePage}${prefFlags}`;
+              }
+              if (sortBy === "trending") {
+                return `${constants_js_1.BASE_URL}/search/?lt=1&pp=1&page=${safePage}${prefFlags}`;
+              }
+              return `${constants_js_1.BASE_URL}/?page=${safePage}${prefFlags}`;
             }
-            case constants_js_1.BROWSE_FEED_KEYS.LATEST:
             default: {
               if (hasNegative) {
                 if (sortBy === "popular") {
                   return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&lt=0&pp=1&page=${safePage}${prefFlags}`;
+                }
+                if (sortBy === "top_rated") {
+                  return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&lt=0&pp=1&sort=top_rated&page=${safePage}${prefFlags}`;
+                }
+                if (sortBy === "trending") {
+                  return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&lt=1&pp=1&page=${safePage}${prefFlags}`;
                 }
                 return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&lt=1&pp=0&page=${safePage}${prefFlags}`;
               }
               if (sortBy === "popular") {
                 return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&page=${safePage}${prefFlags}`;
               }
-              return `${constants_js_1.BASE_URL}/?page=${safePage}`;
+              if (sortBy === "top_rated") {
+                return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&sort=top_rated&page=${safePage}${prefFlags}`;
+              }
+              if (sortBy === "trending") {
+                return `${constants_js_1.BASE_URL}/search/?lt=1&pp=1&page=${safePage}${prefFlags}`;
+              }
+              return `${constants_js_1.BASE_URL}/?page=${safePage}${prefFlags}`;
             }
           }
         }
@@ -4257,7 +4305,7 @@ var SourcePackage = (() => {
             }
           }
           const searchKey = encodeURIComponent(queryParts.join(" ").trim());
-          const sortFlag = params.sortBy === "popular" || params.sortBy === "pp" ? "&lt=0&pp=1" : "&lt=1&pp=0";
+          const sortFlag = params.sortBy === "popular" || params.sortBy === "pp" ? "&lt=0&pp=1" : params.sortBy === "top_rated" ? "&lt=0&pp=1&sort=top_rated" : params.sortBy === "trending" ? "&lt=1&pp=1" : "&lt=1&pp=0";
           let overrideCategories;
           if (params.categories) {
             const { include, exclude } = params.categories;
@@ -4392,15 +4440,34 @@ var SourcePackage = (() => {
       var filters_js_1 = require_filters();
       var preferences_js_1 = require_preferences();
       var scraper_js_1 = require_scraper();
-      var SPOTLIGHT_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.POPULAR }, "Popular / Top Rated");
-      var LATEST_DOUJINSHI_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.DOUJINSHI }, "Event Doujinshi");
-      var SERIALIZED_MANGA_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.MANGA }, "Serialized Manga");
+      var SPOTLIGHT_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.TRENDING }, "Trending");
+      var TRENDING_NOW_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.TRENDING }, "Trending Now");
+      var FRESH_RELEASES_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.LATEST }, "Fresh Releases");
+      var TOP_RATED_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.TOP_RATED }, "Top Rated");
       var STATIC_CUSTOM_FEEDS = [
         {
           id: constants_js_1.BROWSE_FEED_KEYS.DISCOVER,
           title: "Discover",
           content: {
             page: "home"
+          }
+        },
+        {
+          id: constants_js_1.BROWSE_FEED_KEYS.TRENDING,
+          title: "Trending",
+          content: {
+            list: {
+              key: constants_js_1.BROWSE_FEED_KEYS.TRENDING
+            }
+          }
+        },
+        {
+          id: constants_js_1.BROWSE_FEED_KEYS.POPULAR,
+          title: "Popular",
+          content: {
+            list: {
+              key: constants_js_1.BROWSE_FEED_KEYS.POPULAR
+            }
           }
         },
         {
@@ -4413,45 +4480,15 @@ var SourcePackage = (() => {
           }
         },
         {
-          id: constants_js_1.BROWSE_FEED_KEYS.POPULAR,
-          title: "Popular / Top Rated",
+          id: constants_js_1.BROWSE_FEED_KEYS.TOP_RATED,
+          title: "Top Rated",
           content: {
             list: {
-              key: constants_js_1.BROWSE_FEED_KEYS.POPULAR
-            }
-          }
-        },
-        {
-          id: constants_js_1.BROWSE_FEED_KEYS.MANGA,
-          title: "Serialized Manga",
-          content: {
-            list: {
-              key: constants_js_1.BROWSE_FEED_KEYS.MANGA
-            }
-          }
-        },
-        {
-          id: constants_js_1.BROWSE_FEED_KEYS.DOUJINSHI,
-          title: "Event Doujinshi",
-          content: {
-            list: {
-              key: constants_js_1.BROWSE_FEED_KEYS.DOUJINSHI
-            }
-          }
-        },
-        {
-          id: constants_js_1.BROWSE_FEED_KEYS.WESTERN,
-          title: "Western Comics",
-          content: {
-            list: {
-              key: constants_js_1.BROWSE_FEED_KEYS.WESTERN
+              key: constants_js_1.BROWSE_FEED_KEYS.TOP_RATED
             }
           }
         }
       ];
-      var STATIC_HOME_PAGE = {
-        feeds: STATIC_CUSTOM_FEEDS
-      };
       var _Target = class _Target {
         constructor(scraper) {
           __publicField(this, "info", _Target.info);
@@ -4461,6 +4498,7 @@ var SourcePackage = (() => {
           __publicField(this, "parseGalleryCards", scraper_js_1.parseGalleryCards);
           __publicField(this, "parseGalleryDetail", scraper_js_1.parseGalleryDetail);
           __publicField(this, "filterAndMapGalleryCards", scraper_js_1.filterAndMapGalleryCards);
+          __publicField(this, "cachedHomeSections", null);
           this.scraper = scraper instanceof scraper_js_1.ImHentaiScraperClient ? scraper : new scraper_js_1.ImHentaiScraperClient();
         }
         getConfiguration() {
@@ -4473,7 +4511,12 @@ var SourcePackage = (() => {
         // HomeProvider
         // =========================================================================
         async getHomePage() {
-          return STATIC_HOME_PAGE;
+          const homeSections = await this.getItemPage("home", 1);
+          return {
+            feeds: STATIC_CUSTOM_FEEDS,
+            sections: homeSections.sections,
+            isLastPage: homeSections.isLastPage
+          };
         }
         async getItemPage(key, page) {
           if (page > 1 && key === "home") {
@@ -4482,46 +4525,69 @@ var SourcePackage = (() => {
               isLastPage: true
             };
           }
+          const now = Date.now();
+          if (this.cachedHomeSections && now - this.cachedHomeSections.timestamp < 1e4) {
+            return this.cachedHomeSections.data;
+          }
           const prefs = await (0, preferences_js_1.getUserPreferences)();
-          const [spotlightRes, doujinshiRes, mangaRes] = await Promise.all([
-            this.scraper.fetchFeedItems(constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT, 1, prefs),
-            this.scraper.fetchFeedItems(constants_js_1.HOME_SECTION_KEYS.LATEST_DOUJINSHI, 1, prefs),
-            this.scraper.fetchFeedItems(constants_js_1.HOME_SECTION_KEYS.SERIALIZED_MANGA, 1, prefs)
+          const [trendingRes, freshRes, topRatedRes] = await Promise.all([
+            this.scraper.fetchFeedItems(constants_js_1.BROWSE_FEED_KEYS.TRENDING, 1, prefs),
+            this.scraper.fetchFeedItems(constants_js_1.BROWSE_FEED_KEYS.LATEST, 1, prefs),
+            this.scraper.fetchFeedItems(constants_js_1.BROWSE_FEED_KEYS.TOP_RATED, 1, prefs)
           ]);
+          const bannerItems = trendingRes.items.length >= 5 ? trendingRes.items.slice(0, 10) : trendingRes.items;
           const sections = [
             {
               id: constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT,
-              title: "Spotlight / Popular",
-              subtitle: "Top rated popular releases on IMHentai",
+              title: "Featured",
+              subtitle: "Prominent trending releases on IMHentai",
               style: toolchain_1.PageSectionStyle.BANNER,
-              items: spotlightRes.items,
+              items: bannerItems,
               destination: SPOTLIGHT_DESTINATION
             },
             {
-              id: constants_js_1.HOME_SECTION_KEYS.LATEST_DOUJINSHI,
-              title: "Latest Doujinshi",
-              subtitle: "Recent event doujinshi releases",
+              id: constants_js_1.HOME_SECTION_KEYS.TRENDING_NOW,
+              title: "Trending Now",
+              subtitle: "Fast-rising releases combining high ratings with recent uploads",
               style: toolchain_1.PageSectionStyle.DEFAULT,
-              items: doujinshiRes.items,
-              destination: LATEST_DOUJINSHI_DESTINATION
+              items: trendingRes.items,
+              destination: TRENDING_NOW_DESTINATION
             },
             {
-              id: constants_js_1.HOME_SECTION_KEYS.SERIALIZED_MANGA,
-              title: "Serialized Manga",
-              subtitle: "Recent tank\u014Dbon and commercial manga releases",
+              id: constants_js_1.HOME_SECTION_KEYS.FRESH_RELEASES,
+              title: "Fresh Releases",
+              subtitle: "Newest additions matching your preferred language",
               style: toolchain_1.PageSectionStyle.DEFAULT,
-              items: mangaRes.items,
-              destination: SERIALIZED_MANGA_DESTINATION
+              items: freshRes.items,
+              destination: FRESH_RELEASES_DESTINATION
+            },
+            {
+              id: constants_js_1.HOME_SECTION_KEYS.TOP_RATED,
+              title: "Top Rated",
+              subtitle: "Standout all-time favorites and high-scoring works",
+              style: toolchain_1.PageSectionStyle.DEFAULT,
+              items: topRatedRes.items,
+              destination: TOP_RATED_DESTINATION
             }
           ];
-          return {
+          const response = {
             sections,
             isLastPage: true
           };
+          this.cachedHomeSections = { timestamp: now, data: response };
+          return response;
         }
         async getPageSectionItems(sectionKey, _pageKey) {
           const prefs = await (0, preferences_js_1.getUserPreferences)();
-          const res = await this.scraper.fetchFeedItems(sectionKey, 1, prefs);
+          let feedKey = sectionKey;
+          if (sectionKey === constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT || sectionKey === constants_js_1.HOME_SECTION_KEYS.TRENDING_NOW) {
+            feedKey = constants_js_1.BROWSE_FEED_KEYS.TRENDING;
+          } else if (sectionKey === constants_js_1.HOME_SECTION_KEYS.FRESH_RELEASES) {
+            feedKey = constants_js_1.BROWSE_FEED_KEYS.LATEST;
+          } else if (sectionKey === constants_js_1.HOME_SECTION_KEYS.TOP_RATED) {
+            feedKey = constants_js_1.BROWSE_FEED_KEYS.TOP_RATED;
+          }
+          const res = await this.scraper.fetchFeedItems(feedKey, 1, prefs);
           return res.items;
         }
         // =========================================================================
@@ -4710,7 +4776,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_org();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "org.imhentai", "name": "IMHentai", "version": 1.3, "website": "https://imhentai.xxx", "rating": 2, "thumbnail": "imhentai.png", "languages": ["en", "ja", "zh", "es", "fr", "de", "ru"] };
+      exports.SourceMetadata = { "id": "org.imhentai", "name": "IMHentai", "version": 1.4, "website": "https://imhentai.xxx", "rating": 2, "thumbnail": "imhentai.png", "languages": ["en", "ja", "zh", "es", "fr", "de", "ru"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;
