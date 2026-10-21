@@ -833,15 +833,15 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.IMHENTAI_TAGS = exports.IMHENTAI_FILTER_LANGUAGES = exports.SEARCH_CATEGORY_OPTIONS = exports.IMHENTAI_SORT_OPTIONS = exports.BROWSE_FEED_DEFINITIONS = exports.BROWSE_FEED_KEYS = exports.HOME_SECTION_KEYS = exports.DEFAULT_TITLE_PREFERENCE = exports.TITLE_PREFERENCE_OPTIONS = exports.HEAVY_TROPE_SYNONYM_MAP = exports.TROPE_SERVER_NEGATIVE_MAP = exports.TROPE_ALIASES = exports.HEAVY_TROPE_OPTIONS = exports.LANGUAGE_QUERY_MAP = exports.DEFAULT_LANGUAGE = exports.LANGUAGE_OPTIONS = exports.SEARCH_LANGUAGE_KEYS = exports.SEARCH_CATEGORY_KEYS = exports.CATEGORY_QUERY_MAP = exports.ALL_CATEGORIES = exports.DEFAULT_CATEGORIES = exports.CATEGORY_OPTIONS = exports.PREF_KEYS = exports.SERVER_PREFIX_REGEX = exports.SERVER_FROM_URL_REGEX = exports.VIEW_PATH_REGEX = exports.GALLERY_PATH_REGEX = exports.GALLERY_URL_REGEX = exports.DEFAULT_IMAGE_EXT = exports.DEFAULT_SERVER_ID = exports.RATE_LIMIT_PER_SECOND = exports.STATIC_CONFIGURATION = exports.PAGE_IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.STANDARD_HEADERS = exports.DEFAULT_USER_AGENT = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_RESOLUTION_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.SOURCE_CONTENT_RATING = exports.SOURCE_LANGUAGES = exports.SOURCE_ENVIRONMENT = exports.THUMBNAIL_FILENAME = exports.VARIANT_ID = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = exports.ContentRating = void 0;
-      exports.EXTENSION_CODE_MAP = exports.IMHENTAI_POPULAR_PARODIES = void 0;
+      exports.G_TH_OBJECT_REGEX = exports.G_TH_STRING_REGEX = exports.G_TH_PARSE_JSON_REGEX = exports.THUMB_PAGENUM_EXT_REGEX = exports.PAGES_TEXT_REGEX = exports.INLINE_LOAD_PAGES_REGEX = exports.INLINE_LOAD_ID_REGEX = exports.INLINE_LOAD_DIR_REGEX = exports.INLINE_GALLERY_ID_REGEX = exports.FLAG_JA_REGEX = exports.FLAG_JP_REGEX = exports.BG_IMAGE_URL_REGEX = exports.BADGE_COUNT_REGEX = exports.BRACKET_TOKEN_REGEX = exports.COMMA_SEMICOLON_REGEX = exports.CATEGORY_PREFIX_REGEX = exports.WHITESPACE_REGEX = exports.PROTOCOL_RELATIVE_REGEX = exports.HTTP_PREFIX_REGEX = exports.LEADING_DOT_REGEX = exports.TRIM_SLASHES_REGEX = exports.EXT_REGEX = exports.NUMERIC_ONLY_REGEX = exports.SERVER_PREFIX_REGEX = exports.SERVER_FROM_URL_REGEX = exports.VIEW_PATH_REGEX = exports.GALLERY_PATH_REGEX = exports.GALLERY_URL_REGEX = exports.DEFAULT_IMAGE_EXT = exports.DEFAULT_SERVER_ID = exports.RATE_LIMIT_PER_SECOND = exports.STATIC_CONFIGURATION = exports.PAGE_IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.STANDARD_HEADERS = exports.DEFAULT_USER_AGENT = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_RESOLUTION_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.SOURCE_CONTENT_RATING = exports.SOURCE_LANGUAGES = exports.SOURCE_ENVIRONMENT = exports.THUMBNAIL_FILENAME = exports.VARIANT_ID = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = exports.ContentRating = void 0;
+      exports.EXTENSION_CODE_MAP = exports.IMHENTAI_FILTER_LANGUAGES = exports.SEARCH_CATEGORY_OPTIONS = exports.IMHENTAI_SORT_OPTIONS = exports.BROWSE_FEED_DEFINITIONS = exports.BROWSE_FEED_KEYS = exports.HOME_SECTION_KEYS = exports.DEFAULT_TITLE_PREFERENCE = exports.TITLE_PREFERENCE_OPTIONS = exports.LANGUAGE_QUERY_MAP = exports.DEFAULT_LANGUAGE = exports.LANGUAGE_OPTIONS = exports.SEARCH_LANGUAGE_KEYS = exports.SEARCH_CATEGORY_KEYS = exports.CATEGORY_QUERY_MAP = exports.ALL_CATEGORIES = exports.DEFAULT_CATEGORIES = exports.CATEGORY_OPTIONS = exports.PREF_KEYS = exports.G_TH_FALLBACK_ENTRY_REGEX = void 0;
       var toolchain_1 = require_dist();
       require_types2();
       toolchain_1.ContentRating.ADULT = toolchain_1.ContentRating.MATURE;
       exports.ContentRating = toolchain_1.ContentRating;
       exports.SOURCE_ID = "org.imhentai";
       exports.SOURCE_NAME = "IMHentai";
-      exports.SOURCE_VERSION = 1.6;
+      exports.SOURCE_VERSION = 1.7;
       exports.BASE_URL = "https://imhentai.xxx";
       exports.VARIANT_ID = "org.imhentai";
       exports.THUMBNAIL_FILENAME = "imhentai.png";
@@ -888,6 +888,30 @@ var SourcePackage = (() => {
       exports.VIEW_PATH_REGEX = /\/view\/(\d+)(?:\/(\d+))?/i;
       exports.SERVER_FROM_URL_REGEX = /https?:\/\/m(\d+)\.imhentai\.xxx\/([^/]+)\/(\d+)\//i;
       exports.SERVER_PREFIX_REGEX = /https?:\/\/m(\d+)\.imhentai\.xxx/i;
+      exports.NUMERIC_ONLY_REGEX = /^\d+$/;
+      exports.EXT_REGEX = /\.([a-z0-9]+)$/i;
+      exports.TRIM_SLASHES_REGEX = /^\/+|\/+$/g;
+      exports.LEADING_DOT_REGEX = /^\./;
+      exports.HTTP_PREFIX_REGEX = /^http:\/\//i;
+      exports.PROTOCOL_RELATIVE_REGEX = /^\/\//;
+      exports.WHITESPACE_REGEX = /\s+/g;
+      exports.CATEGORY_PREFIX_REGEX = /^category[:/]/i;
+      exports.COMMA_SEMICOLON_REGEX = /[,;]/;
+      exports.BRACKET_TOKEN_REGEX = /\[([^\]]+)\]|\(([^)]+)\)/g;
+      exports.BADGE_COUNT_REGEX = /\s+\(\d[\d,]*\)$/;
+      exports.BG_IMAGE_URL_REGEX = /background(?:-image)?\s*:\s*url\(\s*['"]?([^'")]+)['"]?\s*\)/i;
+      exports.FLAG_JP_REGEX = /(?:^|\s|-|_)jp(?:$|\s|-|_)/;
+      exports.FLAG_JA_REGEX = /(?:^|\s|-|_)ja(?:$|\s|-|_)/;
+      exports.INLINE_GALLERY_ID_REGEX = /['"]?gallery_id['"]?\s*[:=]\s*['"]?(\d+)['"]?/i;
+      exports.INLINE_LOAD_DIR_REGEX = /['"]?load_dir['"]?\s*[:=]\s*['"]([^'"]+)['"]/i;
+      exports.INLINE_LOAD_ID_REGEX = /['"]?(?:load_id|load_server|server_id)['"]?\s*[:=]\s*['"]?([^'",;\s}]+)['"]?/i;
+      exports.INLINE_LOAD_PAGES_REGEX = /['"]?load_pages['"]?\s*[:=]\s*['"]?(\d+)['"]?/i;
+      exports.PAGES_TEXT_REGEX = /Pages\s*:\s*(\d+)/i;
+      exports.THUMB_PAGENUM_EXT_REGEX = /\/(\d+)t\.([a-z0-9]+)/i;
+      exports.G_TH_PARSE_JSON_REGEX = /g_th\s*=\s*(?:\$\.parseJSON|JSON\.parse)\(\s*(['"])([\s\S]*?)\1\s*\)/i;
+      exports.G_TH_STRING_REGEX = /g_th\s*=\s*(['"])(\{[\s\S]*?\})\1/i;
+      exports.G_TH_OBJECT_REGEX = /g_th\s*=\s*(\{[\s\S]*?\})\s*;/i;
+      exports.G_TH_FALLBACK_ENTRY_REGEX = /["']?(\d+)["']?\s*:\s*["']([^"']+)["']/g;
       exports.PREF_KEYS = {
         CATEGORIES: "enabled_categories",
         LANGUAGE: "content_languages",
@@ -895,11 +919,7 @@ var SourcePackage = (() => {
         // Legacy aliases
         LEGACY_CATEGORIES: "imhentai_pref_categories",
         LEGACY_LANGUAGE: "imhentai_pref_language",
-        LEGACY_TITLE_PREFERENCE: "imhentai_pref_title_preference",
-        EXCLUDED_TROPES: "imhentai_pref_excluded_tropes",
-        CUSTOM_BLACKLIST: "imhentai_pref_custom_blacklist",
-        ALIAS_EXCLUDED_TROPES: "blacklist_heavy_tropes",
-        ALIAS_CUSTOM_BLACKLIST: "custom_blacklist_tags"
+        LEGACY_TITLE_PREFERENCE: "imhentai_pref_title_preference"
       };
       exports.CATEGORY_OPTIONS = Object.freeze([
         { id: "doujinshi", title: "Doujinshi", queryParam: "d" },
@@ -991,146 +1011,6 @@ var SourcePackage = (() => {
         ru: "ru",
         russian: "ru"
       });
-      exports.HEAVY_TROPE_OPTIONS = Object.freeze([
-        {
-          id: "ntr",
-          title: "Exclude Netorare (NTR)",
-          synonyms: [
-            "netorare",
-            "ntr",
-            "cheating",
-            "cuckold",
-            "infidelity",
-            "netori"
-          ]
-        },
-        {
-          id: "futanari",
-          title: "Exclude Futanari",
-          synonyms: [
-            "futanari",
-            "dickgirl",
-            "dickgirls",
-            "futa",
-            "full-packaged futanari",
-            "shemale"
-          ]
-        },
-        {
-          id: "guro",
-          title: "Exclude Guro / Gore",
-          synonyms: [
-            "guro",
-            "gore",
-            "amputation",
-            "amputee",
-            "snuff",
-            "blood",
-            "cannibalism",
-            "torture",
-            "decapitation"
-          ]
-        },
-        {
-          id: "scat",
-          title: "Exclude Scat",
-          synonyms: [
-            "scat",
-            "coprophagia",
-            "defecation",
-            "feces",
-            "diaper"
-          ]
-        },
-        {
-          id: "yaoi",
-          title: "Exclude Yaoi / Male Only",
-          synonyms: [
-            "yaoi",
-            "males only",
-            "male only",
-            "shounen ai",
-            "danmei",
-            "bl",
-            "boys love",
-            "bara",
-            "josou seme",
-            "tomgirl"
-          ]
-        },
-        {
-          id: "snuff",
-          title: "Exclude Snuff",
-          synonyms: ["snuff", "death", "necrophilia", "asphyxiation"]
-        }
-      ]);
-      exports.TROPE_ALIASES = Object.freeze({
-        yaoi: Object.freeze([
-          "yaoi",
-          "males only",
-          "male only",
-          "shounen ai",
-          "danmei",
-          "bl",
-          "boys love",
-          "bara",
-          "josou seme",
-          "tomgirl"
-        ]),
-        netorare: Object.freeze([
-          "netorare",
-          "ntr",
-          "cheating",
-          "cuckold",
-          "infidelity",
-          "netori"
-        ]),
-        ntr: Object.freeze([
-          "netorare",
-          "ntr",
-          "cheating",
-          "cuckold",
-          "infidelity",
-          "netori"
-        ]),
-        futanari: Object.freeze([
-          "futanari",
-          "dickgirl",
-          "dickgirls",
-          "futa",
-          "full-packaged futanari",
-          "shemale"
-        ]),
-        guro: Object.freeze([
-          "guro",
-          "gore",
-          "amputation",
-          "amputee",
-          "snuff",
-          "blood",
-          "cannibalism",
-          "torture",
-          "decapitation"
-        ]),
-        scat: Object.freeze([
-          "scat",
-          "coprophagia",
-          "defecation",
-          "feces",
-          "diaper"
-        ]),
-        snuff: Object.freeze(["snuff", "death", "necrophilia", "asphyxiation"])
-      });
-      exports.TROPE_SERVER_NEGATIVE_MAP = Object.freeze({
-        yaoi: Object.freeze(["-yaoi", '-"males only"']),
-        netorare: Object.freeze(["-netorare", "-ntr"]),
-        ntr: Object.freeze(["-netorare", "-ntr"]),
-        futanari: Object.freeze(["-futanari", "-dickgirl"]),
-        guro: Object.freeze(["-guro", "-gore"]),
-        scat: Object.freeze(["-scat", "-coprophagia"]),
-        snuff: Object.freeze(["-snuff"])
-      });
-      exports.HEAVY_TROPE_SYNONYM_MAP = new Map(exports.HEAVY_TROPE_OPTIONS.map((opt) => [opt.id, opt.synonyms]));
       exports.TITLE_PREFERENCE_OPTIONS = Object.freeze([
         { id: "english", title: "English Title (Japanese in Subtitle)" },
         { id: "japanese", title: "Japanese Title (English in Subtitle)" }
@@ -1206,127 +1086,6 @@ var SourcePackage = (() => {
         { id: "de", title: "German" },
         { id: "ru", title: "Russian" }
       ]);
-      exports.IMHENTAI_TAGS = Object.freeze([
-        { id: "big breasts", title: "Big Breasts", namespace: "tag" },
-        { id: "sole female", title: "Sole Female", namespace: "tag" },
-        { id: "sole male", title: "Sole Male", namespace: "tag" },
-        { id: "full color", title: "Full Color", namespace: "tag" },
-        { id: "uncensored", title: "Uncensored", namespace: "tag" },
-        { id: "mosaic censorship", title: "Mosaic Censorship", namespace: "tag" },
-        { id: "stockings", title: "Stockings", namespace: "tag" },
-        { id: "nakadashi", title: "Nakadashi", namespace: "tag" },
-        { id: "blowjob", title: "Blowjob", namespace: "tag" },
-        { id: "paizuri", title: "Paizuri", namespace: "tag" },
-        { id: "glasses", title: "Glasses", namespace: "tag" },
-        { id: "schoolgirl uniform", title: "Schoolgirl Uniform", namespace: "tag" },
-        { id: "schoolboy uniform", title: "Schoolboy Uniform", namespace: "tag" },
-        { id: "swimsuit", title: "Swimsuit", namespace: "tag" },
-        { id: "bikini", title: "Bikini", namespace: "tag" },
-        { id: "maid", title: "Maid", namespace: "tag" },
-        { id: "nurse", title: "Nurse", namespace: "tag" },
-        { id: "teacher", title: "Teacher", namespace: "tag" },
-        { id: "office lady", title: "Office Lady", namespace: "tag" },
-        { id: "milf", title: "MILF", namespace: "tag" },
-        { id: "housewife", title: "Housewife", namespace: "tag" },
-        { id: "gyaru", title: "Gyaru", namespace: "tag" },
-        { id: "dark skin", title: "Dark Skin", namespace: "tag" },
-        { id: "tanlines", title: "Tanlines", namespace: "tag" },
-        { id: "tomboy", title: "Tomboy", namespace: "tag" },
-        { id: "tsundere", title: "Tsundere", namespace: "tag" },
-        { id: "yandere", title: "Yandere", namespace: "tag" },
-        { id: "kuudere", title: "Kuudere", namespace: "tag" },
-        { id: "childhood friend", title: "Childhood Friend", namespace: "tag" },
-        { id: "sister", title: "Sister", namespace: "tag" },
-        { id: "mother", title: "Mother", namespace: "tag" },
-        { id: "twins", title: "Twins", namespace: "tag" },
-        { id: "harem", title: "Harem", namespace: "tag" },
-        { id: "ffm threesome", title: "FFM Threesome", namespace: "tag" },
-        { id: "mmf threesome", title: "MMF Threesome", namespace: "tag" },
-        { id: "group", title: "Group", namespace: "tag" },
-        { id: "femdom", title: "Femdom", namespace: "tag" },
-        { id: "bondage", title: "Bondage", namespace: "tag" },
-        { id: "collar", title: "Collar", namespace: "tag" },
-        { id: "exhibitionism", title: "Exhibitionism", namespace: "tag" },
-        { id: "voyeurism", title: "Voyeurism", namespace: "tag" },
-        { id: "lingerie", title: "Lingerie", namespace: "tag" },
-        { id: "pantyhose", title: "Pantyhose", namespace: "tag" },
-        { id: "garter belt", title: "Garter Belt", namespace: "tag" },
-        { id: "kimono", title: "Kimono", namespace: "tag" },
-        { id: "miko", title: "Miko", namespace: "tag" },
-        { id: "nun", title: "Nun", namespace: "tag" },
-        { id: "cheerleader", title: "Cheerleader", namespace: "tag" },
-        { id: "bunny girl", title: "Bunny Girl", namespace: "tag" },
-        { id: "catgirl", title: "Catgirl", namespace: "tag" },
-        { id: "foxgirl", title: "Foxgirl", namespace: "tag" },
-        { id: "kemonomimi", title: "Kemonomimi", namespace: "tag" },
-        { id: "elf", title: "Elf", namespace: "tag" },
-        { id: "dark elf", title: "Dark Elf", namespace: "tag" },
-        { id: "demon girl", title: "Demon Girl", namespace: "tag" },
-        { id: "succubus", title: "Succubus", namespace: "tag" },
-        { id: "vampire", title: "Vampire", namespace: "tag" },
-        { id: "monster girl", title: "Monster Girl", namespace: "tag" },
-        { id: "angel", title: "Angel", namespace: "tag" },
-        { id: "magical girl", title: "Magical Girl", namespace: "tag" },
-        { id: "witch", title: "Witch", namespace: "tag" },
-        { id: "princess", title: "Princess", namespace: "tag" },
-        { id: "kunoichi", title: "Kunoichi", namespace: "tag" },
-        { id: "valkyrie", title: "Valkyrie", namespace: "tag" },
-        { id: "yuri", title: "Yuri", namespace: "tag" },
-        { id: "females only", title: "Females Only", namespace: "tag" },
-        { id: "romance", title: "Romance", namespace: "tag" },
-        { id: "comedy", title: "Comedy", namespace: "tag" },
-        { id: "fantasy", title: "Fantasy", namespace: "tag" },
-        { id: "sci-fi", title: "Sci-Fi", namespace: "tag" },
-        { id: "supernatural", title: "Supernatural", namespace: "tag" },
-        { id: "slice of life", title: "Slice of Life", namespace: "tag" },
-        { id: "sports", title: "Sports", namespace: "tag" },
-        { id: "martial arts", title: "Martial Arts", namespace: "tag" },
-        { id: "military", title: "Military", namespace: "tag" },
-        { id: "historical", title: "Historical", namespace: "tag" },
-        { id: "anthology", title: "Anthology", namespace: "tag" },
-        { id: "tankoubon", title: "Tankoubon", namespace: "tag" },
-        { id: "webtoon", title: "Webtoon", namespace: "tag" },
-        { id: "full censorship", title: "Full Censorship", namespace: "tag" },
-        { id: "multi-work series", title: "Multi-Work Series", namespace: "tag" },
-        { id: "story arc", title: "Story Arc", namespace: "tag" },
-        { id: "netorare", title: "Netorare (NTR)", namespace: "tag" },
-        { id: "futanari", title: "Futanari", namespace: "tag" },
-        { id: "guro", title: "Guro / Gore", namespace: "tag" },
-        { id: "scat", title: "Scat", namespace: "tag" },
-        { id: "yaoi", title: "Yaoi", namespace: "tag" },
-        { id: "males only", title: "Males Only", namespace: "tag" },
-        { id: "snuff", title: "Snuff", namespace: "tag" }
-      ]);
-      exports.IMHENTAI_POPULAR_PARODIES = Object.freeze([
-        { id: "original", title: "Original Work" },
-        { id: "blue archive", title: "Blue Archive" },
-        { id: "fate grand order", title: "Fate/Grand Order" },
-        { id: "genshin impact", title: "Genshin Impact" },
-        { id: "honkai star rail", title: "Honkai: Star Rail" },
-        { id: "azur lane", title: "Azur Lane" },
-        { id: "kantai collection", title: "Kantai Collection" },
-        { id: "granblue fantasy", title: "Granblue Fantasy" },
-        { id: "nikke", title: "Goddess of Victory: Nikke" },
-        { id: "arknights", title: "Arknights" },
-        { id: "idolmaster", title: "The iDOLM@STER" },
-        { id: "touhou project", title: "Touhou Project" },
-        { id: "hololive", title: "Hololive" },
-        { id: "chainsaw man", title: "Chainsaw Man" },
-        { id: "jujutsu kaisen", title: "Jujutsu Kaisen" },
-        { id: "one piece", title: "One Piece" },
-        { id: "naruto", title: "Naruto" },
-        { id: "bleach", title: "Bleach" },
-        { id: "my hero academia", title: "My Hero Academia" },
-        { id: "frieren", title: "Frieren: Beyond Journey's End" },
-        { id: "pokemon", title: "Pok\xE9mon" },
-        { id: "nier automata", title: "NieR:Automata" },
-        { id: "final fantasy", title: "Final Fantasy" },
-        { id: "xenoblade", title: "Xenoblade Chronicles" },
-        { id: "fire emblem", title: "Fire Emblem" },
-        { id: "street fighter", title: "Street Fighter" },
-        { id: "overwatch", title: "Overwatch" },
-        { id: "league of legends", title: "League of Legends" }
-      ]);
       exports.EXTENSION_CODE_MAP = Object.freeze({
         j: "jpg",
         jpg: "jpg",
@@ -1352,24 +1111,15 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.CACHED_SEARCH_FILTERS = exports.CACHED_SORT_OPTIONS = exports.SORT_OPTION_LIST = exports.CATEGORY_PICKER_OPTIONS = exports.FILTER_IDS = exports.FilterType = void 0;
-      exports.createTriStateFilter = createTriStateFilter;
+      exports.CACHED_SEARCH_FILTERS = exports.CACHED_SORT_OPTIONS = exports.SORT_OPTION_LIST = exports.CATEGORY_PICKER_OPTIONS = exports.FILTER_IDS = void 0;
       exports.getSearchFilters = getSearchFilters;
       exports.getSortOptions = getSortOptions;
       exports.mapFiltersToExploreParams = mapFiltersToExploreParams;
       var toolchain_1 = require_dist();
       var constants_js_1 = require_constants();
-      var FilterType;
-      (function(FilterType2) {
-        FilterType2["TRI_STATE"] = "select";
-        FilterType2["SELECT"] = "picker";
-        FilterType2["TOGGLE"] = "toggle";
-        FilterType2["TEXT"] = "text";
-      })(FilterType || (exports.FilterType = FilterType = {}));
       exports.FILTER_IDS = {
         CATEGORY: "category",
         CATEGORIES: "categories",
-        TAGS: "tags",
         LANGUAGE: "language"
       };
       exports.CATEGORY_PICKER_OPTIONS = constants_js_1.SEARCH_CATEGORY_OPTIONS.map((opt) => ({
@@ -1384,9 +1134,6 @@ var SourcePackage = (() => {
         options: exports.SORT_OPTION_LIST,
         disableOrdering: false
       };
-      function createTriStateFilter(id, title, options, subtitle) {
-        return (0, toolchain_1.SearchFilter)(id, title, (0, toolchain_1.SelectFilter)(options.map((opt) => ({ id: opt.id, title: opt.title })), true), subtitle);
-      }
       exports.CACHED_SEARCH_FILTERS = [
         (0, toolchain_1.SearchFilter)(exports.FILTER_IDS.CATEGORY, "Category", (0, toolchain_1.PickerFilter)(exports.CATEGORY_PICKER_OPTIONS), "Select content category")
       ];
@@ -1401,8 +1148,9 @@ var SourcePackage = (() => {
       }
       function mapFiltersToExploreParams(filters, sort, query, page = 1) {
         var _a;
+        const trimmedQuery = query == null ? void 0 : query.trim();
         const params = {
-          query: (query == null ? void 0 : query.trim()) || void 0,
+          query: trimmedQuery && trimmedQuery.length > 0 ? trimmedQuery : void 0,
           page
         };
         if (sort == null ? void 0 : sort.key) {
@@ -1435,21 +1183,14 @@ var SourcePackage = (() => {
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.ImHentaiPreferenceProvider = void 0;
       exports.invalidatePreferencesCache = invalidatePreferencesCache;
+      exports.decodeHtmlEntities = decodeHtmlEntities;
       exports.parseStringList = parseStringList;
       exports.normalizeCategoryToken = normalizeCategoryToken;
       exports.normalizeCategoriesList = normalizeCategoriesList;
       exports.normalizeLanguageToken = normalizeLanguageToken;
-      exports.normalizeTropeToken = normalizeTropeToken;
-      exports.normalizeTropesList = normalizeTropesList;
       exports.normalizeTitlePreference = normalizeTitlePreference;
-      exports.parseCustomBlacklist = parseCustomBlacklist;
-      exports.buildNegativeSearchTerms = buildNegativeSearchTerms;
-      exports.buildNegativeSearchQuery = buildNegativeSearchQuery;
       exports.getUserPreferences = getUserPreferences;
-      exports.compileBlacklistContext = compileBlacklistContext;
-      exports.isCardBlacklisted = isCardBlacklisted;
       exports.isCardMatchingLanguage = isCardMatchingLanguage;
-      exports.shouldKeepCard = shouldKeepCard;
       exports.buildFullLanguageQueryFlags = buildFullLanguageQueryFlags;
       exports.buildFullCategoryQueryFlags = buildFullCategoryQueryFlags;
       exports.buildPreferenceQueryFlags = buildPreferenceQueryFlags;
@@ -1474,9 +1215,7 @@ var SourcePackage = (() => {
       var memoryPreferences = {
         categories: [...constants_js_1.DEFAULT_CATEGORIES],
         language: constants_js_1.DEFAULT_LANGUAGE,
-        titlePreference: constants_js_1.DEFAULT_TITLE_PREFERENCE,
-        excludedTropes: [],
-        customBlacklist: []
+        titlePreference: constants_js_1.DEFAULT_TITLE_PREFERENCE
       };
       var isHydrated = false;
       var inflightHydration = null;
@@ -1489,6 +1228,27 @@ var SourcePackage = (() => {
       function invalidatePreferencesCache() {
         isHydrated = false;
         inflightHydration = null;
+      }
+      var HTML_ENTITY_MAP = Object.freeze({
+        "&amp;": "&",
+        "&quot;": '"',
+        "&#039;": "'",
+        "&#39;": "'",
+        "&apos;": "'",
+        "&lt;": "<",
+        "&gt;": ">",
+        "&nbsp;": " "
+      });
+      var ENTITY_REGEX = /&(?:amp|quot|#039|#39|apos|lt|gt|nbsp);/g;
+      var DECIMAL_ENTITY_REGEX = /&#(\d+);/g;
+      var HEX_ENTITY_REGEX = /&#x([0-9a-fA-F]+);/g;
+      function decodeHtmlEntities(str) {
+        if (!str)
+          return "";
+        return str.replace(ENTITY_REGEX, (match) => {
+          var _a;
+          return (_a = HTML_ENTITY_MAP[match]) != null ? _a : match;
+        }).replace(DECIMAL_ENTITY_REGEX, (_, code) => String.fromCharCode(Number(code))).replace(HEX_ENTITY_REGEX, (_, hex) => String.fromCharCode(parseInt(hex, 16))).replace(constants_js_1.WHITESPACE_REGEX, " ").trim();
       }
       function parseStringList(raw) {
         var _a;
@@ -1613,39 +1373,6 @@ var SourcePackage = (() => {
           return "all";
         return constants_js_1.DEFAULT_LANGUAGE;
       }
-      function normalizeTropeToken(raw) {
-        const lower = raw.trim().toLowerCase();
-        if (!lower)
-          return null;
-        if (lower === "netorare" || lower.includes("ntr") || lower.includes("netorare"))
-          return "ntr";
-        if (lower.includes("futa"))
-          return "futanari";
-        if (lower.includes("guro") || lower.includes("gore") || lower.includes("amput"))
-          return "guro";
-        if (lower.includes("scat") || lower.includes("coprophagia") || lower.includes("defecat"))
-          return "scat";
-        if (lower.includes("yaoi") || lower.includes("male only") || lower.includes("males only") || lower === "bl" || lower.includes("shounen ai") || lower.includes("danmei")) {
-          return "yaoi";
-        }
-        if (lower.includes("snuff"))
-          return "snuff";
-        return lower;
-      }
-      function normalizeTropesList(raw) {
-        const list = parseStringList(raw);
-        const unique = /* @__PURE__ */ new Set();
-        for (let i = 0, len = list.length; i < len; i++) {
-          const item = list[i];
-          if (item) {
-            const norm = normalizeTropeToken(item);
-            if (norm) {
-              unique.add(norm);
-            }
-          }
-        }
-        return Array.from(unique);
-      }
       function normalizeTitlePreference(raw) {
         if (typeof raw !== "string")
           return constants_js_1.DEFAULT_TITLE_PREFERENCE;
@@ -1655,52 +1382,19 @@ var SourcePackage = (() => {
         }
         return "english";
       }
-      function parseCustomBlacklist(raw) {
-        var _a, _b, _c;
-        const list = parseStringList(raw);
-        const unique = /* @__PURE__ */ new Set();
-        for (let i = 0, len = list.length; i < len; i++) {
-          const rawEntry = (_a = list[i]) == null ? void 0 : _a.trim().toLowerCase();
-          if (rawEntry && rawEntry.length > 0) {
-            const parts = rawEntry.split(",");
-            for (let j = 0; j < parts.length; j++) {
-              let token = (_b = parts[j]) == null ? void 0 : _b.trim().toLowerCase();
-              if (token && token.length > 0) {
-                unique.add(token);
-                if (token.includes(":")) {
-                  const stripped = (_c = token.split(":").pop()) == null ? void 0 : _c.trim();
-                  if (stripped) {
-                    unique.add(stripped);
-                  }
-                }
-              }
-            }
-          }
-        }
-        return Array.from(unique);
-      }
-      function buildNegativeSearchTerms(_prefs) {
-        return [];
-      }
-      function buildNegativeSearchQuery(_prefs) {
-        return "";
-      }
       async function hydratePreferencesFromStore() {
-        var _a, _b;
         if (!hasObjectStore()) {
           isHydrated = true;
           return memoryPreferences;
         }
         try {
-          const [storedCategories, legacyCategories, storedLanguage, legacyLanguage, storedTitlePref, legacyTitlePref, legacyTropes, legacyBlacklist] = await Promise.all([
+          const [storedCategories, legacyCategories, storedLanguage, legacyLanguage, storedTitlePref, legacyTitlePref] = await Promise.all([
             ObjectStore.get(constants_js_1.PREF_KEYS.CATEGORIES).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.LEGACY_CATEGORIES).catch(() => null),
             ObjectStore.string(constants_js_1.PREF_KEYS.LANGUAGE).catch(() => null),
             ObjectStore.string(constants_js_1.PREF_KEYS.LEGACY_LANGUAGE).catch(() => null),
             ObjectStore.string(constants_js_1.PREF_KEYS.TITLE_PREFERENCE).catch(() => null),
-            ObjectStore.string(constants_js_1.PREF_KEYS.LEGACY_TITLE_PREFERENCE).catch(() => null),
-            ObjectStore.get(constants_js_1.PREF_KEYS.EXCLUDED_TROPES).catch(() => null),
-            ObjectStore.get(constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST).catch(() => null)
+            ObjectStore.string(constants_js_1.PREF_KEYS.LEGACY_TITLE_PREFERENCE).catch(() => null)
           ]);
           let categories = memoryPreferences.categories;
           const rawCat = storedCategories != null ? storedCategories : legacyCategories;
@@ -1714,14 +1408,10 @@ var SourcePackage = (() => {
           const language = rawLang !== null && rawLang !== void 0 ? normalizeLanguageToken(rawLang) : memoryPreferences.language;
           const rawTitle = storedTitlePref != null ? storedTitlePref : legacyTitlePref;
           const titlePreference = rawTitle !== null && rawTitle !== void 0 ? normalizeTitlePreference(rawTitle) : memoryPreferences.titlePreference;
-          const excludedTropes = legacyTropes !== null && legacyTropes !== void 0 ? normalizeTropesList(legacyTropes) : (_a = memoryPreferences.excludedTropes) != null ? _a : [];
-          const customBlacklist = legacyBlacklist !== null && legacyBlacklist !== void 0 ? parseCustomBlacklist(legacyBlacklist) : (_b = memoryPreferences.customBlacklist) != null ? _b : [];
           memoryPreferences = {
             categories,
             language,
-            titlePreference,
-            excludedTropes,
-            customBlacklist
+            titlePreference
           };
         } catch {
         }
@@ -1739,18 +1429,6 @@ var SourcePackage = (() => {
           inflightHydration = null;
         });
         return inflightHydration;
-      }
-      function compileBlacklistContext(prefs, _extraExcludedTags) {
-        var _a, _b;
-        const allowedCategoriesSet = new Set(prefs.categories && prefs.categories.length > 0 ? prefs.categories : constants_js_1.DEFAULT_CATEGORIES);
-        return {
-          allowedCategoriesSet,
-          language: (_a = prefs.language) != null ? _a : constants_js_1.DEFAULT_LANGUAGE,
-          titlePreference: (_b = prefs.titlePreference) != null ? _b : constants_js_1.DEFAULT_TITLE_PREFERENCE
-        };
-      }
-      function isCardBlacklisted(_card, _context, _extraExcludedTags) {
-        return false;
       }
       function isCardMatchingLanguage(card, preferredLanguage) {
         var _a;
@@ -1803,9 +1481,6 @@ var SourcePackage = (() => {
             return false;
           }
         }
-        return true;
-      }
-      function shouldKeepCard(_card, _context, _options) {
         return true;
       }
       function buildFullLanguageQueryFlags(rawLanguage) {
@@ -1882,17 +1557,17 @@ var SourcePackage = (() => {
         return `${catFlags}${langFlags}`;
       }
       function formatGalleryTitleDisplay(englishTitle, japaneseSubtitle, prefs) {
-        const cleanEn = englishTitle.trim();
-        const cleanJp = (japaneseSubtitle != null ? japaneseSubtitle : "").trim();
+        const cleanEn = decodeHtmlEntities(englishTitle);
+        const cleanJp = decodeHtmlEntities(japaneseSubtitle != null ? japaneseSubtitle : "");
         if (prefs.titlePreference === "japanese" && cleanJp.length > 0) {
           return {
             title: cleanJp,
-            subtitle: cleanEn,
+            subtitle: cleanEn.length > 0 ? cleanEn : void 0,
             additionalTitles: cleanEn.length > 0 ? [cleanEn] : []
           };
         }
         return {
-          title: cleanEn,
+          title: cleanEn.length > 0 ? cleanEn : cleanJp,
           subtitle: cleanJp.length > 0 ? cleanJp : void 0,
           additionalTitles: cleanJp.length > 0 ? [cleanJp] : []
         };
@@ -1951,11 +1626,11 @@ var SourcePackage = (() => {
         };
       }
       async function updateUserPreferences(data) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i;
         if (!isRecord(data)) {
           return;
         }
-        let { categories, language, titlePreference, excludedTropes = [], customBlacklist = [] } = memoryPreferences;
+        let { categories, language, titlePreference } = memoryPreferences;
         const storeAvailable = hasObjectStore();
         const writeTasks = [];
         const rawCategories = (_c = (_b = (_a = data[constants_js_1.PREF_KEYS.CATEGORIES]) != null ? _a : data[constants_js_1.PREF_KEYS.LEGACY_CATEGORIES]) != null ? _b : data["enabled_categories"]) != null ? _c : data["categories"];
@@ -1986,20 +1661,10 @@ var SourcePackage = (() => {
             }));
           }
         }
-        const rawTropes = (_l = (_k = (_j = data[constants_js_1.PREF_KEYS.EXCLUDED_TROPES]) != null ? _j : data[constants_js_1.PREF_KEYS.ALIAS_EXCLUDED_TROPES]) != null ? _k : data["excluded_tropes"]) != null ? _l : data["heavy_tropes"];
-        if (rawTropes !== void 0 && rawTropes !== null) {
-          excludedTropes = normalizeTropesList(rawTropes);
-        }
-        const rawCustomBlacklist = (_o = (_n = (_m = data[constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST]) != null ? _m : data[constants_js_1.PREF_KEYS.ALIAS_CUSTOM_BLACKLIST]) != null ? _n : data["custom_blacklist"]) != null ? _o : data["blacklist_tags"];
-        if (rawCustomBlacklist !== void 0 && rawCustomBlacklist !== null) {
-          customBlacklist = parseCustomBlacklist(rawCustomBlacklist);
-        }
         memoryPreferences = {
           categories,
           language,
-          titlePreference,
-          excludedTropes,
-          customBlacklist
+          titlePreference
         };
         isHydrated = true;
         if (writeTasks.length > 0) {
@@ -2956,7 +2621,7 @@ var SourcePackage = (() => {
         const clean = url.trim().toLowerCase();
         if (!clean)
           return true;
-        return clean.includes("blank.gif") || clean.includes("pixel.gif") || clean.includes("placeholder") || clean.startsWith("/images/") || clean.startsWith("/assets/images/") || clean.includes("about:blank");
+        return clean.includes("blank.gif") || clean.includes("pixel.gif") || clean.includes("placeholder") || clean.startsWith("/images/") || clean.startsWith("/assets/images/") || clean.includes("about:blank") || clean.startsWith("data:image");
       }
       function deriveBaseCdnUrl(rawUrl) {
         var _a, _b, _c;
@@ -2970,7 +2635,7 @@ var SourcePackage = (() => {
         if (lastSlashIdx !== -1) {
           const base = normalized.substring(0, lastSlashIdx + 1);
           if (base.startsWith("https://") || base.startsWith("http://")) {
-            return base.replace(/^http:\/\//i, "https://");
+            return base.replace(constants_js_1.HTTP_PREFIX_REGEX, "https://");
           }
         }
         return void 0;
@@ -2982,9 +2647,9 @@ var SourcePackage = (() => {
         if (!trimmed)
           return constants_js_1.FALLBACK_COVER_URL;
         if (trimmed.startsWith("https://") || trimmed.startsWith("http://")) {
-          return trimmed.replace(/^http:\/\//i, "https://");
+          return trimmed.replace(constants_js_1.HTTP_PREFIX_REGEX, "https://");
         }
-        if (trimmed.startsWith("//")) {
+        if (constants_js_1.PROTOCOL_RELATIVE_REGEX.test(trimmed)) {
           return `https:${trimmed}`;
         }
         if (trimmed.startsWith("/")) {
@@ -3012,7 +2677,7 @@ var SourcePackage = (() => {
       } });
       function buildFeedUrl(feedKey, page, prefs, sortBy) {
         const safePage = Math.max(1, page || 1);
-        const cleanKey = feedKey.trim().toLowerCase().replace(/^category[:/]/, "");
+        const cleanKey = feedKey.trim().toLowerCase().replace(constants_js_1.CATEGORY_PREFIX_REGEX, "");
         const isPopular = sortBy === "popular" || sortBy === "popularity" || sortBy === "pp" || sortBy === "most_viewed";
         const subPath = isPopular ? "popular/" : "";
         if (cleanKey === "doujinshi" || cleanKey === "manga" || cleanKey === "western" || cleanKey === "imageset" || cleanKey === "cosplay") {
@@ -3059,7 +2724,10 @@ var SourcePackage = (() => {
         const safePage = Math.max(1, (_a = params.page) != null ? _a : 1);
         const queryParts = [];
         if (params.query) {
-          queryParts.push(params.query.trim());
+          const trimmed = params.query.trim();
+          if (trimmed.length > 0) {
+            queryParts.push(trimmed);
+          }
         }
         if (((_b = params.tags) == null ? void 0 : _b.include) && params.tags.include.length > 0) {
           for (let i = 0; i < params.tags.include.length; i++) {
@@ -3069,9 +2737,13 @@ var SourcePackage = (() => {
             }
           }
         }
+        const isPopular = params.sortBy === "popular" || params.sortBy === "popularity" || params.sortBy === "pp" || params.sortBy === "most_viewed";
+        if (queryParts.length === 0) {
+          return buildFeedUrl(isPopular ? constants_js_1.BROWSE_FEED_KEYS.POPULAR : constants_js_1.BROWSE_FEED_KEYS.LATEST, safePage, prefs, params.sortBy);
+        }
         const searchKey = encodeURIComponent(queryParts.join(" ").trim());
         let sortFlag = "&pp=0&lt=1";
-        if (params.sortBy === "popular" || params.sortBy === "popularity" || params.sortBy === "pp" || params.sortBy === "most_viewed") {
+        if (isPopular) {
           sortFlag = "&pp=1&lt=0";
         } else if (params.sortBy === "top_rated") {
           sortFlag = "&pp=1&lt=0&sort=top_rated";
@@ -3084,24 +2756,24 @@ var SourcePackage = (() => {
         return `${constants_js_1.BASE_URL}/search/?key=${searchKey}&apply=Search${categoryFlags}${languageFlags}${sortFlag}&page=${safePage}`;
       }
       function buildGalleryUrl(id) {
-        const cleanId = id.replace(/^\/+|\/+$/g, "");
+        const cleanId = id.replace(constants_js_1.TRIM_SLASHES_REGEX, "");
         return `${constants_js_1.BASE_URL}/gallery/${cleanId}/`;
       }
       function buildReaderUrl(id, page = 1) {
-        const cleanId = id.replace(/^\/+|\/+$/g, "");
+        const cleanId = id.replace(constants_js_1.TRIM_SLASHES_REGEX, "");
         return `${constants_js_1.BASE_URL}/view/${cleanId}/${page}/`;
       }
       function buildImageUrl(baseOrServer, dirOrPage, pageOrExt, maybePage, maybeExt) {
         var _a, _b;
         if (baseOrServer.startsWith("https://") || baseOrServer.startsWith("http://")) {
-          const cleanBase = baseOrServer.endsWith("/") ? baseOrServer.replace(/^http:\/\//i, "https://") : `${baseOrServer.replace(/^http:\/\//i, "https://")}/`;
+          const cleanBase = baseOrServer.endsWith("/") ? baseOrServer.replace(constants_js_1.HTTP_PREFIX_REGEX, "https://") : `${baseOrServer.replace(constants_js_1.HTTP_PREFIX_REGEX, "https://")}/`;
           const pageNum2 = typeof dirOrPage === "number" ? dirOrPage : parseInt(String(dirOrPage), 10) || 1;
           const rawExt2 = typeof pageOrExt === "string" ? pageOrExt : constants_js_1.DEFAULT_IMAGE_EXT;
-          const cleanExt2 = (_a = constants_js_1.EXTENSION_CODE_MAP[rawExt2.toLowerCase().replace(/^\./, "")]) != null ? _a : rawExt2 && rawExt2 !== "undefined" && rawExt2 !== "null" ? rawExt2 : constants_js_1.DEFAULT_IMAGE_EXT;
+          const cleanExt2 = (_a = constants_js_1.EXTENSION_CODE_MAP[rawExt2.toLowerCase().replace(constants_js_1.LEADING_DOT_REGEX, "")]) != null ? _a : rawExt2 && rawExt2 !== "undefined" && rawExt2 !== "null" ? rawExt2 : constants_js_1.DEFAULT_IMAGE_EXT;
           return `${cleanBase}${pageNum2}.${cleanExt2}`;
         }
         const cleanServerId = baseOrServer.replace(/^m/i, "").trim() || constants_js_1.DEFAULT_SERVER_ID;
-        const cleanLoadDir = String(dirOrPage).replace(/^\/+|\/+$/g, "").trim() || "001";
+        const cleanLoadDir = String(dirOrPage).replace(constants_js_1.TRIM_SLASHES_REGEX, "").trim() || "001";
         let pageNum = 1;
         let rawExt = constants_js_1.DEFAULT_IMAGE_EXT;
         if (maybeExt !== void 0) {
@@ -3111,7 +2783,7 @@ var SourcePackage = (() => {
           pageNum = pageOrExt;
           rawExt = maybePage || constants_js_1.DEFAULT_IMAGE_EXT;
         }
-        const cleanExt = (_b = constants_js_1.EXTENSION_CODE_MAP[rawExt.toLowerCase().replace(/^\./, "")]) != null ? _b : rawExt && rawExt !== "undefined" && rawExt !== "null" ? rawExt : constants_js_1.DEFAULT_IMAGE_EXT;
+        const cleanExt = (_b = constants_js_1.EXTENSION_CODE_MAP[rawExt.toLowerCase().replace(constants_js_1.LEADING_DOT_REGEX, "")]) != null ? _b : rawExt && rawExt !== "undefined" && rawExt !== "null" ? rawExt : constants_js_1.DEFAULT_IMAGE_EXT;
         return `https://m${cleanServerId}.imhentai.xxx/${cleanLoadDir}/${pageNum}.${cleanExt}`;
       }
     }
@@ -3168,6 +2840,7 @@ var SourcePackage = (() => {
       exports.sanitizeImageExtension = sanitizeImageExtension;
       exports.parseExtensionMapFromHtml = parseExtensionMapFromHtml;
       exports.extractImageSrcFromElement = extractImageSrcFromElement;
+      exports.extractGalleryCardFromElement = extractGalleryCardFromElement;
       exports.parseGalleryCards = parseGalleryCards;
       exports.filterAndMapGalleryCards = filterAndMapGalleryCards;
       exports.mapCardsToItems = mapCardsToItems;
@@ -3216,10 +2889,9 @@ var SourcePackage = (() => {
         if (viewMatch == null ? void 0 : viewMatch[1]) {
           return viewMatch[1];
         }
-        const clean = trimmed.replace(/^\/+|\/+$/g, "");
-        const numericMatch = /^(\d+)$/.exec(clean);
-        if (numericMatch == null ? void 0 : numericMatch[1]) {
-          return numericMatch[1];
+        const clean = trimmed.replace(constants_js_1.TRIM_SLASHES_REGEX, "");
+        if (constants_js_1.NUMERIC_ONLY_REGEX.test(clean)) {
+          return clean;
         }
         return clean;
       }
@@ -3228,7 +2900,7 @@ var SourcePackage = (() => {
         if (!url)
           return constants_js_1.DEFAULT_IMAGE_EXT;
         const clean = (_c = (_b = (_a = url.split("?")[0]) == null ? void 0 : _a.split("#")[0]) == null ? void 0 : _b.trim().toLowerCase()) != null ? _c : "";
-        const extMatch = /\.([a-z0-9]+)$/i.exec(clean);
+        const extMatch = constants_js_1.EXT_REGEX.exec(clean);
         if (extMatch == null ? void 0 : extMatch[1]) {
           const mapped = constants_js_1.EXTENSION_CODE_MAP[extMatch[1].toLowerCase()];
           if (mapped) {
@@ -3253,8 +2925,9 @@ var SourcePackage = (() => {
         if (typeof ext !== "string")
           return constants_js_1.DEFAULT_IMAGE_EXT;
         const clean = ext.trim().toLowerCase().replace(/^\./, "");
-        if (!clean || clean === "undefined" || clean === "null")
+        if (!clean || clean === "undefined" || clean === "null") {
           return constants_js_1.DEFAULT_IMAGE_EXT;
+        }
         return (_a = constants_js_1.EXTENSION_CODE_MAP[clean]) != null ? _a : clean;
       }
       function parseExtensionMapFromHtml(html, $) {
@@ -3270,19 +2943,19 @@ var SourcePackage = (() => {
           }
         }
         if (!rawJson) {
-          const parseJsonMatch = /g_th\s*=\s*(?:\$\.parseJSON|JSON\.parse)\(\s*(['"])([\s\S]*?)\1\s*\)/i.exec(html);
+          const parseJsonMatch = constants_js_1.G_TH_PARSE_JSON_REGEX.exec(html);
           if (parseJsonMatch == null ? void 0 : parseJsonMatch[2]) {
             rawJson = parseJsonMatch[2].replace(/\\'/g, "'").replace(/\\"/g, '"');
           }
         }
         if (!rawJson) {
-          const stringMatch = /g_th\s*=\s*(['"])(\{[\s\S]*?\})\1/i.exec(html);
+          const stringMatch = constants_js_1.G_TH_STRING_REGEX.exec(html);
           if (stringMatch == null ? void 0 : stringMatch[2]) {
             rawJson = stringMatch[2];
           }
         }
         if (!rawJson) {
-          const objMatch = /g_th\s*=\s*(\{[\s\S]*?\})\s*;/i.exec(html);
+          const objMatch = constants_js_1.G_TH_OBJECT_REGEX.exec(html);
           if (objMatch == null ? void 0 : objMatch[1]) {
             rawJson = objMatch[1];
           }
@@ -3296,14 +2969,15 @@ var SourcePackage = (() => {
             for (const [pageKey, val] of Object.entries(parsed)) {
               map[pageKey] = resolveExtensionToken(val, constants_js_1.DEFAULT_IMAGE_EXT);
             }
+            return map;
           }
         } catch {
-          const entryRegex = /["']?(\d+)["']?\s*:\s*["']([^"']+)["']/g;
-          let m;
-          while ((m = entryRegex.exec(rawJson)) !== null) {
-            if (m[1] && m[2]) {
-              map[m[1]] = resolveExtensionToken(m[2], constants_js_1.DEFAULT_IMAGE_EXT);
-            }
+        }
+        const entryRegex = new RegExp(constants_js_1.G_TH_FALLBACK_ENTRY_REGEX.source, "g");
+        let m;
+        while ((m = entryRegex.exec(rawJson)) !== null) {
+          if (m[1] && m[2]) {
+            map[m[1]] = resolveExtensionToken(m[2], constants_js_1.DEFAULT_IMAGE_EXT);
           }
         }
         return map;
@@ -3312,8 +2986,8 @@ var SourcePackage = (() => {
         var _a;
         const $clone = $(el).clone();
         $clone.find(".badge, .count, span.badge, span.count").remove();
-        let raw = $clone.text().replace(/\s+/g, " ").trim();
-        raw = raw.replace(/\s+\(\d[\d,]*\)$/, "").trim();
+        let raw = (0, preferences_js_1.decodeHtmlEntities)($clone.text());
+        raw = raw.replace(constants_js_1.BADGE_COUNT_REGEX, "").trim();
         let namespace;
         const href = ((_a = $(el).attr("href")) != null ? _a : "").trim().toLowerCase();
         if (href.includes("/artist/"))
@@ -3345,7 +3019,7 @@ var SourcePackage = (() => {
       function extractTitleBracketTokens(title) {
         var _a, _b;
         const tokens = [];
-        const regex = /\[([^\]]+)\]|\(([^)]+)\)/g;
+        const regex = new RegExp(constants_js_1.BRACKET_TOKEN_REGEX.source, "g");
         let match;
         while ((match = regex.exec(title)) !== null) {
           const inner = ((_b = (_a = match[1]) != null ? _a : match[2]) != null ? _b : "").trim().toLowerCase();
@@ -3365,7 +3039,8 @@ var SourcePackage = (() => {
           $img.attr("data-full"),
           $img.attr("src")
         ];
-        for (const candidate of candidates) {
+        for (let i = 0; i < candidates.length; i++) {
+          const candidate = candidates[i];
           if (candidate && typeof candidate === "string") {
             const trimmed = candidate.trim();
             if (trimmed && !(0, api_js_1.isPlaceholderImageUrl)(trimmed)) {
@@ -3375,7 +3050,7 @@ var SourcePackage = (() => {
         }
         const style = $img.attr("style");
         if (style) {
-          const bgMatch = /background(?:-image)?\s*:\s*url\(\s*['"]?([^'")]+)['"]?\s*\)/i.exec(style);
+          const bgMatch = constants_js_1.BG_IMAGE_URL_REGEX.exec(style);
           if (bgMatch == null ? void 0 : bgMatch[1]) {
             const bgUrl = bgMatch[1].trim();
             if (!(0, api_js_1.isPlaceholderImageUrl)(bgUrl)) {
@@ -3385,136 +3060,144 @@ var SourcePackage = (() => {
         }
         return void 0;
       }
-      function parseGalleryCards(html) {
-        if (!html || typeof html !== "string") {
+      function extractGalleryCardFromElement($thumb, $) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+        const galleryHref = (_c = (_b = (_a = $thumb.find(".caption a").attr("href")) != null ? _a : $thumb.find(".inner_thumb a").attr("href")) != null ? _b : $thumb.find('a[href*="/gallery/"]').attr("href")) != null ? _c : "";
+        const id = extractGalleryId(galleryHref) || ((_d = $thumb.attr("data-id")) != null ? _d : "").trim();
+        if (!id) {
+          return null;
+        }
+        const $captionLink = $thumb.find(".caption a").first();
+        const rawTitle = (0, preferences_js_1.decodeHtmlEntities)($captionLink.text() || $thumb.find(".caption").text() || $thumb.find("img").attr("alt") || `Gallery #${id}`);
+        const rawSubtitle = $thumb.find(".subtitle").text() || $thumb.attr("data-jtitle") || $thumb.attr("data-subtitle") || "";
+        const japaneseTitle = rawSubtitle ? (0, preferences_js_1.decodeHtmlEntities)(rawSubtitle) : void 0;
+        const $lazyImg = $thumb.find("img.lazy").first();
+        const $anyImg = $lazyImg.length > 0 ? $lazyImg : $thumb.find("img").first();
+        const extractedThumb = extractImageSrcFromElement($anyImg);
+        const thumbnailUrl = extractedThumb || constants_js_1.FALLBACK_COVER_URL;
+        const baseUrl = (0, api_js_1.deriveBaseCdnUrl)(thumbnailUrl);
+        let categoryBadge = $thumb.find(".thumb_cat, .cat, .category, a[href*='/category/']").first().text().trim() || ((_e = $thumb.attr("data-category")) == null ? void 0 : _e.trim()) || void 0;
+        let languageBadge = $thumb.find(".lang, .language, .languages, a[href*='/language/']").first().text().trim() || ((_f = $thumb.attr("data-language")) == null ? void 0 : _f.trim()) || ((_g = $thumb.attr("data-lang")) == null ? void 0 : _g.trim()) || void 0;
+        if (!languageBadge) {
+          const flagClass2 = ((_h = $thumb.find("[class*='flag']").attr("class")) != null ? _h : "").toLowerCase();
+          if (flagClass2.includes("en") || flagClass2.includes("us") || flagClass2.includes("gb")) {
+            languageBadge = "English";
+          } else if (flagClass2.includes("jp") || flagClass2.includes("ja")) {
+            languageBadge = "Japanese";
+          } else if (flagClass2.includes("zh") || flagClass2.includes("cn")) {
+            languageBadge = "Chinese";
+          } else if (flagClass2.includes("es")) {
+            languageBadge = "Spanish";
+          } else if (flagClass2.includes("fr")) {
+            languageBadge = "French";
+          } else if (flagClass2.includes("de")) {
+            languageBadge = "German";
+          } else if (flagClass2.includes("ru")) {
+            languageBadge = "Russian";
+          }
+        }
+        const tagSet = /* @__PURE__ */ new Set();
+        const dataTags = $thumb.attr("data-tags");
+        if (dataTags) {
+          const parts = dataTags.split(constants_js_1.COMMA_SEMICOLON_REGEX);
+          for (let i = 0; i < parts.length; i++) {
+            const p = (_i = parts[i]) == null ? void 0 : _i.trim().toLowerCase();
+            if (p)
+              tagSet.add(p);
+          }
+        }
+        $thumb.find(".tag, .tags a, a[href*='/tag/']").each((_i2, tagEl) => {
+          const { name } = extractCleanTagText($, tagEl);
+          if (name) {
+            tagSet.add(name.toLowerCase());
+          }
+        });
+        const bracketTokens = extractTitleBracketTokens(rawTitle);
+        for (let i = 0; i < bracketTokens.length; i++) {
+          const tok = bracketTokens[i];
+          if (tok) {
+            tagSet.add(tok);
+            if (!languageBadge) {
+              if (tok === "english" || tok === "eng")
+                languageBadge = "English";
+              else if (tok === "japanese" || tok === "jp" || tok === "ja" || tok === "raw" || tok === "untranslated")
+                languageBadge = "Japanese";
+              else if (tok === "chinese" || tok === "chi" || tok === "zh")
+                languageBadge = "Chinese";
+              else if (tok === "spanish" || tok === "es")
+                languageBadge = "Spanish";
+              else if (tok === "french" || tok === "fr")
+                languageBadge = "French";
+              else if (tok === "german" || tok === "de")
+                languageBadge = "German";
+              else if (tok === "russian" || tok === "ru")
+                languageBadge = "Russian";
+            }
+            if (!categoryBadge) {
+              const normCat = (0, preferences_js_1.normalizeCategoryToken)(tok);
+              if (normCat) {
+                categoryBadge = tok;
+              }
+            }
+          }
+        }
+        if (categoryBadge) {
+          tagSet.add(categoryBadge.toLowerCase());
+        }
+        if (languageBadge) {
+          tagSet.add(languageBadge.toLowerCase());
+        }
+        let serverId;
+        let loadDir;
+        const serverMatch = constants_js_1.SERVER_FROM_URL_REGEX.exec(thumbnailUrl);
+        if (serverMatch) {
+          serverId = serverMatch[1];
+          loadDir = serverMatch[2];
+        }
+        const subtitleParts = [];
+        if (categoryBadge)
+          subtitleParts.push(categoryBadge);
+        if (languageBadge)
+          subtitleParts.push(languageBadge);
+        const titleLower = rawTitle.toLowerCase();
+        const isJpTitle = titleLower.includes("[japanese]") || titleLower.includes("(japanese)") || titleLower.includes("[jp]");
+        const hasJapaneseClass = $thumb.hasClass("japanese") || $thumb.find(".japanese").length > 0 || Boolean($thumb.find("[class*='japanese']").length);
+        const flagClass = ((_j = $thumb.find("[class*='flag']").attr("class")) != null ? _j : "").toLowerCase();
+        const hasJpFlag = flagClass.includes("flag-jp") || flagClass.includes("flag_jp") || flagClass.includes("flag-ja") || flagClass.includes("flag_ja") || constants_js_1.FLAG_JP_REGEX.test(flagClass) || constants_js_1.FLAG_JA_REGEX.test(flagClass);
+        const isJpBadge = (languageBadge == null ? void 0 : languageBadge.toLowerCase()) === "japanese" || (languageBadge == null ? void 0 : languageBadge.toLowerCase()) === "jp" || (languageBadge == null ? void 0 : languageBadge.toLowerCase()) === "ja";
+        const isJapaneseRaw = isJpTitle || hasJapaneseClass || hasJpFlag || isJpBadge;
+        return {
+          id,
+          title: rawTitle,
+          subtitle: subtitleParts.length > 0 ? subtitleParts.join(" \u2022 ") : void 0,
+          japaneseTitle,
+          thumbnailUrl,
+          webUrl: `${constants_js_1.BASE_URL}/gallery/${id}/`,
+          category: categoryBadge,
+          language: languageBadge,
+          tags: Array.from(tagSet),
+          serverId,
+          loadDir,
+          baseUrl,
+          baseImageUrl: baseUrl,
+          isJapaneseRaw
+        };
+      }
+      function parseGalleryCards(htmlOrCheerio, $container) {
+        if (!htmlOrCheerio) {
           return [];
         }
-        const $ = cheerio.load(html);
+        const $ = typeof htmlOrCheerio === "function" ? htmlOrCheerio : cheerio.load(htmlOrCheerio);
         const cards = [];
         const seenIds = /* @__PURE__ */ new Set();
-        $(".thumb").each((_idx, el) => {
-          var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m;
+        const $thumbs = $container ? $container.find(".thumb") : $(".thumb");
+        $thumbs.each((_idx, el) => {
           const $thumb = $(el);
-          let galleryHref = (_c = (_b = (_a = $thumb.find(".caption a").attr("href")) != null ? _a : $thumb.find(".inner_thumb a").attr("href")) != null ? _b : $thumb.find('a[href*="/gallery/"]').attr("href")) != null ? _c : "";
-          const id = extractGalleryId(galleryHref) || ((_d = $thumb.attr("data-id")) != null ? _d : "").trim();
-          if (!id || seenIds.has(id)) {
-            return;
+          const card = extractGalleryCardFromElement($thumb, $);
+          if (card && !seenIds.has(card.id)) {
+            seenIds.add(card.id);
+            cards.push(card);
           }
-          seenIds.add(id);
-          const $captionLink = $thumb.find(".caption a").first();
-          const rawTitle = $captionLink.text().trim() || $thumb.find(".caption").text().trim() || ((_e = $thumb.find("img").attr("alt")) == null ? void 0 : _e.trim()) || `Gallery #${id}`;
-          const japaneseTitle = $thumb.find(".subtitle").text().trim() || ((_f = $thumb.attr("data-jtitle")) == null ? void 0 : _f.trim()) || ((_g = $thumb.attr("data-subtitle")) == null ? void 0 : _g.trim()) || void 0;
-          const $lazyImg = $thumb.find("img.lazy").first();
-          const $anyImg = $lazyImg.length > 0 ? $lazyImg : $thumb.find("img").first();
-          const extractedThumb = extractImageSrcFromElement($anyImg);
-          const thumbnailUrl = extractedThumb || constants_js_1.FALLBACK_COVER_URL;
-          const baseUrl = (0, api_js_1.deriveBaseCdnUrl)(thumbnailUrl);
-          let categoryBadge = $thumb.find(".thumb_cat, .cat, .category, a[href*='/category/']").first().text().trim() || ((_h = $thumb.attr("data-category")) == null ? void 0 : _h.trim()) || void 0;
-          let languageBadge = $thumb.find(".lang, .language, .languages, a[href*='/language/']").first().text().trim() || ((_i = $thumb.attr("data-language")) == null ? void 0 : _i.trim()) || ((_j = $thumb.attr("data-lang")) == null ? void 0 : _j.trim()) || void 0;
-          if (!languageBadge) {
-            const flagClass2 = (_k = $thumb.find("[class*='flag']").attr("class")) != null ? _k : "";
-            if (flagClass2.includes("en") || flagClass2.includes("us") || flagClass2.includes("gb")) {
-              languageBadge = "English";
-            } else if (flagClass2.includes("jp") || flagClass2.includes("ja")) {
-              languageBadge = "Japanese";
-            } else if (flagClass2.includes("zh") || flagClass2.includes("cn")) {
-              languageBadge = "Chinese";
-            } else if (flagClass2.includes("es")) {
-              languageBadge = "Spanish";
-            } else if (flagClass2.includes("fr")) {
-              languageBadge = "French";
-            } else if (flagClass2.includes("de")) {
-              languageBadge = "German";
-            } else if (flagClass2.includes("ru")) {
-              languageBadge = "Russian";
-            }
-          }
-          const tagSet = /* @__PURE__ */ new Set();
-          const dataTags = $thumb.attr("data-tags");
-          if (dataTags) {
-            const parts = dataTags.split(/[,;]/);
-            for (let i = 0; i < parts.length; i++) {
-              const p = (_l = parts[i]) == null ? void 0 : _l.trim().toLowerCase();
-              if (p)
-                tagSet.add(p);
-            }
-          }
-          $thumb.find(".tag, .tags a, a[href*='/tag/']").each((_i2, tagEl) => {
-            const { name } = extractCleanTagText($, tagEl);
-            if (name) {
-              tagSet.add(name.toLowerCase());
-            }
-          });
-          const bracketTokens = extractTitleBracketTokens(rawTitle);
-          for (let i = 0; i < bracketTokens.length; i++) {
-            const tok = bracketTokens[i];
-            if (tok) {
-              tagSet.add(tok);
-              if (!languageBadge) {
-                if (tok === "english" || tok === "eng")
-                  languageBadge = "English";
-                else if (tok === "japanese" || tok === "jp" || tok === "ja" || tok === "raw" || tok === "untranslated")
-                  languageBadge = "Japanese";
-                else if (tok === "chinese" || tok === "chi" || tok === "zh")
-                  languageBadge = "Chinese";
-                else if (tok === "spanish" || tok === "es")
-                  languageBadge = "Spanish";
-                else if (tok === "french" || tok === "fr")
-                  languageBadge = "French";
-                else if (tok === "german" || tok === "de")
-                  languageBadge = "German";
-                else if (tok === "russian" || tok === "ru")
-                  languageBadge = "Russian";
-              }
-              if (!categoryBadge) {
-                const normCat = (0, preferences_js_1.normalizeCategoryToken)(tok);
-                if (normCat) {
-                  categoryBadge = tok;
-                }
-              }
-            }
-          }
-          if (categoryBadge) {
-            tagSet.add(categoryBadge.toLowerCase());
-          }
-          if (languageBadge) {
-            tagSet.add(languageBadge.toLowerCase());
-          }
-          let serverId;
-          let loadDir;
-          const serverMatch = constants_js_1.SERVER_FROM_URL_REGEX.exec(thumbnailUrl);
-          if (serverMatch) {
-            serverId = serverMatch[1];
-            loadDir = serverMatch[2];
-          }
-          const subtitleParts = [];
-          if (categoryBadge)
-            subtitleParts.push(categoryBadge);
-          if (languageBadge)
-            subtitleParts.push(languageBadge);
-          const titleLower = rawTitle.toLowerCase();
-          const isJpTitle = titleLower.includes("[japanese]") || titleLower.includes("(japanese)") || titleLower.includes("[jp]");
-          const hasJapaneseClass = $thumb.hasClass("japanese") || $thumb.find(".japanese").length > 0 || Boolean($thumb.find("[class*='japanese']").length);
-          const flagClass = ((_m = $thumb.find("[class*='flag']").attr("class")) != null ? _m : "").toLowerCase();
-          const hasJpFlag = flagClass.includes("flag-jp") || flagClass.includes("flag_jp") || flagClass.includes("flag-ja") || flagClass.includes("flag_ja") || /(?:^|\s|-|_)jp(?:$|\s|-|_)/.test(flagClass) || /(?:^|\s|-|_)ja(?:$|\s|-|_)/.test(flagClass);
-          const isJpBadge = (languageBadge == null ? void 0 : languageBadge.toLowerCase()) === "japanese" || (languageBadge == null ? void 0 : languageBadge.toLowerCase()) === "jp" || (languageBadge == null ? void 0 : languageBadge.toLowerCase()) === "ja";
-          const isJapaneseRaw = isJpTitle || hasJapaneseClass || hasJpFlag || isJpBadge;
-          cards.push({
-            id,
-            title: rawTitle,
-            subtitle: subtitleParts.length > 0 ? subtitleParts.join(" \u2022 ") : void 0,
-            japaneseTitle,
-            thumbnailUrl,
-            webUrl: `${constants_js_1.BASE_URL}/gallery/${id}/`,
-            category: categoryBadge,
-            language: languageBadge,
-            tags: Array.from(tagSet),
-            serverId,
-            loadDir,
-            baseUrl,
-            baseImageUrl: baseUrl,
-            isJapaneseRaw
-          });
         });
         return cards;
       }
@@ -3565,7 +3248,7 @@ var SourcePackage = (() => {
         });
       }
       function extractPageResolutionMeta(html, fallbackId = "1", $loaded) {
-        var _a, _b, _c, _d, _e, _f, _g;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i;
         const $ = $loaded != null ? $loaded : cheerio.load(html);
         const $coverImg = $("#cover img, .left_cover img, .thumb img").first();
         const rawCoverUrl = extractImageSrcFromElement($coverImg);
@@ -3576,13 +3259,13 @@ var SourcePackage = (() => {
         const urlPartsMatch = constants_js_1.SERVER_FROM_URL_REGEX.exec(coverUrl || rawFirstThumbUrl || "");
         const serverPrefixMatch = constants_js_1.SERVER_PREFIX_REGEX.exec(coverUrl || rawFirstThumbUrl || html);
         const domGalleryId = ((_a = $("#gallery_id").val()) != null ? _a : "").trim();
-        const inlineGalleryIdMatch = /['"]?gallery_id['"]?\s*[:=]\s*['"]?(\d+)['"]?/i.exec(html);
+        const inlineGalleryIdMatch = constants_js_1.INLINE_GALLERY_ID_REGEX.exec(html);
         const galleryId = domGalleryId || (inlineGalleryIdMatch == null ? void 0 : inlineGalleryIdMatch[1]) || (urlPartsMatch == null ? void 0 : urlPartsMatch[3]) || extractGalleryId(fallbackId) || "1";
         const domLoadDir = ((_b = $("#load_dir").val()) != null ? _b : "").trim();
-        const inlineLoadDirMatch = /['"]?load_dir['"]?\s*[:=]\s*['"]([^'"]+)['"]/i.exec(html);
+        const inlineLoadDirMatch = constants_js_1.INLINE_LOAD_DIR_REGEX.exec(html);
         const loadDir = domLoadDir || ((_c = inlineLoadDirMatch == null ? void 0 : inlineLoadDirMatch[1]) == null ? void 0 : _c.trim()) || (urlPartsMatch == null ? void 0 : urlPartsMatch[2]) || "001";
         const domLoadId = ((_e = (_d = $("#load_id").val()) != null ? _d : $("#load_server").val()) != null ? _e : "").trim();
-        const inlineLoadIdMatch = /['"]?(?:load_id|load_server|server_id)['"]?\s*[:=]\s*['"]?([^'",;\s}]+)['"]?/i.exec(html);
+        const inlineLoadIdMatch = constants_js_1.INLINE_LOAD_ID_REGEX.exec(html);
         let rawServerId = domLoadId || ((_f = inlineLoadIdMatch == null ? void 0 : inlineLoadIdMatch[1]) == null ? void 0 : _f.trim()) || (urlPartsMatch == null ? void 0 : urlPartsMatch[1]) || (serverPrefixMatch == null ? void 0 : serverPrefixMatch[1]) || constants_js_1.DEFAULT_SERVER_ID;
         if (/^m\d+$/i.test(rawServerId)) {
           rawServerId = rawServerId.slice(1);
@@ -3590,16 +3273,15 @@ var SourcePackage = (() => {
         const serverId = rawServerId || constants_js_1.DEFAULT_SERVER_ID;
         if (!baseUrl) {
           const cleanServer = serverId.replace(/^m/i, "") || constants_js_1.DEFAULT_SERVER_ID;
-          const cleanDir = loadDir.replace(/^\/+|\/+$/g, "");
+          const cleanDir = loadDir.replace(constants_js_1.TRIM_SLASHES_REGEX, "");
           baseUrl = `https://m${cleanServer}.imhentai.xxx/${cleanDir}/`;
         }
-        if (!baseUrl.endsWith("/")) {
-          baseUrl += "/";
-        }
+        const cleanBaseUrl = (_h = (_g = baseUrl.split("?")[0]) == null ? void 0 : _g.split("#")[0]) != null ? _h : baseUrl;
+        baseUrl = cleanBaseUrl.endsWith("/") ? cleanBaseUrl : `${cleanBaseUrl}/`;
         const extensionMap = parseExtensionMapFromHtml(html, $);
-        $("img[data-src*='t.'], img[src*='t.']").each((_i, imgEl) => {
+        $("img[data-src*='t.'], img[src*='t.']").each((_i2, imgEl) => {
           const src = $(imgEl).attr("data-src") || $(imgEl).attr("src") || "";
-          const m = /\/(\d+)t\.([a-z0-9]+)/i.exec(src);
+          const m = constants_js_1.THUMB_PAGENUM_EXT_REGEX.exec(src);
           if (m && m[1] && m[2]) {
             const pNum = m[1];
             const ext = sanitizeImageExtension(m[2]);
@@ -3609,16 +3291,16 @@ var SourcePackage = (() => {
           }
         });
         const defaultExt = sanitizeImageExtension(detectExtensionFromUrl(coverUrl));
-        const domPagesVal = ((_g = $("#load_pages").val()) != null ? _g : "").trim();
+        const domPagesVal = ((_i = $("#load_pages").val()) != null ? _i : "").trim();
         let totalPages = parseInt(domPagesVal, 10);
         if (Number.isNaN(totalPages) || totalPages <= 0) {
-          const inlinePagesMatch = /['"]?load_pages['"]?\s*[:=]\s*['"]?(\d+)['"]?/i.exec(html);
+          const inlinePagesMatch = constants_js_1.INLINE_LOAD_PAGES_REGEX.exec(html);
           if (inlinePagesMatch == null ? void 0 : inlinePagesMatch[1]) {
             totalPages = parseInt(inlinePagesMatch[1], 10);
           }
         }
         if (Number.isNaN(totalPages) || totalPages <= 0) {
-          const pagesTextMatch = /Pages\s*:\s*(\d+)/i.exec($.text());
+          const pagesTextMatch = constants_js_1.PAGES_TEXT_REGEX.exec($.text());
           if (pagesTextMatch == null ? void 0 : pagesTextMatch[1]) {
             totalPages = parseInt(pagesTextMatch[1], 10);
           }
@@ -3638,22 +3320,22 @@ var SourcePackage = (() => {
         };
       }
       function buildChapterPagesFromMeta(meta) {
-        var _a;
-        const count = Math.max(1, meta.totalPages);
+        var _a, _b, _c;
+        const count = Math.max(1, meta.totalPages || 1);
         const pages = new Array(count);
         const { extensionMap, defaultExt, baseUrl } = meta;
-        const safeDefaultExt = sanitizeImageExtension(defaultExt);
-        let baseCdn = baseUrl;
+        const safeDefaultExt = sanitizeImageExtension(defaultExt || constants_js_1.DEFAULT_IMAGE_EXT);
+        let baseCdn = (_b = (_a = baseUrl == null ? void 0 : baseUrl.split("?")[0]) == null ? void 0 : _a.split("#")[0]) != null ? _b : baseUrl;
         if (!baseCdn || !baseCdn.startsWith("http")) {
           const cleanServer = (meta.serverId || constants_js_1.DEFAULT_SERVER_ID).replace(/^m/i, "") || constants_js_1.DEFAULT_SERVER_ID;
-          const cleanDir = (meta.loadDir || "001").replace(/^\/+|\/+$/g, "");
+          const cleanDir = (meta.loadDir || "001").replace(constants_js_1.TRIM_SLASHES_REGEX, "");
           baseCdn = `https://m${cleanServer}.imhentai.xxx/${cleanDir}/`;
         }
         if (!baseCdn.endsWith("/")) {
           baseCdn += "/";
         }
         for (let pageNumber = 1; pageNumber <= count; pageNumber++) {
-          const rawExt = (_a = extensionMap[String(pageNumber)]) != null ? _a : safeDefaultExt;
+          const rawExt = (_c = extensionMap[String(pageNumber)]) != null ? _c : safeDefaultExt;
           const cleanExt = sanitizeImageExtension(rawExt);
           const url = `${baseCdn}${pageNumber}.${cleanExt}`;
           pages[pageNumber - 1] = {
@@ -3671,8 +3353,9 @@ var SourcePackage = (() => {
         const $ = cheerio.load(html);
         const pageMeta = extractPageResolutionMeta(html, fallbackId, $);
         const id = pageMeta.galleryId || extractGalleryId(fallbackId) || "1";
-        const primaryTitle = $(".right_details h1").first().text().trim() || $("h1").first().text().trim() || `Gallery #${id}`;
-        const subtitleText = $(".right_details .subtitle").first().text().trim() || $(".subtitle").first().text().trim() || "";
+        const primaryTitle = (0, preferences_js_1.decodeHtmlEntities)($(".right_details h1").first().text() || $("h1").first().text() || `Gallery #${id}`);
+        const subtitleRaw = $(".right_details .subtitle").first().text() || $(".subtitle").first().text() || "";
+        const subtitleText = subtitleRaw ? (0, preferences_js_1.decodeHtmlEntities)(subtitleRaw) : "";
         const additionalTitles = subtitleText.length > 0 ? [subtitleText] : [];
         const $coverImg = $("#cover img, .left_cover img").first();
         const rawCover = extractImageSrcFromElement($coverImg);
@@ -3693,9 +3376,9 @@ var SourcePackage = (() => {
         let totalPages = pageMeta.totalPages;
         $(".right_details li, ul.galleries_info li, .galleries_info li").each((_idx, liEl) => {
           const $li = $(liEl);
-          const fullText = $li.text().replace(/\s+/g, " ").trim();
-          if (/Pages\s*:/i.test(fullText)) {
-            const m = /Pages\s*:\s*(\d+)/i.exec(fullText);
+          const fullText = $li.text().replace(constants_js_1.WHITESPACE_REGEX, " ").trim();
+          if (constants_js_1.PAGES_TEXT_REGEX.test(fullText)) {
+            const m = constants_js_1.PAGES_TEXT_REGEX.exec(fullText);
             if (m == null ? void 0 : m[1]) {
               const parsedPages = parseInt(m[1], 10);
               if (!Number.isNaN(parsedPages) && parsedPages > 0) {
@@ -3780,7 +3463,7 @@ var SourcePackage = (() => {
               break;
           }
         });
-        const relatedCards = parseRelatedGalleryCards(html);
+        const relatedCards = parseRelatedGalleryCards($, $);
         const relatedItems = relatedCards.map((card) => ({
           id: card.id,
           title: card.title,
@@ -3808,19 +3491,16 @@ var SourcePackage = (() => {
           relatedItems: relatedItems.length > 0 ? relatedItems : void 0
         };
       }
-      function parseRelatedGalleryCards(html) {
-        if (!html || typeof html !== "string") {
+      function parseRelatedGalleryCards(htmlOrCheerio, $loaded) {
+        if (!htmlOrCheerio) {
           return [];
         }
-        const $ = cheerio.load(html);
-        const container = $(".related_galleries, #related, #related_galleries, .similar_galleries, #similar");
-        if (container.length === 0) {
+        const $ = $loaded != null ? $loaded : typeof htmlOrCheerio === "function" ? htmlOrCheerio : cheerio.load(htmlOrCheerio);
+        const $container = $(".related_galleries, #related, #related_galleries, .similar_galleries, #similar");
+        if ($container.length === 0) {
           return [];
         }
-        const containerHtml = container.html();
-        if (!containerHtml)
-          return [];
-        return parseGalleryCards(containerHtml);
+        return parseGalleryCards($, $container);
       }
       function mapDetailToContent(detail, prefs) {
         var _a, _b;
@@ -3830,7 +3510,7 @@ var SourcePackage = (() => {
           role: "Artist"
         }));
         const genres = detail.tags.map((tag) => ({
-          id: tag.toLowerCase().replace(/\s+/g, "-"),
+          id: tag.toLowerCase().replace(constants_js_1.WHITESPACE_REGEX, "-"),
           title: tag,
           rating: constants_js_1.ContentRating.ADULT
         }));
@@ -3841,7 +3521,7 @@ var SourcePackage = (() => {
             title: "Artist",
             namespace: "Artist",
             tags: detail.artists.map((a) => ({
-              id: `artist:${a.toLowerCase().replace(/\s+/g, "-")}`,
+              id: `artist:${a.toLowerCase().replace(constants_js_1.WHITESPACE_REGEX, "-")}`,
               title: a,
               namespace: "Artist"
             }))
@@ -3853,7 +3533,7 @@ var SourcePackage = (() => {
             title: "Circle",
             namespace: "Circle",
             tags: detail.groups.map((g) => ({
-              id: `group:${g.toLowerCase().replace(/\s+/g, "-")}`,
+              id: `group:${g.toLowerCase().replace(constants_js_1.WHITESPACE_REGEX, "-")}`,
               title: g,
               namespace: "Circle"
             }))
@@ -3865,7 +3545,7 @@ var SourcePackage = (() => {
             title: "Parody",
             namespace: "Parody",
             tags: detail.parodies.map((p) => ({
-              id: `parody:${p.toLowerCase().replace(/\s+/g, "-")}`,
+              id: `parody:${p.toLowerCase().replace(constants_js_1.WHITESPACE_REGEX, "-")}`,
               title: p,
               namespace: "Parody"
             }))
@@ -3877,7 +3557,7 @@ var SourcePackage = (() => {
             title: "Character",
             namespace: "Character",
             tags: detail.characters.map((c) => ({
-              id: `character:${c.toLowerCase().replace(/\s+/g, "-")}`,
+              id: `character:${c.toLowerCase().replace(constants_js_1.WHITESPACE_REGEX, "-")}`,
               title: c,
               namespace: "Character"
             }))
@@ -3889,7 +3569,7 @@ var SourcePackage = (() => {
             title: "Category",
             namespace: "Category",
             tags: detail.categories.map((cat) => ({
-              id: `category:${cat.toLowerCase().replace(/\s+/g, "-")}`,
+              id: `category:${cat.toLowerCase().replace(constants_js_1.WHITESPACE_REGEX, "-")}`,
               title: cat,
               namespace: "Category"
             }))
@@ -3901,7 +3581,7 @@ var SourcePackage = (() => {
             title: "Language",
             namespace: "Language",
             tags: detail.languages.map((lang) => ({
-              id: `language:${lang.toLowerCase().replace(/\s+/g, "-")}`,
+              id: `language:${lang.toLowerCase().replace(constants_js_1.WHITESPACE_REGEX, "-")}`,
               title: lang,
               namespace: "Language"
             }))
@@ -4057,6 +3737,12 @@ var SourcePackage = (() => {
           const url = this.buildFeedUrl(feedKey, page, resolvedPrefs, sortBy);
           const html = await this.fetchHtml(url);
           const cards = parseGalleryCards(html);
+          if (cards.length === 0) {
+            return {
+              items: [],
+              isLastPage: true
+            };
+          }
           let overrideCategories;
           const normFeedCategory = (0, preferences_js_1.normalizeCategoryToken)(feedKey);
           if (normFeedCategory) {
@@ -4069,20 +3755,30 @@ var SourcePackage = (() => {
             const dir = sortAscending === false ? -1 : 1;
             items.sort((a, b) => a.title.localeCompare(b.title) * dir);
           }
-          const hasNextPage = html.includes(`page=${(page || 1) + 1}`) || html.includes('class="next"') || cards.length >= 20;
+          const hasNextPage = cards.length > 0 && (html.includes(`page=${(page || 1) + 1}`) || html.includes('class="next"') || cards.length >= 20);
           return {
             items,
             isLastPage: !hasNextPage
           };
         }
         async fetchSearchResults(params, prefs) {
-          var _a, _b, _c, _d;
+          var _a, _b, _c, _d, _e, _f, _g;
           const resolvedPrefs = prefs != null ? prefs : await (0, preferences_js_1.getUserPreferences)();
+          if (!((_a = params.query) == null ? void 0 : _a.trim()) && (!((_b = params.tags) == null ? void 0 : _b.include) || params.tags.include.length === 0)) {
+            const isPopular = params.sortBy === "popular" || params.sortBy === "popularity" || params.sortBy === "pp" || params.sortBy === "most_viewed";
+            return this.fetchFeedItems(isPopular ? constants_js_1.BROWSE_FEED_KEYS.POPULAR : constants_js_1.BROWSE_FEED_KEYS.LATEST, (_c = params.page) != null ? _c : 1, resolvedPrefs, params.sortBy, params.sortAscending);
+          }
           const url = this.buildSearchUrl(params, resolvedPrefs);
           const html = await this.fetchHtml(url);
           const cards = parseGalleryCards(html);
+          if (cards.length === 0) {
+            return {
+              items: [],
+              isLastPage: true
+            };
+          }
           let overrideCategories;
-          if (((_a = params.categories) == null ? void 0 : _a.include) && params.categories.include.length > 0) {
+          if (((_d = params.categories) == null ? void 0 : _d.include) && params.categories.include.length > 0) {
             const set = /* @__PURE__ */ new Set();
             for (const c of params.categories.include) {
               const norm = (0, preferences_js_1.normalizeCategoryToken)(c);
@@ -4096,15 +3792,15 @@ var SourcePackage = (() => {
           const items = filterAndMapGalleryCards(cards, resolvedPrefs, {
             overrideCategories,
             overrideLanguage: params.language,
-            extraExcludedTags: (_b = params.tags) == null ? void 0 : _b.exclude,
-            requiredIncludedTags: (_c = params.tags) == null ? void 0 : _c.include
+            extraExcludedTags: (_e = params.tags) == null ? void 0 : _e.exclude,
+            requiredIncludedTags: (_f = params.tags) == null ? void 0 : _f.include
           });
           if (params.sortBy === "title") {
             const dir = params.sortAscending === false ? -1 : 1;
             items.sort((a, b) => a.title.localeCompare(b.title) * dir);
           }
-          const page = (_d = params.page) != null ? _d : 1;
-          const hasNextPage = html.includes(`page=${page + 1}`) || html.includes('class="next"') || cards.length >= 20;
+          const page = (_g = params.page) != null ? _g : 1;
+          const hasNextPage = cards.length > 0 && (html.includes(`page=${page + 1}`) || html.includes('class="next"') || cards.length >= 20);
           return {
             items,
             isLastPage: !hasNextPage
@@ -4511,7 +4207,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_org();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "org.imhentai", "name": "IMHentai", "version": 1.6, "website": "https://imhentai.xxx", "rating": 2, "thumbnail": "imhentai.png", "languages": ["en", "ja", "zh", "es", "fr", "de", "ru"] };
+      exports.SourceMetadata = { "id": "org.imhentai", "name": "IMHentai", "version": 1.7, "website": "https://imhentai.xxx", "rating": 2, "thumbnail": "imhentai.png", "languages": ["en", "ja", "zh", "es", "fr", "de", "ru"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;
