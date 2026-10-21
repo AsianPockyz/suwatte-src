@@ -833,14 +833,14 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.EXTENSION_CODE_MAP = exports.IMHENTAI_POPULAR_PARODIES = exports.IMHENTAI_TAGS = exports.IMHENTAI_FILTER_LANGUAGES = exports.IMHENTAI_SORT_OPTIONS = exports.BROWSE_FEED_DEFINITIONS = exports.BROWSE_FEED_KEYS = exports.HOME_SECTION_KEYS = exports.DEFAULT_TITLE_PREFERENCE = exports.TITLE_PREFERENCE_OPTIONS = exports.HEAVY_TROPE_SYNONYM_MAP = exports.HEAVY_TROPE_OPTIONS = exports.LANGUAGE_QUERY_MAP = exports.DEFAULT_LANGUAGE = exports.LANGUAGE_OPTIONS = exports.CATEGORY_QUERY_MAP = exports.ALL_CATEGORIES = exports.DEFAULT_CATEGORIES = exports.CATEGORY_OPTIONS = exports.PREF_KEYS = exports.SERVER_PREFIX_REGEX = exports.SERVER_FROM_URL_REGEX = exports.VIEW_PATH_REGEX = exports.GALLERY_PATH_REGEX = exports.GALLERY_URL_REGEX = exports.DEFAULT_IMAGE_EXT = exports.DEFAULT_SERVER_ID = exports.RATE_LIMIT_PER_SECOND = exports.STATIC_CONFIGURATION = exports.PAGE_IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.STANDARD_HEADERS = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_RESOLUTION_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.SOURCE_CONTENT_RATING = exports.SOURCE_LANGUAGES = exports.SOURCE_ENVIRONMENT = exports.THUMBNAIL_FILENAME = exports.VARIANT_ID = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = exports.ContentRating = void 0;
+      exports.EXTENSION_CODE_MAP = exports.IMHENTAI_POPULAR_PARODIES = exports.IMHENTAI_TAGS = exports.IMHENTAI_FILTER_LANGUAGES = exports.IMHENTAI_SORT_OPTIONS = exports.BROWSE_FEED_DEFINITIONS = exports.BROWSE_FEED_KEYS = exports.HOME_SECTION_KEYS = exports.DEFAULT_TITLE_PREFERENCE = exports.TITLE_PREFERENCE_OPTIONS = exports.HEAVY_TROPE_SYNONYM_MAP = exports.HEAVY_TROPE_OPTIONS = exports.LANGUAGE_QUERY_MAP = exports.DEFAULT_LANGUAGE = exports.LANGUAGE_OPTIONS = exports.CATEGORY_QUERY_MAP = exports.ALL_CATEGORIES = exports.DEFAULT_CATEGORIES = exports.CATEGORY_OPTIONS = exports.PREF_KEYS = exports.SERVER_PREFIX_REGEX = exports.SERVER_FROM_URL_REGEX = exports.VIEW_PATH_REGEX = exports.GALLERY_PATH_REGEX = exports.GALLERY_URL_REGEX = exports.DEFAULT_IMAGE_EXT = exports.DEFAULT_SERVER_ID = exports.RATE_LIMIT_PER_SECOND = exports.STATIC_CONFIGURATION = exports.PAGE_IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.STANDARD_HEADERS = exports.DEFAULT_USER_AGENT = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_RESOLUTION_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.SOURCE_CONTENT_RATING = exports.SOURCE_LANGUAGES = exports.SOURCE_ENVIRONMENT = exports.THUMBNAIL_FILENAME = exports.VARIANT_ID = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = exports.ContentRating = void 0;
       var toolchain_1 = require_dist();
       require_types2();
       toolchain_1.ContentRating.ADULT = toolchain_1.ContentRating.MATURE;
       exports.ContentRating = toolchain_1.ContentRating;
       exports.SOURCE_ID = "org.imhentai";
       exports.SOURCE_NAME = "IMHentai";
-      exports.SOURCE_VERSION = 1.1;
+      exports.SOURCE_VERSION = 1.2;
       exports.BASE_URL = "https://imhentai.xxx";
       exports.VARIANT_ID = "org.imhentai";
       exports.THUMBNAIL_FILENAME = "imhentai.png";
@@ -859,20 +859,20 @@ var SourcePackage = (() => {
       exports.ORIGIN_URL = "https://imhentai.xxx";
       exports.CLOUDFLARE_RESOLUTION_URL = "https://imhentai.xxx";
       exports.FALLBACK_COVER_URL = "https://imhentai.xxx/assets/images/logo.png";
+      exports.DEFAULT_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
       exports.STANDARD_HEADERS = Object.freeze({
         Referer: exports.REFERER_URL,
-        Origin: exports.ORIGIN_URL
+        "User-Agent": exports.DEFAULT_USER_AGENT
       });
       exports.DEFAULT_HEADERS = Object.freeze({
         Referer: exports.REFERER_URL,
-        Origin: exports.ORIGIN_URL,
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1"
+        "User-Agent": exports.DEFAULT_USER_AGENT
       });
       exports.PAGE_IMAGE_HEADERS = Object.freeze({
         Referer: exports.REFERER_URL,
-        Origin: exports.ORIGIN_URL
+        "User-Agent": exports.DEFAULT_USER_AGENT
       });
       exports.STATIC_CONFIGURATION = Object.freeze({
         imageReferer: exports.REFERER_URL,
@@ -2944,6 +2944,8 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
+      exports.isPlaceholderImageUrl = isPlaceholderImageUrl;
+      exports.deriveBaseCdnUrl = deriveBaseCdnUrl;
       exports.normalizeImageUrl = normalizeImageUrl;
       exports.buildCategoryQueryParam = buildCategoryQueryParam;
       exports.buildLanguageQueryParam = buildLanguageQueryParam;
@@ -2955,6 +2957,31 @@ var SourcePackage = (() => {
       exports.buildImageUrl = buildImageUrl;
       var constants_js_1 = require_constants();
       var preferences_js_1 = require_preferences();
+      function isPlaceholderImageUrl(url) {
+        if (!url)
+          return true;
+        const clean = url.trim().toLowerCase();
+        if (!clean)
+          return true;
+        return clean.includes("blank.gif") || clean.includes("pixel.gif") || clean.includes("placeholder") || clean.startsWith("/images/") || clean.startsWith("/assets/images/") || clean.includes("about:blank");
+      }
+      function deriveBaseCdnUrl(rawUrl) {
+        var _a, _b, _c;
+        if (!rawUrl)
+          return void 0;
+        const clean = (_c = (_b = (_a = rawUrl.split("?")[0]) == null ? void 0 : _a.split("#")[0]) == null ? void 0 : _b.trim()) != null ? _c : "";
+        if (!clean || isPlaceholderImageUrl(clean))
+          return void 0;
+        const normalized = normalizeImageUrl(clean);
+        const lastSlashIdx = normalized.lastIndexOf("/");
+        if (lastSlashIdx !== -1) {
+          const base = normalized.substring(0, lastSlashIdx + 1);
+          if (base.startsWith("https://") || base.startsWith("http://")) {
+            return base.replace(/^http:\/\//i, "https://");
+          }
+        }
+        return void 0;
+      }
       function normalizeImageUrl(rawUrl) {
         if (!rawUrl)
           return constants_js_1.FALLBACK_COVER_URL;
@@ -3072,13 +3099,28 @@ var SourcePackage = (() => {
         const cleanId = id.replace(/^\/+|\/+$/g, "");
         return `${constants_js_1.BASE_URL}/view/${cleanId}/${page}/`;
       }
-      function buildImageUrl(serverId, loadDir, galleryId, pageNumber, ext) {
-        const cleanServerId = (serverId || constants_js_1.DEFAULT_SERVER_ID).toString().replace(/^m/i, "").trim() || constants_js_1.DEFAULT_SERVER_ID;
-        const cleanLoadDir = (loadDir || "").toString().replace(/^\/+|\/+$/g, "").trim() || "001";
-        const cleanGalleryId = (galleryId || "1").toString().replace(/^\/+|\/+$/g, "").trim() || "1";
-        const rawExt = (ext || constants_js_1.DEFAULT_IMAGE_EXT).toString().trim().toLowerCase().replace(/^\./, "");
-        const cleanExt = constants_js_1.EXTENSION_CODE_MAP[rawExt] || (rawExt && rawExt !== "undefined" && rawExt !== "null" ? rawExt : constants_js_1.DEFAULT_IMAGE_EXT);
-        return `https://m${cleanServerId}.imhentai.xxx/${cleanLoadDir}/${cleanGalleryId}/${pageNumber}.${cleanExt}`;
+      function buildImageUrl(baseOrServer, dirOrPage, pageOrExt, maybePage, maybeExt) {
+        var _a, _b;
+        if (baseOrServer.startsWith("https://") || baseOrServer.startsWith("http://")) {
+          const cleanBase = baseOrServer.endsWith("/") ? baseOrServer.replace(/^http:\/\//i, "https://") : `${baseOrServer.replace(/^http:\/\//i, "https://")}/`;
+          const pageNum2 = typeof dirOrPage === "number" ? dirOrPage : parseInt(String(dirOrPage), 10) || 1;
+          const rawExt2 = typeof pageOrExt === "string" ? pageOrExt : constants_js_1.DEFAULT_IMAGE_EXT;
+          const cleanExt2 = (_a = constants_js_1.EXTENSION_CODE_MAP[rawExt2.toLowerCase().replace(/^\./, "")]) != null ? _a : rawExt2 && rawExt2 !== "undefined" && rawExt2 !== "null" ? rawExt2 : constants_js_1.DEFAULT_IMAGE_EXT;
+          return `${cleanBase}${pageNum2}.${cleanExt2}`;
+        }
+        const cleanServerId = baseOrServer.replace(/^m/i, "").trim() || constants_js_1.DEFAULT_SERVER_ID;
+        const cleanLoadDir = String(dirOrPage).replace(/^\/+|\/+$/g, "").trim() || "001";
+        let pageNum = 1;
+        let rawExt = constants_js_1.DEFAULT_IMAGE_EXT;
+        if (maybeExt !== void 0) {
+          pageNum = maybePage != null ? maybePage : 1;
+          rawExt = maybeExt;
+        } else if (typeof pageOrExt === "number") {
+          pageNum = pageOrExt;
+          rawExt = maybePage || constants_js_1.DEFAULT_IMAGE_EXT;
+        }
+        const cleanExt = (_b = constants_js_1.EXTENSION_CODE_MAP[rawExt.toLowerCase().replace(/^\./, "")]) != null ? _b : rawExt && rawExt !== "undefined" && rawExt !== "null" ? rawExt : constants_js_1.DEFAULT_IMAGE_EXT;
+        return `https://m${cleanServerId}.imhentai.xxx/${cleanLoadDir}/${pageNum}.${cleanExt}`;
       }
     }
   });
@@ -3133,6 +3175,7 @@ var SourcePackage = (() => {
       exports.resolveExtensionToken = resolveExtensionToken;
       exports.sanitizeImageExtension = sanitizeImageExtension;
       exports.parseExtensionMapFromHtml = parseExtensionMapFromHtml;
+      exports.extractImageSrcFromElement = extractImageSrcFromElement;
       exports.parseGalleryCards = parseGalleryCards;
       exports.filterAndMapGalleryCards = filterAndMapGalleryCards;
       exports.mapCardsToItems = mapCardsToItems;
@@ -3319,6 +3362,36 @@ var SourcePackage = (() => {
         }
         return tokens;
       }
+      function extractImageSrcFromElement($img) {
+        if (!$img || $img.length === 0)
+          return void 0;
+        const candidates = [
+          $img.attr("data-src"),
+          $img.attr("data-lazy-src"),
+          $img.attr("data-original"),
+          $img.attr("data-full"),
+          $img.attr("src")
+        ];
+        for (const candidate of candidates) {
+          if (candidate && typeof candidate === "string") {
+            const trimmed = candidate.trim();
+            if (trimmed && !(0, api_js_1.isPlaceholderImageUrl)(trimmed)) {
+              return (0, api_js_1.normalizeImageUrl)(trimmed);
+            }
+          }
+        }
+        const style = $img.attr("style");
+        if (style) {
+          const bgMatch = /background(?:-image)?\s*:\s*url\(\s*['"]?([^'")]+)['"]?\s*\)/i.exec(style);
+          if (bgMatch == null ? void 0 : bgMatch[1]) {
+            const bgUrl = bgMatch[1].trim();
+            if (!(0, api_js_1.isPlaceholderImageUrl)(bgUrl)) {
+              return (0, api_js_1.normalizeImageUrl)(bgUrl);
+            }
+          }
+        }
+        return void 0;
+      }
       function parseGalleryCards(html) {
         if (!html || typeof html !== "string") {
           return [];
@@ -3340,8 +3413,9 @@ var SourcePackage = (() => {
           const japaneseTitle = $thumb.find(".subtitle").text().trim() || ((_f = $thumb.attr("data-jtitle")) == null ? void 0 : _f.trim()) || ((_g = $thumb.attr("data-subtitle")) == null ? void 0 : _g.trim()) || void 0;
           const $lazyImg = $thumb.find("img.lazy").first();
           const $anyImg = $lazyImg.length > 0 ? $lazyImg : $thumb.find("img").first();
-          const rawThumb = $anyImg.attr("data-src") || $anyImg.attr("data-original") || $anyImg.attr("src") || constants_js_1.FALLBACK_COVER_URL;
-          const thumbnailUrl = (0, api_js_1.normalizeImageUrl)(rawThumb);
+          const extractedThumb = extractImageSrcFromElement($anyImg);
+          const thumbnailUrl = extractedThumb || constants_js_1.FALLBACK_COVER_URL;
+          const baseUrl = (0, api_js_1.deriveBaseCdnUrl)(thumbnailUrl);
           let categoryBadge = $thumb.find(".thumb_cat, .cat, .category, a[href*='/category/']").first().text().trim() || ((_h = $thumb.attr("data-category")) == null ? void 0 : _h.trim()) || void 0;
           let languageBadge = $thumb.find(".lang, .language, .languages, a[href*='/language/']").first().text().trim() || ((_i = $thumb.attr("data-language")) == null ? void 0 : _i.trim()) || ((_j = $thumb.attr("data-lang")) == null ? void 0 : _j.trim()) || void 0;
           if (!languageBadge) {
@@ -3436,7 +3510,9 @@ var SourcePackage = (() => {
             language: languageBadge,
             tags: Array.from(tagSet),
             serverId,
-            loadDir
+            loadDir,
+            baseUrl,
+            baseImageUrl: baseUrl
           });
         });
         return cards;
@@ -3476,10 +3552,13 @@ var SourcePackage = (() => {
         var _a, _b, _c, _d, _e, _f, _g;
         const $ = $loaded != null ? $loaded : cheerio.load(html);
         const $coverImg = $("#cover img, .left_cover img, .thumb img").first();
-        const rawCoverUrl = $coverImg.attr("data-src") || $coverImg.attr("data-original") || $coverImg.attr("src") || "";
+        const rawCoverUrl = extractImageSrcFromElement($coverImg);
         const coverUrl = rawCoverUrl ? (0, api_js_1.normalizeImageUrl)(rawCoverUrl) : "";
-        const urlPartsMatch = constants_js_1.SERVER_FROM_URL_REGEX.exec(coverUrl);
-        const serverPrefixMatch = constants_js_1.SERVER_PREFIX_REGEX.exec(coverUrl || html);
+        const $firstThumbImg = $("#thumbnail-container img, .gthumb img, .thumbs img, .g_thumb img").first();
+        const rawFirstThumbUrl = extractImageSrcFromElement($firstThumbImg);
+        let baseUrl = (0, api_js_1.deriveBaseCdnUrl)(rawCoverUrl) || (0, api_js_1.deriveBaseCdnUrl)(rawFirstThumbUrl);
+        const urlPartsMatch = constants_js_1.SERVER_FROM_URL_REGEX.exec(coverUrl || rawFirstThumbUrl || "");
+        const serverPrefixMatch = constants_js_1.SERVER_PREFIX_REGEX.exec(coverUrl || rawFirstThumbUrl || html);
         const domGalleryId = ((_a = $("#gallery_id").val()) != null ? _a : "").trim();
         const inlineGalleryIdMatch = /['"]?gallery_id['"]?\s*[:=]\s*['"]?(\d+)['"]?/i.exec(html);
         const galleryId = domGalleryId || (inlineGalleryIdMatch == null ? void 0 : inlineGalleryIdMatch[1]) || (urlPartsMatch == null ? void 0 : urlPartsMatch[3]) || extractGalleryId(fallbackId) || "1";
@@ -3493,6 +3572,14 @@ var SourcePackage = (() => {
           rawServerId = rawServerId.slice(1);
         }
         const serverId = rawServerId || constants_js_1.DEFAULT_SERVER_ID;
+        if (!baseUrl) {
+          const cleanServer = serverId.replace(/^m/i, "") || constants_js_1.DEFAULT_SERVER_ID;
+          const cleanDir = loadDir.replace(/^\/+|\/+$/g, "");
+          baseUrl = `https://m${cleanServer}.imhentai.xxx/${cleanDir}/`;
+        }
+        if (!baseUrl.endsWith("/")) {
+          baseUrl += "/";
+        }
         const extensionMap = parseExtensionMapFromHtml(html, $);
         $("img[data-src*='t.'], img[src*='t.']").each((_i, imgEl) => {
           const src = $(imgEl).attr("data-src") || $(imgEl).attr("src") || "";
@@ -3530,19 +3617,29 @@ var SourcePackage = (() => {
           serverId,
           totalPages,
           extensionMap,
-          defaultExt
+          defaultExt,
+          baseUrl
         };
       }
       function buildChapterPagesFromMeta(meta) {
         var _a;
         const count = Math.max(1, meta.totalPages);
         const pages = new Array(count);
-        const { serverId, loadDir, galleryId, extensionMap, defaultExt } = meta;
+        const { extensionMap, defaultExt, baseUrl } = meta;
         const safeDefaultExt = sanitizeImageExtension(defaultExt);
+        let baseCdn = baseUrl;
+        if (!baseCdn || !baseCdn.startsWith("http")) {
+          const cleanServer = (meta.serverId || constants_js_1.DEFAULT_SERVER_ID).replace(/^m/i, "") || constants_js_1.DEFAULT_SERVER_ID;
+          const cleanDir = (meta.loadDir || "001").replace(/^\/+|\/+$/g, "");
+          baseCdn = `https://m${cleanServer}.imhentai.xxx/${cleanDir}/`;
+        }
+        if (!baseCdn.endsWith("/")) {
+          baseCdn += "/";
+        }
         for (let pageNumber = 1; pageNumber <= count; pageNumber++) {
           const rawExt = (_a = extensionMap[String(pageNumber)]) != null ? _a : safeDefaultExt;
           const cleanExt = sanitizeImageExtension(rawExt);
-          const url = (0, api_js_1.buildImageUrl)(serverId, loadDir, galleryId, pageNumber, cleanExt);
+          const url = `${baseCdn}${pageNumber}.${cleanExt}`;
           pages[pageNumber - 1] = {
             url,
             headers: constants_js_1.PAGE_IMAGE_HEADERS
@@ -3561,9 +3658,9 @@ var SourcePackage = (() => {
         const primaryTitle = $(".right_details h1").first().text().trim() || $("h1").first().text().trim() || `Gallery #${id}`;
         const subtitleText = $(".right_details .subtitle").first().text().trim() || $(".subtitle").first().text().trim() || "";
         const additionalTitles = subtitleText.length > 0 ? [subtitleText] : [];
-        const $coverImg = $("#cover img").first();
-        const rawCover = $coverImg.attr("data-src") || $coverImg.attr("data-original") || $coverImg.attr("src") || constants_js_1.FALLBACK_COVER_URL;
-        const coverImage = (0, api_js_1.normalizeImageUrl)(rawCover);
+        const $coverImg = $("#cover img, .left_cover img").first();
+        const rawCover = extractImageSrcFromElement($coverImg);
+        const coverImage = rawCover || constants_js_1.FALLBACK_COVER_URL;
         const artists = [];
         const groups = [];
         const parodies = [];
@@ -4043,7 +4140,7 @@ var SourcePackage = (() => {
         async fetchChapterPages(contentId, chapterId) {
           const id = extractGalleryId(contentId || chapterId);
           const cached = this.galleryCache.get(id);
-          if (cached && cached.detail.totalPages > 0 && cached.detail.loadDir) {
+          if (cached && cached.detail.totalPages > 0 && (cached.detail.baseUrl || cached.detail.loadDir)) {
             return buildChapterPagesFromMeta(cached.detail);
           }
           const detail = await this.fetchGalleryDetail(id);
@@ -4385,7 +4482,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_org();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "org.imhentai", "name": "IMHentai", "version": 1.1, "website": "https://imhentai.xxx", "rating": 2, "thumbnail": "imhentai.png", "languages": ["en", "ja", "zh", "es", "fr", "de", "ru"] };
+      exports.SourceMetadata = { "id": "org.imhentai", "name": "IMHentai", "version": 1.2, "website": "https://imhentai.xxx", "rating": 2, "thumbnail": "imhentai.png", "languages": ["en", "ja", "zh", "es", "fr", "de", "ru"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;

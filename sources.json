@@ -1,6 +1,6 @@
 {
   "catalogVersion": 2,
-  "generatedAt": "2026-10-20T22:39:02.093Z",
+  "generatedAt": "2026-10-21T03:55:29.833Z",
   "listName": "Atsumaru Source",
   "sources": [
     {
@@ -21,7 +21,7 @@
     {
       "id": "org.imhentai",
       "name": "IMHentai",
-      "version": 1.1,
+      "version": 1.2,
       "website": "https://imhentai.xxx",
       "rating": 2,
       "thumbnail": "imhentai.png",
