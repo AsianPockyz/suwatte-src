@@ -1,0 +1,4271 @@
+var global = globalThis;
+"use strict";
+var SourcePackage = (() => {
+  var __defProp = Object.defineProperty;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+  var __esm = (fn, res) => function __init() {
+    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  };
+  var __commonJS = (cb, mod) => function __require() {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  };
+  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+
+  // node_modules/esbuild-plugins-node-modules-polyfill/globals/process.js
+  var init_process = __esm({
+    "node_modules/esbuild-plugins-node-modules-polyfill/globals/process.js"() {
+    }
+  });
+
+  // node_modules/esbuild-plugins-node-modules-polyfill/globals/Buffer.js
+  var init_Buffer = __esm({
+    "node_modules/esbuild-plugins-node-modules-polyfill/globals/Buffer.js"() {
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/runtime/index.js
+  var require_runtime = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/runtime/index.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.instantiateSource = exports.buildVariantMetadata = exports.readSourceVariants = exports.readSourceInfo = exports.normalizeSourceEntry = exports.resolveDefaultExport = void 0;
+      var resolveDefaultExport = (sourceModule) => {
+        const value = sourceModule;
+        const resolved = typeof value === "object" && value !== null && "default" in value ? value.default : value;
+        if (typeof resolved !== "function" || !("info" in resolved)) {
+          throw new Error("Default export must be a class with a static 'info' property");
+        }
+        return resolved;
+      };
+      exports.resolveDefaultExport = resolveDefaultExport;
+      exports.normalizeSourceEntry = exports.resolveDefaultExport;
+      var readSourceInfo = (cls) => {
+        const info = cls.info;
+        if (!info || typeof info !== "object" || !info.id) {
+          throw new Error("Source class must have a static 'info' property with at least an 'id'");
+        }
+        return info;
+      };
+      exports.readSourceInfo = readSourceInfo;
+      var readSourceVariants = (cls) => {
+        const variants = cls.variants;
+        if (Array.isArray(variants) && variants.length > 0) {
+          return variants;
+        }
+        return [
+          {
+            id: cls.info.id,
+            name: cls.info.name,
+            languages: cls.info.languages
+          }
+        ];
+      };
+      exports.readSourceVariants = readSourceVariants;
+      var buildVariantMetadata = (info, variant) => {
+        var _a, _b, _c;
+        return {
+          ...info,
+          id: (_a = variant.id) != null ? _a : info.id,
+          name: (_b = variant.name) != null ? _b : info.name,
+          languages: (_c = variant.languages) != null ? _c : info.languages
+        };
+      };
+      exports.buildVariantMetadata = buildVariantMetadata;
+      var instantiateSource = (cls, variant) => {
+        return new cls(variant == null ? void 0 : variant.args);
+      };
+      exports.instantiateSource = instantiateSource;
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/networking/builder.js
+  var require_builder = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/networking/builder.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.NetworkClientBuilder = void 0;
+      var NetworkClientBuilder = class {
+        constructor() {
+          // Array of functions that transform requests
+          __publicField(this, "requestTransformers", []);
+          // Array of functions that transform responses
+          __publicField(this, "responseTransformers", []);
+          // Object representing HTTP headers, where each key-value pair represents a header
+          __publicField(this, "headers", {});
+          // Array of cookies
+          __publicField(this, "cookies", []);
+          // The maximum time to wait for a request to complete, in milliseconds
+          __publicField(this, "timeout");
+          // The number of requests allowed per second
+          __publicField(this, "requestsPerSecond");
+          // A function that determines whether a status code is considered successful
+          __publicField(this, "statusValidator");
+          // The maximum number of retries for a request
+          __publicField(this, "maxRetries");
+        }
+        /**
+         * Sets the rate limit for the NetworkClient.
+         *
+         * @param requests - The maximum number of requests to make per interval.
+         * @param interval - The length of the rate limiting interval in seconds.
+         * @returns The builder, to allow for method chaining.
+         */
+        setRateLimit(requests, interval) {
+          this.requestsPerSecond = requests / interval;
+          return this;
+        }
+        /**
+         * Adds a request interceptor to the NetworkClient.
+         *
+         * @param transformer - The interceptor to add. This should be a function that takes a request and modifies it in some way.
+         * @returns The builder, to allow for method chaining.
+         */
+        addRequestInterceptor(transformer) {
+          this.requestTransformers.push(transformer);
+          return this;
+        }
+        /**
+         * Adds a response interceptor to the NetworkClient.
+         *
+         * @param transformer - The interceptor to add. This should be a function that takes a response and modifies it in some way.
+         * @returns The builder, to allow for method chaining.
+         */
+        addResponseInterceptor(transformer) {
+          this.responseTransformers.push(transformer);
+          return this;
+        }
+        /**
+         * Sets the authorization token for the NetworkClient.
+         *
+         * @param token - The token to be included in the Authorization header of every request.
+         * @returns The builder, to allow for method chaining.
+         */
+        setAuthorizationToken(token) {
+          return this.addHeader("Authorization", token);
+        }
+        /**
+         * Sets the status validator for the NetworkClient.
+         *
+         * @param validator - A function that takes a status code and returns true if it is considered successful.
+         * @returns The builder, to allow for method chaining.
+         */
+        setStatusValidator(validator) {
+          this.statusValidator = validator;
+          return this;
+        }
+        /**
+         * Sets the timeout for requests made by the NetworkClient.
+         *
+         * @param timeout - The maximum time to wait for a request to complete, in milliseconds.
+         * @returns The builder, to allow for method chaining.
+         */
+        setTimeout(timeout) {
+          this.timeout = timeout;
+          return this;
+        }
+        /**
+         * Sets the maximum number of retries for this request by the NetworkClient.
+         *
+         * @param retries - The maximum number of retries for this request
+         * @returns The builder, to allow for method chaining.
+         */
+        setMaxRetries(retries) {
+          this.maxRetries = retries;
+          return this;
+        }
+        /**
+         * Sets a header for the NetworkClient.
+         *
+         * @param key - The name of the header
+         * @param value - The value of the header
+         * @returns The builder, to allow for method chaining.
+         */
+        addHeader(key, value) {
+          this.headers[key] = value;
+          return this;
+        }
+        /**
+         * Sets a cookie for the NetworkClient.
+         *
+         * @param cookie - The cookie to be included in every request.
+         * @returns The builder, to allow for method chaining.
+         */
+        addCookie(cookie) {
+          this.cookies.push(cookie);
+          return this;
+        }
+        /**
+         * Builds a NetworkClient using the parameters set on the builder.
+         *
+         * @returns A NetworkClient with the configured parameters.
+         */
+        build() {
+          return new NetworkClient(this);
+        }
+      };
+      exports.NetworkClientBuilder = NetworkClientBuilder;
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/networking/client.js
+  var require_client = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/networking/client.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/networking/http.js
+  var require_http = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/networking/http.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/networking/request.js
+  var require_request = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/networking/request.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/networking/response.js
+  var require_response = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/networking/response.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/networking/transformer.js
+  var require_transformer = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/networking/transformer.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/networking/index.js
+  var require_networking = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/networking/index.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        var desc = Object.getOwnPropertyDescriptor(m, k);
+        if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+          desc = { enumerable: true, get: function() {
+            return m[k];
+          } };
+        }
+        Object.defineProperty(o, k2, desc);
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        o[k2] = m[k];
+      }));
+      var __exportStar = exports && exports.__exportStar || function(m, exports2) {
+        for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p)) __createBinding(exports2, m, p);
+      };
+      Object.defineProperty(exports, "__esModule", { value: true });
+      __exportStar(require_builder(), exports);
+      __exportStar(require_client(), exports);
+      __exportStar(require_http(), exports);
+      __exportStar(require_request(), exports);
+      __exportStar(require_response(), exports);
+      __exportStar(require_transformer(), exports);
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/native.js
+  var require_native = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/native.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/destination.js
+  var require_destination = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/destination.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.URLDestination = URLDestination;
+      exports.ContentDestination = ContentDestination;
+      exports.ItemPageDestination = ItemPageDestination;
+      exports.ChapterDestination = ChapterDestination;
+      exports.ItemListDestination = ItemListDestination;
+      exports.NoDestination = NoDestination;
+      function URLDestination(props, title = null) {
+        return {
+          url: {
+            props,
+            title
+          }
+        };
+      }
+      function ContentDestination(props, title = null) {
+        return {
+          content: {
+            props,
+            title
+          }
+        };
+      }
+      function ItemPageDestination(props, title = null) {
+        return {
+          page: {
+            props,
+            title
+          }
+        };
+      }
+      function ChapterDestination(props) {
+        return {
+          chapter: {
+            props
+          }
+        };
+      }
+      function ItemListDestination(props, title = null) {
+        return {
+          list: {
+            props,
+            title
+          }
+        };
+      }
+      function NoDestination() {
+        return {
+          empty: {
+            props: {}
+          }
+        };
+      }
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/chapter.js
+  var require_chapter = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/chapter.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.ChapterLockedError = exports.ChapterUnavailableError = exports.SOURCE_CHAPTER_TEXT_LIMITS = exports.SourceChapterTextFormat = void 0;
+      var SourceChapterTextFormat;
+      (function(SourceChapterTextFormat2) {
+        SourceChapterTextFormat2["HTML"] = "html";
+        SourceChapterTextFormat2["PLAIN_TEXT"] = "plainText";
+      })(SourceChapterTextFormat || (exports.SourceChapterTextFormat = SourceChapterTextFormat = {}));
+      exports.SOURCE_CHAPTER_TEXT_LIMITS = Object.freeze({
+        bridgePayload: 4 * 1024 * 1024,
+        body: 2 * 1024 * 1024,
+        resources: 512,
+        resourceHref: 2048,
+        resourceURL: 8192,
+        resourceMediaType: 256
+      });
+      var ChapterUnavailableError = class extends Error {
+        constructor(message = "Chapter content is unavailable.") {
+          super(message);
+          this.name = "ChapterUnavailable";
+        }
+      };
+      exports.ChapterUnavailableError = ChapterUnavailableError;
+      var ChapterLockedError = class extends Error {
+        constructor(message = "Chapter content is locked.") {
+          super(message);
+          this.name = "ChapterLocked";
+        }
+      };
+      exports.ChapterLockedError = ChapterLockedError;
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/configuration.js
+  var require_configuration = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/configuration.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/content.js
+  var require_content = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/content.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.ContentRating = exports.TrackStatus = exports.ReadingMode = exports.ContentType = exports.ContentStatus = void 0;
+      var ContentStatus;
+      (function(ContentStatus2) {
+        ContentStatus2[ContentStatus2["UNKNOWN"] = 0] = "UNKNOWN";
+        ContentStatus2[ContentStatus2["ONGOING"] = 1] = "ONGOING";
+        ContentStatus2[ContentStatus2["COMPLETED"] = 2] = "COMPLETED";
+        ContentStatus2[ContentStatus2["CANCELLED"] = 3] = "CANCELLED";
+        ContentStatus2[ContentStatus2["HIATUS"] = 4] = "HIATUS";
+      })(ContentStatus || (exports.ContentStatus = ContentStatus = {}));
+      var ContentType;
+      (function(ContentType2) {
+        ContentType2[ContentType2["MANGA"] = 0] = "MANGA";
+        ContentType2[ContentType2["MANHUA"] = 1] = "MANHUA";
+        ContentType2[ContentType2["MANHWA"] = 2] = "MANHWA";
+        ContentType2[ContentType2["COMIC"] = 3] = "COMIC";
+        ContentType2[ContentType2["NOVEL"] = 4] = "NOVEL";
+      })(ContentType || (exports.ContentType = ContentType = {}));
+      var ReadingMode;
+      (function(ReadingMode2) {
+        ReadingMode2[ReadingMode2["PAGED_MANGA"] = 0] = "PAGED_MANGA";
+        ReadingMode2[ReadingMode2["PAGED_COMIC"] = 1] = "PAGED_COMIC";
+        ReadingMode2[ReadingMode2["PAGED_VERTICAL"] = 2] = "PAGED_VERTICAL";
+        ReadingMode2[ReadingMode2["VERTICAL"] = 3] = "VERTICAL";
+      })(ReadingMode || (exports.ReadingMode = ReadingMode = {}));
+      var TrackStatus;
+      (function(TrackStatus2) {
+        TrackStatus2[TrackStatus2["UNTRACKED"] = 0] = "UNTRACKED";
+        TrackStatus2[TrackStatus2["READING"] = 1] = "READING";
+        TrackStatus2[TrackStatus2["PLANNING"] = 2] = "PLANNING";
+        TrackStatus2[TrackStatus2["COMPLETED"] = 3] = "COMPLETED";
+        TrackStatus2[TrackStatus2["PAUSED"] = 4] = "PAUSED";
+        TrackStatus2[TrackStatus2["DROPPED"] = 5] = "DROPPED";
+        TrackStatus2[TrackStatus2["REPEATING"] = 6] = "REPEATING";
+      })(TrackStatus || (exports.TrackStatus = TrackStatus = {}));
+      var ContentRating;
+      (function(ContentRating2) {
+        ContentRating2[ContentRating2["EVERYONE"] = 0] = "EVERYONE";
+        ContentRating2[ContentRating2["SUGGESTIVE"] = 1] = "SUGGESTIVE";
+        ContentRating2[ContentRating2["MATURE"] = 2] = "MATURE";
+        ContentRating2[ContentRating2["UNKNOWN"] = 3] = "UNKNOWN";
+      })(ContentRating || (exports.ContentRating = ContentRating = {}));
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/item.js
+  var require_item = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/item.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/page.js
+  var require_page = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/page.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.PageSectionStyle = void 0;
+      var PageSectionStyle;
+      (function(PageSectionStyle2) {
+        PageSectionStyle2[PageSectionStyle2["DEFAULT"] = 0] = "DEFAULT";
+        PageSectionStyle2[PageSectionStyle2["DETAIL_VERTICAL"] = 1] = "DETAIL_VERTICAL";
+        PageSectionStyle2[PageSectionStyle2["DETAIL_HORIZONTAL"] = 2] = "DETAIL_HORIZONTAL";
+        PageSectionStyle2[PageSectionStyle2["GALLERY"] = 3] = "GALLERY";
+        PageSectionStyle2[PageSectionStyle2["LIST"] = 4] = "LIST";
+        PageSectionStyle2[PageSectionStyle2["GRID"] = 5] = "GRID";
+        PageSectionStyle2[PageSectionStyle2["TAG_GRID"] = 6] = "TAG_GRID";
+        PageSectionStyle2[PageSectionStyle2["TAG_LIST"] = 7] = "TAG_LIST";
+        PageSectionStyle2[PageSectionStyle2["BANNER"] = 8] = "BANNER";
+        PageSectionStyle2[PageSectionStyle2["HIGHLIGHT"] = 9] = "HIGHLIGHT";
+        PageSectionStyle2[PageSectionStyle2["READABLE"] = 10] = "READABLE";
+        PageSectionStyle2[PageSectionStyle2["MOSAIC"] = 11] = "MOSAIC";
+        PageSectionStyle2[PageSectionStyle2["RANKED"] = 12] = "RANKED";
+        PageSectionStyle2[PageSectionStyle2["STORY_RAIL"] = 13] = "STORY_RAIL";
+        PageSectionStyle2[PageSectionStyle2["EDITORIAL"] = 14] = "EDITORIAL";
+        PageSectionStyle2[PageSectionStyle2["THREE_STACK"] = 15] = "THREE_STACK";
+        PageSectionStyle2[PageSectionStyle2["WINDOWPANE"] = 16] = "WINDOWPANE";
+        PageSectionStyle2[PageSectionStyle2["SIDECAR"] = 17] = "SIDECAR";
+        PageSectionStyle2[PageSectionStyle2["DUET"] = 18] = "DUET";
+        PageSectionStyle2[PageSectionStyle2["TAPESTRY"] = 19] = "TAPESTRY";
+      })(PageSectionStyle || (exports.PageSectionStyle = PageSectionStyle = {}));
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/delegate.js
+  var require_delegate = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/delegate.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/tag.js
+  var require_tag = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/tag.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/updates.js
+  var require_updates = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/updates.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/source.js
+  var require_source = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/source.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/filter.js
+  var require_filter = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/filter.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.ToggleFilter = ToggleFilter;
+      exports.TextFilter = TextFilter;
+      exports.PickerFilter = PickerFilter;
+      exports.SelectFilter = SelectFilter;
+      exports.SearchFilter = SearchFilter;
+      function ToggleFilter() {
+        return {
+          toggle: {
+            props: true
+          }
+        };
+      }
+      function TextFilter() {
+        return {
+          text: {
+            props: true
+          }
+        };
+      }
+      function PickerFilter(props) {
+        return {
+          picker: {
+            props
+          }
+        };
+      }
+      function SelectFilter(options, exclude = false) {
+        return {
+          select: {
+            props: {
+              options,
+              exclude
+            }
+          }
+        };
+      }
+      function SearchFilter(id, title, kind, subtitle) {
+        return {
+          id,
+          title,
+          subtitle,
+          kind
+        };
+      }
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/form.js
+  var require_form = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/form.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.UIKeyboardType = void 0;
+      exports.UIToggle = UIToggle;
+      exports.UIDatePicker = UIDatePicker;
+      exports.UIPicker = UIPicker;
+      exports.UISelect = UISelect;
+      exports.UIStepper = UIStepper;
+      exports.UITextField = UITextField;
+      exports.UIWebViewButton = UIWebViewButton;
+      exports.UIOAuthButton = UIOAuthButton;
+      var UIKeyboardType;
+      (function(UIKeyboardType2) {
+        UIKeyboardType2[UIKeyboardType2["ALPHANUMERIC"] = 0] = "ALPHANUMERIC";
+        UIKeyboardType2[UIKeyboardType2["EMAIL"] = 1] = "EMAIL";
+        UIKeyboardType2[UIKeyboardType2["NUMERIC"] = 2] = "NUMERIC";
+        UIKeyboardType2[UIKeyboardType2["NUMERIC_DECIMAL"] = 3] = "NUMERIC_DECIMAL";
+      })(UIKeyboardType || (exports.UIKeyboardType = UIKeyboardType = {}));
+      function UIToggle(props) {
+        return {
+          toggle: { props }
+        };
+      }
+      function UIDatePicker(props) {
+        return {
+          datepicker: { props }
+        };
+      }
+      function UIPicker(props) {
+        return {
+          picker: { props }
+        };
+      }
+      function UISelect(props) {
+        return {
+          select: {
+            props
+          }
+        };
+      }
+      function UIStepper(props) {
+        return {
+          stepper: { props }
+        };
+      }
+      function UITextField(props) {
+        return {
+          textfield: { props }
+        };
+      }
+      function UIWebViewButton(props) {
+        return {
+          webview: {
+            props
+          }
+        };
+      }
+      function UIOAuthButton(props) {
+        return {
+          oauth: {
+            props
+          }
+        };
+      }
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/image.js
+  var require_image = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/image.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/source/index.js
+  var require_source2 = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/source/index.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        var desc = Object.getOwnPropertyDescriptor(m, k);
+        if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+          desc = { enumerable: true, get: function() {
+            return m[k];
+          } };
+        }
+        Object.defineProperty(o, k2, desc);
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        o[k2] = m[k];
+      }));
+      var __exportStar = exports && exports.__exportStar || function(m, exports2) {
+        for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p)) __createBinding(exports2, m, p);
+      };
+      Object.defineProperty(exports, "__esModule", { value: true });
+      __exportStar(require_destination(), exports);
+      __exportStar(require_chapter(), exports);
+      __exportStar(require_configuration(), exports);
+      __exportStar(require_content(), exports);
+      __exportStar(require_item(), exports);
+      __exportStar(require_page(), exports);
+      __exportStar(require_delegate(), exports);
+      __exportStar(require_tag(), exports);
+      __exportStar(require_updates(), exports);
+      __exportStar(require_source(), exports);
+      __exportStar(require_filter(), exports);
+      __exportStar(require_form(), exports);
+      __exportStar(require_image(), exports);
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/store.js
+  var require_store = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/store.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/utils.js
+  var require_utils = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/utils.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/toolchain.js
+  var require_toolchain = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/toolchain.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/types/index.js
+  var require_types = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/types/index.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        var desc = Object.getOwnPropertyDescriptor(m, k);
+        if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+          desc = { enumerable: true, get: function() {
+            return m[k];
+          } };
+        }
+        Object.defineProperty(o, k2, desc);
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        o[k2] = m[k];
+      }));
+      var __exportStar = exports && exports.__exportStar || function(m, exports2) {
+        for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p)) __createBinding(exports2, m, p);
+      };
+      Object.defineProperty(exports, "__esModule", { value: true });
+      __exportStar(require_networking(), exports);
+      __exportStar(require_native(), exports);
+      __exportStar(require_source2(), exports);
+      __exportStar(require_store(), exports);
+      __exportStar(require_utils(), exports);
+      __exportStar(require_toolchain(), exports);
+    }
+  });
+
+  // node_modules/@suwatte/toolchain/dist/index.js
+  var require_dist = __commonJS({
+    "node_modules/@suwatte/toolchain/dist/index.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        var desc = Object.getOwnPropertyDescriptor(m, k);
+        if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+          desc = { enumerable: true, get: function() {
+            return m[k];
+          } };
+        }
+        Object.defineProperty(o, k2, desc);
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        o[k2] = m[k];
+      }));
+      var __exportStar = exports && exports.__exportStar || function(m, exports2) {
+        for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p)) __createBinding(exports2, m, p);
+      };
+      Object.defineProperty(exports, "__esModule", { value: true });
+      __exportStar(require_types(), exports);
+      __exportStar(require_runtime(), exports);
+    }
+  });
+
+  // __temp__/runners/novelfull/constants.js
+  var require_constants = __commonJS({
+    "__temp__/runners/novelfull/constants.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.NOVELFULL_SORT_OPTIONS = exports.NOVELFULL_STATUS_OPTIONS = exports.SUGGESTIVE_GENRES_SET = exports.MATURE_GENRES_SET = exports.NOVELFULL_GENRES = exports.PREF_KEYS = exports.BROWSE_FEED_KEYS = exports.HOME_SECTION_KEYS = exports.RESERVED_PATHS_SET = exports.PROMO_LINK_HREF_REGEX = exports.WATERMARK_PATTERNS = exports.TLN_BRACKET_REGEX = exports.BG_IMAGE_URL_REGEX = exports.VOLUME_NUMBER_REGEX = exports.LEADING_NUMBER_REGEX = exports.CHAPTER_NUMBER_REGEX = exports.INLINE_NOVEL_ID_REGEX = exports.NON_ALPHANUMERIC_SLUG_REGEX = exports.WORD_TOKEN_REGEX = exports.WHITESPACE_REGEX = exports.PROTOCOL_RELATIVE_REGEX = exports.HTTP_PREFIX_REGEX = exports.HTML_EXT_REGEX = exports.TRIM_SLASHES_REGEX = exports.CHAPTER_PATH_REGEX = exports.NOVEL_PATH_REGEX = exports.CHAPTER_URL_REGEX = exports.NOVEL_URL_REGEX = exports.RATE_LIMIT_PER_SECOND = exports.STATIC_CONFIGURATION = exports.IMAGE_HEADERS = exports.AJAX_HEADERS = exports.DEFAULT_HEADERS = exports.STANDARD_HEADERS = exports.DEFAULT_USER_AGENT = exports.DEFAULT_SYNOPSIS_FALLBACK = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_RESOLUTION_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.SOURCE_CONTENT_RATING = exports.SOURCE_LANGUAGES = exports.SOURCE_ENVIRONMENT = exports.THUMBNAIL_FILENAME = exports.VARIANT_ID = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = exports.ContentRating = void 0;
+      var toolchain_1 = require_dist();
+      Object.defineProperty(exports, "ContentRating", { enumerable: true, get: function() {
+        return toolchain_1.ContentRating;
+      } });
+      exports.SOURCE_ID = "org.novelfull";
+      exports.SOURCE_NAME = "NovelFull";
+      exports.SOURCE_VERSION = 1;
+      exports.BASE_URL = "https://novelfull.com";
+      exports.VARIANT_ID = "org.novelfull";
+      exports.THUMBNAIL_FILENAME = "novelfull.png";
+      exports.SOURCE_ENVIRONMENT = "jsc";
+      exports.SOURCE_LANGUAGES = Object.freeze(["en"]);
+      exports.SOURCE_CONTENT_RATING = toolchain_1.ContentRating.EVERYONE;
+      exports.REFERER_URL = "https://novelfull.com/";
+      exports.ORIGIN_URL = "https://novelfull.com";
+      exports.CLOUDFLARE_RESOLUTION_URL = "https://novelfull.com";
+      exports.FALLBACK_COVER_URL = "https://novelfull.com/uploads/default-cover.jpg";
+      exports.DEFAULT_SYNOPSIS_FALLBACK = "No synopsis available for this novel.";
+      exports.DEFAULT_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
+      exports.STANDARD_HEADERS = Object.freeze({
+        "User-Agent": exports.DEFAULT_USER_AGENT,
+        Referer: exports.REFERER_URL,
+        Origin: exports.ORIGIN_URL
+      });
+      exports.DEFAULT_HEADERS = Object.freeze({
+        "User-Agent": exports.DEFAULT_USER_AGENT,
+        Referer: exports.REFERER_URL,
+        Origin: exports.ORIGIN_URL,
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9"
+      });
+      exports.AJAX_HEADERS = Object.freeze({
+        "User-Agent": exports.DEFAULT_USER_AGENT,
+        Referer: exports.REFERER_URL,
+        Origin: exports.ORIGIN_URL,
+        "X-Requested-With": "XMLHttpRequest",
+        Accept: "text/html, */*; q=0.01"
+      });
+      exports.IMAGE_HEADERS = Object.freeze({
+        "User-Agent": exports.DEFAULT_USER_AGENT,
+        Referer: exports.REFERER_URL,
+        Origin: exports.ORIGIN_URL
+      });
+      exports.STATIC_CONFIGURATION = Object.freeze({
+        imageReferer: exports.REFERER_URL,
+        cloudflareResolutionURL: exports.CLOUDFLARE_RESOLUTION_URL,
+        standardHeaders: exports.STANDARD_HEADERS
+      });
+      exports.RATE_LIMIT_PER_SECOND = 4;
+      exports.NOVEL_URL_REGEX = /^https?:\/\/(?:www\.)?novelfull\.(?:com|net)\/([^/?#]+?)\.html(?:[?#].*)?$/i;
+      exports.CHAPTER_URL_REGEX = /^https?:\/\/(?:www\.)?novelfull\.(?:com|net)\/([^/?#]+)\/([^/?#]+?)(?:\.html)?(?:[?#].*)?$/i;
+      exports.NOVEL_PATH_REGEX = /^\/?([^/?#]+?)\.html(?:[?#].*)?$/i;
+      exports.CHAPTER_PATH_REGEX = /^\/?([^/?#]+)\/([^/?#]+?)(?:\.html)?(?:[?#].*)?$/i;
+      exports.TRIM_SLASHES_REGEX = /^\/+|\/+$/g;
+      exports.HTML_EXT_REGEX = /\.html$/i;
+      exports.HTTP_PREFIX_REGEX = /^http:\/\//i;
+      exports.PROTOCOL_RELATIVE_REGEX = /^\/\//;
+      exports.WHITESPACE_REGEX = /\s+/g;
+      exports.WORD_TOKEN_REGEX = /[a-z0-9]+/g;
+      exports.NON_ALPHANUMERIC_SLUG_REGEX = /[^a-z0-9]+/g;
+      exports.INLINE_NOVEL_ID_REGEX = /(?:data-novel-id|novelId|truyen-id|novel_id)\s*[:=]\s*['"]?(\d+)['"]?/i;
+      exports.CHAPTER_NUMBER_REGEX = /(?:chapter|ch\.?|episode|ep\.?|part)\s*(\d+(?:\.\d+)?)/i;
+      exports.LEADING_NUMBER_REGEX = /^(?:vol(?:ume)?\.?\s*\d+\s*[-:–—]?\s*)?(\d+(?:\.\d+)?)\b/i;
+      exports.VOLUME_NUMBER_REGEX = /\b(?:vol(?:ume)?|book)\.?\s*(\d+)\b/i;
+      exports.BG_IMAGE_URL_REGEX = /background(?:-image)?\s*:\s*url\(\s*['"]?([^'")]+)['"]?\s*\)/i;
+      exports.TLN_BRACKET_REGEX = /(?:\[|\()(?:TL|TN|Translator(?:'s)?)(?:\s*Note)?:\s*([^\])]+?)(?:\]|\))/gi;
+      exports.WATERMARK_PATTERNS = Object.freeze([
+        /read\s+novel\s+online\s+free\s+on\s+novelfull(?:\.(?:com|net))?\.?/gi,
+        /visit\s+novelfull\.(?:com|net)\s+for\s+the\s+best\s+novel\s+reading\s+experience\.?/gi,
+        /if\s+you\s+discover\s+any\s+errors[\s\S]{0,250}?(?:please[\s\S]{0,60}?report|as\s+soon\s+as\s+possible)[^<\n]*/gi,
+        /if\s+you\s+discover\s+any\s+errors[^<\n]*/gi,
+        /find\s+authorized\s+novels\s+in\s+webnovel[\s\S]{0,200}?for\s+visiting\.?/gi,
+        /read\s+latest\s+chapters?\s+at\s+novelfull(?:\.(?:com|net))?[^<\n]*/gi,
+        /this\s+chapter\s+is\s+updated\s+by\s+novelfull(?:\.(?:com|net))?[^<\n]*/gi,
+        /updated\s+by\s+novelfull(?:\.(?:com|net))?[^<\n]*/gi,
+        /source\s*:\s*novelfull\.(?:com|net)/gi,
+        /(?:support\s+us\s+on|join\s+our|donate\s+(?:via|to|on)|check\s+out\s+our|follow\s+us\s+on)\s+[^<\n]*?\b(?:patreon|discord|paypal|ko-fi|buymeacoffee)\b[^<\n]*/gi,
+        /https?:\/\/(?:www\.)?(?:patreon\.com|discord\.(?:gg|com)|paypal\.(?:me|com)|ko-fi\.com|buymeacoffee\.com)\/[^\s<")']*/gi
+      ]);
+      exports.PROMO_LINK_HREF_REGEX = /(?:patreon\.com|discord\.(?:gg|com)|paypal\.(?:me|com)|ko-fi\.com|buymeacoffee\.com|novelfull\.(?:com|net))/i;
+      exports.RESERVED_PATHS_SET = /* @__PURE__ */ new Set([
+        "hot-novel",
+        "latest-release-novel",
+        "most-popular",
+        "completed-novel",
+        "search",
+        "genre",
+        "author",
+        "status",
+        "ajax-chapter-option",
+        "ajax",
+        "contact",
+        "tos",
+        "privacy-policy",
+        "dmca",
+        "index",
+        "home"
+      ]);
+      exports.HOME_SECTION_KEYS = {
+        SPOTLIGHT: "spotlight",
+        HOT_NOVELS: "hot_novels",
+        LATEST_RELEASES: "latest_releases",
+        COMPLETED_MASTERPIECES: "completed_masterpieces",
+        MOST_POPULAR: "most_popular"
+      };
+      exports.BROWSE_FEED_KEYS = {
+        DISCOVER: "discover",
+        HOT_NOVEL: "hot-novel",
+        LATEST_RELEASES: "latest-release-novel",
+        MOST_POPULAR: "most-popular",
+        COMPLETED_NOVELS: "completed-novel"
+      };
+      exports.PREF_KEYS = {
+        SANITIZE_ADS: "sanitize_ads",
+        FORMAT_TLN: "format_tln",
+        NORMALIZE_SPACING: "normalize_spacing",
+        EXCLUDED_GENRES: "excluded_genres",
+        CUSTOM_BLACKLIST: "custom_blacklist"
+      };
+      exports.NOVELFULL_GENRES = Object.freeze([
+        { id: "Action", title: "Action", slug: "Action" },
+        { id: "Adult", title: "Adult", slug: "Adult" },
+        { id: "Adventure", title: "Adventure", slug: "Adventure" },
+        { id: "Comedy", title: "Comedy", slug: "Comedy" },
+        { id: "Drama", title: "Drama", slug: "Drama" },
+        { id: "Eastern", title: "Eastern", slug: "Eastern" },
+        { id: "Ecchi", title: "Ecchi", slug: "Ecchi" },
+        { id: "Fantasy", title: "Fantasy", slug: "Fantasy" },
+        { id: "Game", title: "Game", slug: "Game" },
+        { id: "Gender Bender", title: "Gender Bender", slug: "Gender+Bender" },
+        { id: "Harem", title: "Harem", slug: "Harem" },
+        { id: "Historical", title: "Historical", slug: "Historical" },
+        { id: "Horror", title: "Horror", slug: "Horror" },
+        { id: "Josei", title: "Josei", slug: "Josei" },
+        { id: "Magical Realism", title: "Magical Realism", slug: "Magical+Realism" },
+        { id: "Martial Arts", title: "Martial Arts", slug: "Martial+Arts" },
+        { id: "Mature", title: "Mature", slug: "Mature" },
+        { id: "Mecha", title: "Mecha", slug: "Mecha" },
+        { id: "Modern Life", title: "Modern Life", slug: "Modern+Life" },
+        { id: "Mystery", title: "Mystery", slug: "Mystery" },
+        { id: "Psychological", title: "Psychological", slug: "Psychological" },
+        { id: "Reincarnation", title: "Reincarnation", slug: "Reincarnation" },
+        { id: "Romance", title: "Romance", slug: "Romance" },
+        { id: "School Life", title: "School Life", slug: "School+Life" },
+        { id: "Sci-Fi", title: "Sci-Fi", slug: "Sci-fi" },
+        { id: "Seinen", title: "Seinen", slug: "Seinen" },
+        { id: "Shoujo", title: "Shoujo", slug: "Shoujo" },
+        { id: "Shounen", title: "Shounen", slug: "Shounen" },
+        { id: "Slice of Life", title: "Slice of Life", slug: "Slice+of+Life" },
+        { id: "Smut", title: "Smut", slug: "Smut" },
+        { id: "Sports", title: "Sports", slug: "Sports" },
+        { id: "Supernatural", title: "Supernatural", slug: "Supernatural" },
+        { id: "System", title: "System", slug: "System" },
+        { id: "Tragedy", title: "Tragedy", slug: "Tragedy" },
+        { id: "Urban Life", title: "Urban Life", slug: "Urban+Life" },
+        { id: "Video Games", title: "Video Games", slug: "Video+Games" },
+        { id: "Wuxia", title: "Wuxia", slug: "Wuxia" },
+        { id: "Xianxia", title: "Xianxia", slug: "Xianxia" },
+        { id: "Xuanhuan", title: "Xuanhuan", slug: "Xuanhuan" },
+        { id: "Yaoi", title: "Yaoi", slug: "Yaoi" },
+        { id: "Yuri", title: "Yuri", slug: "Yuri" }
+      ]);
+      exports.MATURE_GENRES_SET = /* @__PURE__ */ new Set([
+        "adult",
+        "mature",
+        "smut",
+        "erotica",
+        "18+"
+      ]);
+      exports.SUGGESTIVE_GENRES_SET = /* @__PURE__ */ new Set([
+        "ecchi",
+        "harem",
+        "yaoi",
+        "yuri"
+      ]);
+      exports.NOVELFULL_STATUS_OPTIONS = Object.freeze([
+        { id: "all", title: "All" },
+        { id: "ongoing", title: "Ongoing" },
+        { id: "completed", title: "Completed" }
+      ]);
+      exports.NOVELFULL_SORT_OPTIONS = Object.freeze([
+        { id: "latest", title: "Latest" },
+        { id: "hot", title: "Hot" },
+        { id: "popular", title: "Most Popular" }
+      ]);
+    }
+  });
+
+  // __temp__/runners/novelfull/api.js
+  var require_api = __commonJS({
+    "__temp__/runners/novelfull/api.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.isPlaceholderImageUrl = isPlaceholderImageUrl;
+      exports.normalizeImageUrl = normalizeImageUrl;
+      exports.isReservedNovelFullPath = isReservedNovelFullPath;
+      exports.canResolveNovelFullUrl = canResolveNovelFullUrl;
+      exports.extractNovelId = extractNovelId;
+      exports.extractChapterId = extractChapterId;
+      exports.buildNovelUrl = buildNovelUrl;
+      exports.buildAjaxChapterUrl = buildAjaxChapterUrl;
+      exports.buildChapterUrl = buildChapterUrl;
+      exports.resolveGenreSlug = resolveGenreSlug;
+      exports.buildGenreUrl = buildGenreUrl;
+      exports.buildStatusUrl = buildStatusUrl;
+      exports.buildFeedUrl = buildFeedUrl;
+      exports.buildSearchUrl = buildSearchUrl;
+      exports.detectContentRating = detectContentRating;
+      var constants_js_1 = require_constants();
+      var GENRE_SLUG_MAP = new Map(constants_js_1.NOVELFULL_GENRES.flatMap((g) => [
+        [g.id.toLowerCase(), g.slug],
+        [g.title.toLowerCase(), g.slug],
+        [g.slug.toLowerCase(), g.slug],
+        [g.title.toLowerCase().replace(/\s+/g, "-"), g.slug]
+      ]));
+      function isPlaceholderImageUrl(url) {
+        if (!url)
+          return true;
+        const clean = url.trim().toLowerCase();
+        if (!clean)
+          return true;
+        return clean.includes("blank.gif") || clean.includes("pixel.gif") || clean.includes("/images/") || clean.includes("placeholder") || clean.includes("no-image") || clean.includes("no_image") || clean.includes("noimage") || clean.includes("about:blank") || clean.startsWith("data:image");
+      }
+      function normalizeImageUrl(rawUrl) {
+        if (!rawUrl)
+          return constants_js_1.FALLBACK_COVER_URL;
+        const trimmed = rawUrl.trim();
+        if (!trimmed || isPlaceholderImageUrl(trimmed)) {
+          return constants_js_1.FALLBACK_COVER_URL;
+        }
+        if (trimmed.startsWith("https://") || trimmed.startsWith("http://")) {
+          return trimmed.replace(constants_js_1.HTTP_PREFIX_REGEX, "https://").replace(/^https:\/\/(?:www\.)?novelfull\.net\b/i, constants_js_1.BASE_URL);
+        }
+        if (constants_js_1.PROTOCOL_RELATIVE_REGEX.test(trimmed)) {
+          return `https:${trimmed}`.replace(/^https:\/\/(?:www\.)?novelfull\.net\b/i, constants_js_1.BASE_URL);
+        }
+        if (trimmed.startsWith("/")) {
+          return `${constants_js_1.BASE_URL}${trimmed}`;
+        }
+        return `${constants_js_1.BASE_URL}/${trimmed}`;
+      }
+      function isReservedNovelFullPath(segment) {
+        const clean = segment.trim().toLowerCase().replace(constants_js_1.TRIM_SLASHES_REGEX, "").replace(constants_js_1.HTML_EXT_REGEX, "");
+        return !clean || constants_js_1.RESERVED_PATHS_SET.has(clean);
+      }
+      function canResolveNovelFullUrl(url) {
+        const trimmed = (url != null ? url : "").trim();
+        if (!trimmed)
+          return false;
+        const novelMatch = constants_js_1.NOVEL_URL_REGEX.exec(trimmed);
+        if (novelMatch == null ? void 0 : novelMatch[1]) {
+          return !isReservedNovelFullPath(novelMatch[1]);
+        }
+        const chapterMatch = constants_js_1.CHAPTER_URL_REGEX.exec(trimmed);
+        if ((chapterMatch == null ? void 0 : chapterMatch[1]) && (chapterMatch == null ? void 0 : chapterMatch[2])) {
+          const firstSeg = chapterMatch[1].toLowerCase();
+          if (isReservedNovelFullPath(firstSeg)) {
+            return false;
+          }
+          return true;
+        }
+        return false;
+      }
+      function extractNovelId(input) {
+        var _a;
+        const trimmed = (input != null ? input : "").trim();
+        if (!trimmed)
+          return "";
+        const novelUrlMatch = constants_js_1.NOVEL_URL_REGEX.exec(trimmed);
+        if (novelUrlMatch == null ? void 0 : novelUrlMatch[1]) {
+          return novelUrlMatch[1].replace(constants_js_1.TRIM_SLASHES_REGEX, "");
+        }
+        const chapterUrlMatch = constants_js_1.CHAPTER_URL_REGEX.exec(trimmed);
+        if ((chapterUrlMatch == null ? void 0 : chapterUrlMatch[1]) && !isReservedNovelFullPath(chapterUrlMatch[1])) {
+          return chapterUrlMatch[1].replace(constants_js_1.TRIM_SLASHES_REGEX, "");
+        }
+        const withoutQuery = ((_a = trimmed.split(/[?#]/)[0]) != null ? _a : "").trim();
+        if (withoutQuery.startsWith("http://") || withoutQuery.startsWith("https://")) {
+          const pathOnly = withoutQuery.replace(/^https?:\/\/[^/]+/i, "");
+          return extractNovelId(pathOnly);
+        }
+        const chapterPathMatch = constants_js_1.CHAPTER_PATH_REGEX.exec(withoutQuery);
+        if ((chapterPathMatch == null ? void 0 : chapterPathMatch[1]) && !isReservedNovelFullPath(chapterPathMatch[1])) {
+          return chapterPathMatch[1].replace(constants_js_1.TRIM_SLASHES_REGEX, "").replace(constants_js_1.HTML_EXT_REGEX, "");
+        }
+        const novelPathMatch = constants_js_1.NOVEL_PATH_REGEX.exec(withoutQuery);
+        if (novelPathMatch == null ? void 0 : novelPathMatch[1]) {
+          return novelPathMatch[1].replace(constants_js_1.TRIM_SLASHES_REGEX, "").replace(constants_js_1.HTML_EXT_REGEX, "");
+        }
+        return withoutQuery.replace(constants_js_1.TRIM_SLASHES_REGEX, "").replace(constants_js_1.HTML_EXT_REGEX, "").trim();
+      }
+      function extractChapterId(input, novelSlug) {
+        var _a;
+        const trimmed = (input != null ? input : "").trim();
+        if (!trimmed)
+          return "";
+        const chapterUrlMatch = constants_js_1.CHAPTER_URL_REGEX.exec(trimmed);
+        if (chapterUrlMatch == null ? void 0 : chapterUrlMatch[2]) {
+          return chapterUrlMatch[2].replace(constants_js_1.TRIM_SLASHES_REGEX, "").replace(constants_js_1.HTML_EXT_REGEX, "");
+        }
+        const withoutQuery = ((_a = trimmed.split(/[?#]/)[0]) != null ? _a : "").trim().replace(/^https?:\/\/[^/]+/i, "").replace(constants_js_1.TRIM_SLASHES_REGEX, "").replace(constants_js_1.HTML_EXT_REGEX, "");
+        if (!withoutQuery)
+          return "";
+        if (novelSlug) {
+          const cleanNovel = extractNovelId(novelSlug).toLowerCase();
+          if (cleanNovel && withoutQuery.toLowerCase().startsWith(`${cleanNovel}/`)) {
+            return withoutQuery.slice(cleanNovel.length + 1).replace(constants_js_1.TRIM_SLASHES_REGEX, "");
+          }
+        }
+        const slashIdx = withoutQuery.lastIndexOf("/");
+        if (slashIdx !== -1) {
+          return withoutQuery.slice(slashIdx + 1).trim();
+        }
+        return withoutQuery;
+      }
+      function buildNovelUrl(contentId) {
+        const slug = extractNovelId(contentId);
+        if (!slug) {
+          throw new Error("Novel contentId cannot be empty.");
+        }
+        return `${constants_js_1.BASE_URL}/${slug}.html`;
+      }
+      function buildAjaxChapterUrl(novelId) {
+        const cleanId = String(novelId != null ? novelId : "").trim();
+        return `${constants_js_1.BASE_URL}/ajax-chapter-option?novelId=${encodeURIComponent(cleanId)}`;
+      }
+      function buildChapterUrl(contentId, chapterId) {
+        var _a, _b;
+        const rawChapter = (chapterId != null ? chapterId : "").trim();
+        if (!rawChapter) {
+          throw new Error("Chapter ID cannot be empty.");
+        }
+        if (rawChapter.startsWith("https://") || rawChapter.startsWith("http://")) {
+          const normalized = rawChapter.replace(constants_js_1.HTTP_PREFIX_REGEX, "https://").replace(/^https:\/\/(?:www\.)?novelfull\.net\b/i, constants_js_1.BASE_URL);
+          const basePart = (_a = normalized.split(/[?#]/)[0]) != null ? _a : normalized;
+          return basePart.endsWith(".html") ? basePart : `${basePart}.html`;
+        }
+        const cleanNovelSlug = extractNovelId(contentId);
+        const cleanChapterPath = ((_b = rawChapter.split(/[?#]/)[0]) != null ? _b : "").trim().replace(constants_js_1.TRIM_SLASHES_REGEX, "").replace(constants_js_1.HTML_EXT_REGEX, "");
+        if (cleanChapterPath.includes("/")) {
+          return `${constants_js_1.BASE_URL}/${cleanChapterPath}.html`;
+        }
+        if (!cleanNovelSlug) {
+          return `${constants_js_1.BASE_URL}/${cleanChapterPath}.html`;
+        }
+        return `${constants_js_1.BASE_URL}/${cleanNovelSlug}/${cleanChapterPath}.html`;
+      }
+      function resolveGenreSlug(genre) {
+        const clean = genre.trim();
+        const mapped = GENRE_SLUG_MAP.get(clean.toLowerCase());
+        if (mapped) {
+          return mapped;
+        }
+        return clean.replace(/\s+/g, "+");
+      }
+      function buildGenreUrl(genre, page = 1) {
+        const safePage = Math.max(1, page || 1);
+        const slug = resolveGenreSlug(genre);
+        return `${constants_js_1.BASE_URL}/genre/${slug}?page=${safePage}`;
+      }
+      function buildStatusUrl(status, page = 1) {
+        const safePage = Math.max(1, page || 1);
+        const lower = status.trim().toLowerCase();
+        if (lower === "completed" || lower === "full") {
+          return `${constants_js_1.BASE_URL}/completed-novel?page=${safePage}`;
+        }
+        if (lower === "ongoing") {
+          return `${constants_js_1.BASE_URL}/status/Ongoing?page=${safePage}`;
+        }
+        return `${constants_js_1.BASE_URL}/latest-release-novel?page=${safePage}`;
+      }
+      function buildFeedUrl(feedKey, page = 1, sortBy) {
+        const safePage = Math.max(1, page || 1);
+        const cleanKey = (feedKey != null ? feedKey : "").trim().toLowerCase();
+        if (cleanKey.startsWith("genre:") || cleanKey.startsWith("genre/")) {
+          const genreName = feedKey.slice(6).trim();
+          return buildGenreUrl(genreName, safePage);
+        }
+        if (cleanKey.startsWith("status:") || cleanKey.startsWith("status/")) {
+          const statusName = feedKey.slice(7).trim();
+          return buildStatusUrl(statusName, safePage);
+        }
+        switch (cleanKey) {
+          case constants_js_1.BROWSE_FEED_KEYS.HOT_NOVEL:
+          case constants_js_1.HOME_SECTION_KEYS.HOT_NOVELS:
+          case constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT:
+          case "hot_novel":
+          case "hot":
+          case "hot novel":
+          case "hot novels":
+            return `${constants_js_1.BASE_URL}/hot-novel?page=${safePage}`;
+          case constants_js_1.BROWSE_FEED_KEYS.LATEST_RELEASES:
+          case constants_js_1.HOME_SECTION_KEYS.LATEST_RELEASES:
+          case "latest-releases":
+          case "latest_release_novel":
+          case "latest":
+          case "latest releases":
+            return `${constants_js_1.BASE_URL}/latest-release-novel?page=${safePage}`;
+          case constants_js_1.BROWSE_FEED_KEYS.MOST_POPULAR:
+          case constants_js_1.HOME_SECTION_KEYS.MOST_POPULAR:
+          case "most_popular":
+          case "popular":
+          case "most popular":
+          case "most popular all-time":
+            return `${constants_js_1.BASE_URL}/most-popular?page=${safePage}`;
+          case constants_js_1.BROWSE_FEED_KEYS.COMPLETED_NOVELS:
+          case constants_js_1.HOME_SECTION_KEYS.COMPLETED_MASTERPIECES:
+          case "completed-novels":
+          case "completed_novels":
+          case "completed_novel":
+          case "completed":
+          case "completed novels":
+          case "completed masterpieces":
+            return `${constants_js_1.BASE_URL}/completed-novel?page=${safePage}`;
+          case constants_js_1.BROWSE_FEED_KEYS.DISCOVER:
+          case "home":
+          default: {
+            const sortLower = (sortBy != null ? sortBy : "").trim().toLowerCase();
+            if (sortLower === "hot") {
+              return `${constants_js_1.BASE_URL}/hot-novel?page=${safePage}`;
+            }
+            if (sortLower === "popular" || sortLower === "most-popular") {
+              return `${constants_js_1.BASE_URL}/most-popular?page=${safePage}`;
+            }
+            if (sortLower === "completed") {
+              return `${constants_js_1.BASE_URL}/completed-novel?page=${safePage}`;
+            }
+            if (sortLower === "latest") {
+              return `${constants_js_1.BASE_URL}/latest-release-novel?page=${safePage}`;
+            }
+            return `${constants_js_1.BASE_URL}/hot-novel?page=${safePage}`;
+          }
+        }
+      }
+      function buildSearchUrl(params) {
+        var _a, _b, _c, _d, _e, _f, _g, _h;
+        const safePage = Math.max(1, (_a = params.page) != null ? _a : 1);
+        const cleanQuery = (_b = params.query) == null ? void 0 : _b.trim();
+        if (cleanQuery && cleanQuery.length > 0) {
+          const encodedQuery = encodeURIComponent(cleanQuery);
+          return `${constants_js_1.BASE_URL}/search?keyword=${encodedQuery}&page=${safePage}`;
+        }
+        const activeGenre = ((_c = params.genre) == null ? void 0 : _c.trim()) || ((_f = (_e = (_d = params.genres) == null ? void 0 : _d.include) == null ? void 0 : _e[0]) == null ? void 0 : _f.trim());
+        if (activeGenre && activeGenre.toLowerCase() !== "all") {
+          return buildGenreUrl(activeGenre, safePage);
+        }
+        const activeStatus = (_g = params.status) == null ? void 0 : _g.trim().toLowerCase();
+        if (activeStatus && activeStatus !== "all") {
+          return buildStatusUrl(activeStatus, safePage);
+        }
+        const sortLower = ((_h = params.sortBy) != null ? _h : "").trim().toLowerCase();
+        if (sortLower === "hot") {
+          return `${constants_js_1.BASE_URL}/hot-novel?page=${safePage}`;
+        }
+        if (sortLower === "popular" || sortLower === "most-popular") {
+          return `${constants_js_1.BASE_URL}/most-popular?page=${safePage}`;
+        }
+        return `${constants_js_1.BASE_URL}/latest-release-novel?page=${safePage}`;
+      }
+      function detectContentRating(genres) {
+        var _a;
+        if (!Array.isArray(genres) || genres.length === 0) {
+          return constants_js_1.ContentRating.EVERYONE;
+        }
+        let hasSuggestive = false;
+        for (let i = 0, len = genres.length; i < len; i++) {
+          const g = (_a = genres[i]) == null ? void 0 : _a.trim().toLowerCase();
+          if (!g)
+            continue;
+          if (constants_js_1.MATURE_GENRES_SET.has(g)) {
+            return constants_js_1.ContentRating.MATURE;
+          }
+          if (constants_js_1.SUGGESTIVE_GENRES_SET.has(g)) {
+            hasSuggestive = true;
+          }
+        }
+        return hasSuggestive ? constants_js_1.ContentRating.SUGGESTIVE : constants_js_1.ContentRating.EVERYONE;
+      }
+    }
+  });
+
+  // __temp__/runners/novelfull/preferences.js
+  var require_preferences = __commonJS({
+    "__temp__/runners/novelfull/preferences.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.NovelFullPreferenceProvider = void 0;
+      exports.invalidatePreferencesCache = invalidatePreferencesCache;
+      exports.decodeHtmlEntities = decodeHtmlEntities;
+      exports.parseStringList = parseStringList;
+      exports.getUserPreferences = getUserPreferences;
+      exports.compileBlacklistContext = compileBlacklistContext;
+      exports.isNovelAllowed = isNovelAllowed;
+      exports.buildSettingsForm = buildSettingsForm;
+      exports.updateUserPreferences = updateUserPreferences;
+      var toolchain_1 = require_dist();
+      var constants_js_1 = require_constants();
+      var UI_GENRE_OPTIONS = constants_js_1.NOVELFULL_GENRES.map((g) => ({
+        id: g.id,
+        title: g.title
+      }));
+      var GENRE_Lookup_MAP = new Map(constants_js_1.NOVELFULL_GENRES.flatMap((g) => [
+        [g.id.toLowerCase(), g.title.toLowerCase()],
+        [g.slug.toLowerCase(), g.title.toLowerCase()],
+        [
+          g.title.toLowerCase().replace(constants_js_1.NON_ALPHANUMERIC_SLUG_REGEX, "-"),
+          g.title.toLowerCase()
+        ]
+      ]));
+      var memoryPreferences = {
+        sanitizeAds: true,
+        formatTln: true,
+        normalizeSpacing: true,
+        excludedGenres: [],
+        customBlacklist: []
+      };
+      var isHydrated = false;
+      var inflightHydration = null;
+      var blacklistContextCache = /* @__PURE__ */ new WeakMap();
+      function hasObjectStore() {
+        return typeof ObjectStore !== "undefined" && ObjectStore !== null;
+      }
+      function isRecord(value) {
+        return typeof value === "object" && value !== null && !Array.isArray(value);
+      }
+      function invalidatePreferencesCache() {
+        isHydrated = false;
+        inflightHydration = null;
+      }
+      var HTML_ENTITY_MAP = Object.freeze({
+        "&amp;": "&",
+        "&quot;": '"',
+        "&#039;": "'",
+        "&#39;": "'",
+        "&apos;": "'",
+        "&lt;": "<",
+        "&gt;": ">",
+        "&nbsp;": " ",
+        "&rsquo;": "'",
+        "&lsquo;": "'",
+        "&rdquo;": '"',
+        "&ldquo;": '"',
+        "&hellip;": "...",
+        "&mdash;": "\u2014",
+        "&ndash;": "\u2013"
+      });
+      var ENTITY_REGEX = /&(?:amp|quot|#039|#39|apos|lt|gt|nbsp|rsquo|lsquo|rdquo|ldquo|hellip|mdash|ndash);/gi;
+      var DECIMAL_ENTITY_REGEX = /&#(\d+);/g;
+      var HEX_ENTITY_REGEX = /&#x([0-9a-fA-F]+);/g;
+      function decodeHtmlEntities(str) {
+        if (!str)
+          return "";
+        return str.replace(ENTITY_REGEX, (match) => {
+          var _a;
+          return (_a = HTML_ENTITY_MAP[match.toLowerCase()]) != null ? _a : match;
+        }).replace(DECIMAL_ENTITY_REGEX, (_, code) => {
+          const num = Number(code);
+          if (num === 160)
+            return " ";
+          if (num === 8216 || num === 8217)
+            return "'";
+          if (num === 8220 || num === 8221)
+            return '"';
+          if (num === 8230)
+            return "...";
+          if (num === 8212)
+            return "\u2014";
+          if (num === 8211)
+            return "\u2013";
+          return String.fromCharCode(num);
+        }).replace(HEX_ENTITY_REGEX, (_, hex) => {
+          const num = parseInt(hex, 16);
+          if (num === 160)
+            return " ";
+          return String.fromCharCode(num);
+        }).replace(/\u00a0/g, " ").replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\u2026/g, "...").replace(constants_js_1.WHITESPACE_REGEX, " ").trim();
+      }
+      function parseStringList(raw) {
+        var _a;
+        if (!raw)
+          return [];
+        if (Array.isArray(raw)) {
+          const result = [];
+          for (let i = 0, len = raw.length; i < len; i++) {
+            const s = String(raw[i]).trim();
+            if (s.length > 0) {
+              result.push(s);
+            }
+          }
+          return result;
+        }
+        if (isRecord(raw)) {
+          const listCandidate = Array.isArray(raw.include) ? raw.include : Array.isArray(raw.exclude) && raw.exclude.length > 0 ? raw.exclude : null;
+          if (listCandidate) {
+            const result = [];
+            for (let i = 0, len = listCandidate.length; i < len; i++) {
+              const s = String(listCandidate[i]).trim();
+              if (s.length > 0) {
+                result.push(s);
+              }
+            }
+            return result;
+          }
+        }
+        if (typeof raw === "string") {
+          const trimmed = raw.trim();
+          if (!trimmed)
+            return [];
+          if (trimmed.charCodeAt(0) === 91 && trimmed.charCodeAt(trimmed.length - 1) === 93) {
+            try {
+              const parsed = JSON.parse(trimmed);
+              if (Array.isArray(parsed)) {
+                const result2 = [];
+                for (let i = 0, len = parsed.length; i < len; i++) {
+                  const s = String(parsed[i]).trim();
+                  if (s.length > 0) {
+                    result2.push(s);
+                  }
+                }
+                return result2;
+              }
+            } catch {
+            }
+          }
+          const parts = trimmed.split(/[,;\n]+/);
+          const result = [];
+          for (let i = 0, len = parts.length; i < len; i++) {
+            const part = (_a = parts[i]) == null ? void 0 : _a.trim();
+            if (part) {
+              result.push(part);
+            }
+          }
+          return result;
+        }
+        return [];
+      }
+      function parseBooleanPref(raw, fallback) {
+        if (typeof raw === "boolean")
+          return raw;
+        if (typeof raw === "string") {
+          const lower = raw.trim().toLowerCase();
+          if (lower === "true" || lower === "1" || lower === "yes")
+            return true;
+          if (lower === "false" || lower === "0" || lower === "no")
+            return false;
+        }
+        if (typeof raw === "number") {
+          return raw !== 0;
+        }
+        return fallback;
+      }
+      async function hydratePreferencesFromStore() {
+        if (!hasObjectStore()) {
+          isHydrated = true;
+          return memoryPreferences;
+        }
+        try {
+          const [storedSanitizeAds, storedFormatTln, storedNormalizeSpacing, storedExcludedGenres, storedCustomBlacklist] = await Promise.all([
+            ObjectStore.get(constants_js_1.PREF_KEYS.SANITIZE_ADS).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.FORMAT_TLN).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.NORMALIZE_SPACING).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.EXCLUDED_GENRES).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST).catch(() => null)
+          ]);
+          const sanitizeAds = storedSanitizeAds !== null && storedSanitizeAds !== void 0 ? parseBooleanPref(storedSanitizeAds, memoryPreferences.sanitizeAds) : memoryPreferences.sanitizeAds;
+          const formatTln = storedFormatTln !== null && storedFormatTln !== void 0 ? parseBooleanPref(storedFormatTln, memoryPreferences.formatTln) : memoryPreferences.formatTln;
+          const normalizeSpacing = storedNormalizeSpacing !== null && storedNormalizeSpacing !== void 0 ? parseBooleanPref(storedNormalizeSpacing, memoryPreferences.normalizeSpacing) : memoryPreferences.normalizeSpacing;
+          const excludedGenres = storedExcludedGenres !== null && storedExcludedGenres !== void 0 ? parseStringList(storedExcludedGenres) : memoryPreferences.excludedGenres;
+          const customBlacklist = storedCustomBlacklist !== null && storedCustomBlacklist !== void 0 ? parseStringList(storedCustomBlacklist) : memoryPreferences.customBlacklist;
+          memoryPreferences = {
+            sanitizeAds,
+            formatTln,
+            normalizeSpacing,
+            excludedGenres,
+            customBlacklist
+          };
+        } catch {
+        }
+        isHydrated = true;
+        return memoryPreferences;
+      }
+      async function getUserPreferences() {
+        if (isHydrated) {
+          return memoryPreferences;
+        }
+        if (inflightHydration) {
+          return inflightHydration;
+        }
+        inflightHydration = hydratePreferencesFromStore().finally(() => {
+          inflightHydration = null;
+        });
+        return inflightHydration;
+      }
+      function compileBlacklistContext(prefs, additionalExcludedGenres) {
+        const hasAdditional = Array.isArray(additionalExcludedGenres) && additionalExcludedGenres.length > 0;
+        if (!hasAdditional) {
+          const cached = blacklistContextCache.get(prefs);
+          if (cached) {
+            return cached;
+          }
+        }
+        const excludedGenreSet = /* @__PURE__ */ new Set();
+        const excludedKeywordSet = /* @__PURE__ */ new Set();
+        const excludedPhrasesSet = /* @__PURE__ */ new Set();
+        const addGenreToken = (rawGenre) => {
+          var _a;
+          const clean = rawGenre.trim().toLowerCase();
+          if (!clean)
+            return;
+          excludedGenreSet.add(clean);
+          const slug = clean.replace(constants_js_1.NON_ALPHANUMERIC_SLUG_REGEX, "-").replace(/^-|-$/g, "");
+          if (slug) {
+            excludedGenreSet.add(slug);
+          }
+          const mapped = (_a = GENRE_Lookup_MAP.get(clean)) != null ? _a : GENRE_Lookup_MAP.get(slug);
+          if (mapped) {
+            excludedGenreSet.add(mapped);
+            const mappedSlug = mapped.replace(constants_js_1.NON_ALPHANUMERIC_SLUG_REGEX, "-").replace(/^-|-$/g, "");
+            if (mappedSlug) {
+              excludedGenreSet.add(mappedSlug);
+            }
+          }
+          if (!clean.includes(" ")) {
+            excludedKeywordSet.add(clean);
+          } else {
+            excludedPhrasesSet.add(clean);
+            if (slug)
+              excludedPhrasesSet.add(slug);
+          }
+        };
+        if (Array.isArray(prefs.excludedGenres)) {
+          for (let i = 0, len = prefs.excludedGenres.length; i < len; i++) {
+            const g = prefs.excludedGenres[i];
+            if (g)
+              addGenreToken(g);
+          }
+        }
+        if (hasAdditional && additionalExcludedGenres) {
+          for (let i = 0, len = additionalExcludedGenres.length; i < len; i++) {
+            const g = additionalExcludedGenres[i];
+            if (g)
+              addGenreToken(g);
+          }
+        }
+        if (Array.isArray(prefs.customBlacklist)) {
+          for (let i = 0, len = prefs.customBlacklist.length; i < len; i++) {
+            const rawKw = prefs.customBlacklist[i];
+            if (!rawKw)
+              continue;
+            const clean = rawKw.trim().toLowerCase();
+            if (!clean)
+              continue;
+            excludedKeywordSet.add(clean);
+            excludedPhrasesSet.add(clean);
+            const slug = clean.replace(constants_js_1.NON_ALPHANUMERIC_SLUG_REGEX, "-").replace(/^-|-$/g, "");
+            if (slug) {
+              excludedKeywordSet.add(slug);
+              excludedPhrasesSet.add(slug);
+            }
+          }
+        }
+        const excludedPhrases = Array.from(excludedPhrasesSet);
+        const hasExclusions = excludedGenreSet.size > 0 || excludedKeywordSet.size > 0 || excludedPhrases.length > 0;
+        const compiled = {
+          excludedGenreSet,
+          excludedKeywordSet,
+          excludedPhrases,
+          hasExclusions
+        };
+        if (!hasAdditional) {
+          blacklistContextCache.set(prefs, compiled);
+        }
+        return compiled;
+      }
+      function isNovelAllowed(card, ctx) {
+        var _a, _b;
+        if (!ctx.hasExclusions) {
+          return true;
+        }
+        const genres = card.genres;
+        if (Array.isArray(genres) && ctx.excludedGenreSet.size > 0) {
+          for (let i = 0, len = genres.length; i < len; i++) {
+            const rawGenre = genres[i];
+            if (!rawGenre)
+              continue;
+            const lower = rawGenre.trim().toLowerCase();
+            if (ctx.excludedGenreSet.has(lower)) {
+              return false;
+            }
+            const slug = lower.replace(constants_js_1.NON_ALPHANUMERIC_SLUG_REGEX, "-").replace(/^-|-$/g, "");
+            if (slug && ctx.excludedGenreSet.has(slug)) {
+              return false;
+            }
+          }
+        }
+        const slugLower = ((_a = card.id) != null ? _a : "").trim().toLowerCase();
+        if (slugLower) {
+          if (ctx.excludedKeywordSet.has(slugLower) || ctx.excludedGenreSet.has(slugLower)) {
+            return false;
+          }
+          const slugTokens = slugLower.split("-");
+          for (let i = 0, len = slugTokens.length; i < len; i++) {
+            const tok = slugTokens[i];
+            if (tok && (ctx.excludedKeywordSet.has(tok) || ctx.excludedGenreSet.has(tok))) {
+              return false;
+            }
+          }
+        }
+        const titleLower = ((_b = card.title) != null ? _b : "").trim().toLowerCase();
+        if (titleLower) {
+          if (ctx.excludedKeywordSet.has(titleLower)) {
+            return false;
+          }
+          const wordRegex = new RegExp(constants_js_1.WORD_TOKEN_REGEX.source, "g");
+          let match;
+          while ((match = wordRegex.exec(titleLower)) !== null) {
+            const word = match[0];
+            if (word && (ctx.excludedKeywordSet.has(word) || ctx.excludedGenreSet.has(word))) {
+              return false;
+            }
+          }
+          const phrases = ctx.excludedPhrases;
+          for (let i = 0, len = phrases.length; i < len; i++) {
+            const phrase = phrases[i];
+            if (phrase && (titleLower.includes(phrase) || slugLower.includes(phrase))) {
+              return false;
+            }
+          }
+        }
+        return true;
+      }
+      async function buildSettingsForm() {
+        const prefs = await getUserPreferences();
+        const customBlacklistStr = prefs.customBlacklist.join(", ");
+        return {
+          sections: [
+            {
+              header: "Reading & Typography Enhancements",
+              footer: "Configure NovelFull's native chapter text sanitization engine, translator note callouts, and paragraph typography.",
+              views: [
+                (0, toolchain_1.UIToggle)({
+                  id: constants_js_1.PREF_KEYS.SANITIZE_ADS,
+                  title: "Strip Aggregator Promos & Watermarks",
+                  currentValue: prefs.sanitizeAds,
+                  defaultValue: true
+                }),
+                (0, toolchain_1.UIToggle)({
+                  id: constants_js_1.PREF_KEYS.FORMAT_TLN,
+                  title: "Format Translator Notes into Callouts",
+                  currentValue: prefs.formatTln,
+                  defaultValue: true
+                }),
+                (0, toolchain_1.UIToggle)({
+                  id: constants_js_1.PREF_KEYS.NORMALIZE_SPACING,
+                  title: "Normalize Paragraph Spacing & Punctuation",
+                  currentValue: prefs.normalizeSpacing,
+                  defaultValue: true
+                })
+              ]
+            },
+            {
+              header: "Content Exclusions / Blacklist",
+              footer: "Permanently hide novels matching excluded genres or negative keywords across all Discover shelves, category tabs, and search results.",
+              views: [
+                (0, toolchain_1.UISelect)({
+                  id: constants_js_1.PREF_KEYS.EXCLUDED_GENRES,
+                  title: "Excluded Genres",
+                  options: UI_GENRE_OPTIONS,
+                  exclude: false,
+                  currentValue: {
+                    include: prefs.excludedGenres,
+                    exclude: []
+                  },
+                  defaultValue: {
+                    include: [],
+                    exclude: []
+                  }
+                }),
+                (0, toolchain_1.UITextField)({
+                  id: constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST,
+                  title: "Custom Keyword Blacklist",
+                  placeholder: "e.g. mtl, machine translation, harem, system",
+                  keyboardType: toolchain_1.UIKeyboardType.ALPHANUMERIC,
+                  currentValue: customBlacklistStr,
+                  defaultValue: ""
+                })
+              ]
+            }
+          ]
+        };
+      }
+      async function updateUserPreferences(data) {
+        if (!isRecord(data)) {
+          return;
+        }
+        let { sanitizeAds, formatTln, normalizeSpacing, excludedGenres, customBlacklist } = memoryPreferences;
+        const storeAvailable = hasObjectStore();
+        const writeTasks = [];
+        if (data[constants_js_1.PREF_KEYS.SANITIZE_ADS] !== void 0) {
+          sanitizeAds = parseBooleanPref(data[constants_js_1.PREF_KEYS.SANITIZE_ADS], sanitizeAds);
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.SANITIZE_ADS, sanitizeAds).catch(() => {
+            }));
+          }
+        }
+        if (data[constants_js_1.PREF_KEYS.FORMAT_TLN] !== void 0) {
+          formatTln = parseBooleanPref(data[constants_js_1.PREF_KEYS.FORMAT_TLN], formatTln);
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.FORMAT_TLN, formatTln).catch(() => {
+            }));
+          }
+        }
+        if (data[constants_js_1.PREF_KEYS.NORMALIZE_SPACING] !== void 0) {
+          normalizeSpacing = parseBooleanPref(data[constants_js_1.PREF_KEYS.NORMALIZE_SPACING], normalizeSpacing);
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.NORMALIZE_SPACING, normalizeSpacing).catch(() => {
+            }));
+          }
+        }
+        if (data[constants_js_1.PREF_KEYS.EXCLUDED_GENRES] !== void 0 && data[constants_js_1.PREF_KEYS.EXCLUDED_GENRES] !== null) {
+          excludedGenres = parseStringList(data[constants_js_1.PREF_KEYS.EXCLUDED_GENRES]);
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.EXCLUDED_GENRES, excludedGenres).catch(() => {
+            }));
+          }
+        }
+        if (data[constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST] !== void 0 && data[constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST] !== null) {
+          customBlacklist = parseStringList(data[constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST]);
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST, customBlacklist.join(", ")).catch(() => {
+            }));
+          }
+        }
+        memoryPreferences = {
+          sanitizeAds,
+          formatTln,
+          normalizeSpacing,
+          excludedGenres,
+          customBlacklist
+        };
+        isHydrated = true;
+        if (writeTasks.length > 0) {
+          await Promise.all(writeTasks);
+        }
+      }
+      var NovelFullPreferenceProvider = class {
+        async getSettingsPage() {
+          return buildSettingsForm();
+        }
+        async getPreferenceMenu() {
+          return buildSettingsForm();
+        }
+        async onFormSubmitted(_id, data) {
+          await updateUserPreferences(data);
+        }
+      };
+      exports.NovelFullPreferenceProvider = NovelFullPreferenceProvider;
+    }
+  });
+
+  // __temp__/runners/novelfull/filters.js
+  var require_filters = __commonJS({
+    "__temp__/runners/novelfull/filters.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.CACHED_SEARCH_FILTERS = exports.CACHED_SORT_OPTIONS = exports.SORT_OPTION_LIST = exports.STATUS_PICKER_OPTIONS = exports.GENRE_SELECT_OPTIONS = exports.FILTER_IDS = void 0;
+      exports.getSearchFilters = getSearchFilters;
+      exports.getSortOptions = getSortOptions;
+      exports.mapFiltersToExploreParams = mapFiltersToExploreParams;
+      var toolchain_1 = require_dist();
+      var constants_js_1 = require_constants();
+      var preferences_js_1 = require_preferences();
+      exports.FILTER_IDS = {
+        GENRES: "genres",
+        GENRE: "genre",
+        CATEGORIES: "categories",
+        STATUS: "status",
+        SORT: "sort"
+      };
+      exports.GENRE_SELECT_OPTIONS = constants_js_1.NOVELFULL_GENRES.map((g) => ({
+        id: g.id,
+        title: g.title
+      }));
+      exports.STATUS_PICKER_OPTIONS = constants_js_1.NOVELFULL_STATUS_OPTIONS.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      exports.SORT_OPTION_LIST = constants_js_1.NOVELFULL_SORT_OPTIONS.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      exports.CACHED_SORT_OPTIONS = {
+        options: exports.SORT_OPTION_LIST,
+        disableOrdering: false
+      };
+      exports.CACHED_SEARCH_FILTERS = [
+        (0, toolchain_1.SearchFilter)(exports.FILTER_IDS.GENRES, "Genres / Categories", (0, toolchain_1.SelectFilter)(exports.GENRE_SELECT_OPTIONS, true), "Filter by NovelFull genres and categories"),
+        (0, toolchain_1.SearchFilter)(exports.FILTER_IDS.STATUS, "Status", (0, toolchain_1.PickerFilter)(exports.STATUS_PICKER_OPTIONS), "Filter by publication status (All, Ongoing, Completed)"),
+        (0, toolchain_1.SearchFilter)(exports.FILTER_IDS.SORT, "Sorting", (0, toolchain_1.PickerFilter)(exports.SORT_OPTION_LIST), "Sort browse and search results (Latest, Hot, Most Popular)")
+      ];
+      async function getSearchFilters() {
+        return exports.CACHED_SEARCH_FILTERS;
+      }
+      async function getSortOptions() {
+        return exports.CACHED_SORT_OPTIONS;
+      }
+      function isRecord(value) {
+        return typeof value === "object" && value !== null && !Array.isArray(value);
+      }
+      function mapFiltersToExploreParams(filters, sort, query, page = 1) {
+        var _a, _b;
+        const trimmedQuery = query == null ? void 0 : query.trim();
+        const params = {
+          query: trimmedQuery && trimmedQuery.length > 0 ? trimmedQuery : void 0,
+          page: Math.max(1, page || 1)
+        };
+        if (sort == null ? void 0 : sort.key) {
+          params.sortBy = sort.key.trim().toLowerCase();
+          params.sortAscending = sort.ascending;
+        }
+        if (isRecord(filters)) {
+          const rawGenres = (_b = (_a = filters[exports.FILTER_IDS.GENRES]) != null ? _a : filters[exports.FILTER_IDS.GENRE]) != null ? _b : filters[exports.FILTER_IDS.CATEGORIES];
+          if (typeof rawGenres === "string" && rawGenres.trim().length > 0) {
+            const cleanGenre = rawGenres.trim();
+            params.genre = cleanGenre;
+            params.genres = { include: [cleanGenre], exclude: [] };
+          } else if (Array.isArray(rawGenres)) {
+            const inc = (0, preferences_js_1.parseStringList)(rawGenres);
+            if (inc.length > 0) {
+              params.genre = inc[0];
+              params.genres = { include: inc, exclude: [] };
+            }
+          } else if (isRecord(rawGenres)) {
+            const include = (0, preferences_js_1.parseStringList)(rawGenres.include);
+            const exclude = (0, preferences_js_1.parseStringList)(rawGenres.exclude);
+            const triState = { include, exclude };
+            params.genres = triState;
+            if (include.length > 0) {
+              params.genre = include[0];
+            }
+          }
+          const rawStatus = filters[exports.FILTER_IDS.STATUS];
+          if (typeof rawStatus === "string" && rawStatus.trim().length > 0) {
+            params.status = rawStatus.trim().toLowerCase();
+          }
+          const rawSort = filters[exports.FILTER_IDS.SORT];
+          if (!params.sortBy && typeof rawSort === "string" && rawSort.trim().length > 0) {
+            params.sortBy = rawSort.trim().toLowerCase();
+          }
+        }
+        return params;
+      }
+    }
+  });
+
+  // node_modules/cheerio/index.js
+  var require_cheerio = __commonJS({
+    "node_modules/cheerio/index.js"(exports, module) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      var VOID_TAGS = /* @__PURE__ */ new Set([
+        "area",
+        "base",
+        "br",
+        "col",
+        "embed",
+        "hr",
+        "img",
+        "input",
+        "link",
+        "meta",
+        "param",
+        "source",
+        "track",
+        "wbr"
+      ]);
+      var RAW_TEXT_TAGS = /* @__PURE__ */ new Set(["script", "style"]);
+      var NAMED_ENTITIES = {
+        amp: "&",
+        lt: "<",
+        gt: ">",
+        quot: '"',
+        apos: "'",
+        nbsp: " ",
+        copy: "\xA9",
+        reg: "\xAE",
+        ndash: "\u2013",
+        mdash: "\u2014",
+        hellip: "\u2026",
+        hearts: "\u2665",
+        times: "\xD7"
+      };
+      function decodeEntities(str) {
+        if (!str || typeof str !== "string" || str.indexOf("&") === -1) {
+          return str || "";
+        }
+        return str.replace(/&(#(?:x[0-9a-fA-F]+|\d+)|[a-zA-Z0-9]+);/g, (full, entity) => {
+          if (entity.charCodeAt(0) === 35) {
+            const isHex = entity.charCodeAt(1) === 120 || entity.charCodeAt(1) === 88;
+            const code = parseInt(entity.slice(isHex ? 2 : 1), isHex ? 16 : 10);
+            if (!Number.isNaN(code) && code > 0 && code <= 1114111) {
+              return String.fromCodePoint(code);
+            }
+            return full;
+          }
+          const lower = entity.toLowerCase();
+          return Object.prototype.hasOwnProperty.call(NAMED_ENTITIES, lower) ? NAMED_ENTITIES[lower] : full;
+        });
+      }
+      function parseAttributes(attrString) {
+        const attribs = {};
+        if (!attrString || !attrString.trim()) {
+          return attribs;
+        }
+        const attrRegex = /([a-zA-Z0-9_:@.-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+        let match;
+        while ((match = attrRegex.exec(attrString)) !== null) {
+          const key = match[1].toLowerCase();
+          const rawVal = match[2] !== void 0 ? match[2] : match[3] !== void 0 ? match[3] : match[4] !== void 0 ? match[4] : "";
+          attribs[key] = decodeEntities(rawVal);
+        }
+        return attribs;
+      }
+      function parseHTML(html) {
+        const root = {
+          type: "root",
+          name: "root",
+          attribs: {},
+          children: [],
+          parent: null
+        };
+        if (typeof html !== "string" || html.length === 0) {
+          return root;
+        }
+        const stack = [root];
+        let pos = 0;
+        const len = html.length;
+        while (pos < len) {
+          const currentParent = stack[stack.length - 1];
+          if (currentParent.type === "tag" && RAW_TEXT_TAGS.has(currentParent.name)) {
+            const closePattern = new RegExp(`</${currentParent.name}\\s*>`, "ig");
+            closePattern.lastIndex = pos;
+            const closeMatch = closePattern.exec(html);
+            if (closeMatch) {
+              const rawText = html.slice(pos, closeMatch.index);
+              if (rawText.length > 0) {
+                currentParent.children.push({
+                  type: "text",
+                  name: "#text",
+                  data: rawText,
+                  attribs: {},
+                  children: [],
+                  parent: currentParent
+                });
+              }
+              stack.pop();
+              pos = closeMatch.index + closeMatch[0].length;
+              continue;
+            } else {
+              const rawText = html.slice(pos);
+              if (rawText.length > 0) {
+                currentParent.children.push({
+                  type: "text",
+                  name: "#text",
+                  data: rawText,
+                  attribs: {},
+                  children: [],
+                  parent: currentParent
+                });
+              }
+              break;
+            }
+          }
+          const ltIdx = html.indexOf("<", pos);
+          if (ltIdx === -1) {
+            const text = decodeEntities(html.slice(pos));
+            if (text.length > 0) {
+              currentParent.children.push({
+                type: "text",
+                name: "#text",
+                data: text,
+                attribs: {},
+                children: [],
+                parent: currentParent
+              });
+            }
+            break;
+          }
+          if (ltIdx > pos) {
+            const text = decodeEntities(html.slice(pos, ltIdx));
+            if (text.length > 0) {
+              currentParent.children.push({
+                type: "text",
+                name: "#text",
+                data: text,
+                attribs: {},
+                children: [],
+                parent: currentParent
+              });
+            }
+          }
+          if (html.startsWith("<!--", ltIdx)) {
+            const endComment = html.indexOf("-->", ltIdx + 4);
+            pos = endComment === -1 ? len : endComment + 3;
+            continue;
+          }
+          if (html.startsWith("<!", ltIdx) || html.startsWith("<?", ltIdx)) {
+            const gtIdx2 = html.indexOf(">", ltIdx + 2);
+            pos = gtIdx2 === -1 ? len : gtIdx2 + 1;
+            continue;
+          }
+          let gtIdx = ltIdx + 1;
+          let quoteChar = null;
+          while (gtIdx < len) {
+            const ch = html[gtIdx];
+            if (quoteChar) {
+              if (ch === quoteChar) {
+                quoteChar = null;
+              }
+            } else if (ch === '"' || ch === "'") {
+              quoteChar = ch;
+            } else if (ch === ">") {
+              break;
+            }
+            gtIdx++;
+          }
+          if (gtIdx >= len) {
+            break;
+          }
+          const tagContent = html.slice(ltIdx + 1, gtIdx).trim();
+          pos = gtIdx + 1;
+          if (!tagContent) {
+            continue;
+          }
+          if (tagContent.charCodeAt(0) === 47) {
+            const closeName = tagContent.slice(1).trim().split(/\s+/)[0].toLowerCase();
+            for (let i = stack.length - 1; i >= 1; i--) {
+              if (stack[i].name === closeName) {
+                stack.length = i;
+                break;
+              }
+            }
+            continue;
+          }
+          const selfClosing = tagContent.charCodeAt(tagContent.length - 1) === 47;
+          const cleanContent = selfClosing ? tagContent.slice(0, -1).trim() : tagContent;
+          const spaceMatch = /^([a-zA-Z0-9_:-]+)([\s\S]*)$/.exec(cleanContent);
+          if (!spaceMatch) {
+            continue;
+          }
+          const tagName = spaceMatch[1].toLowerCase();
+          const attrPart = spaceMatch[2] || "";
+          if ((tagName === "li" || tagName === "p" || tagName === "option") && currentParent.type === "tag" && currentParent.name === tagName && stack.length > 1) {
+            stack.pop();
+          }
+          const parentNode = stack[stack.length - 1];
+          const element = {
+            type: "tag",
+            name: tagName,
+            attribs: parseAttributes(attrPart),
+            children: [],
+            parent: parentNode
+          };
+          parentNode.children.push(element);
+          if (!selfClosing && !VOID_TAGS.has(tagName)) {
+            stack.push(element);
+          }
+        }
+        return root;
+      }
+      function getElementText(node) {
+        if (!node) return "";
+        if (node.type === "text") {
+          return node.data || "";
+        }
+        if (!Array.isArray(node.children) || node.children.length === 0) {
+          return "";
+        }
+        let out = "";
+        for (let i = 0; i < node.children.length; i++) {
+          out += getElementText(node.children[i]);
+        }
+        return out;
+      }
+      function serializeNode(node) {
+        if (!node) return "";
+        if (node.type === "text") {
+          return node.data || "";
+        }
+        if (node.type === "root") {
+          return (node.children || []).map(serializeNode).join("");
+        }
+        const attrs = Object.entries(node.attribs || {}).map(([k, v]) => `${k}="${String(v).replace(/"/g, "&quot;")}"`).join(" ");
+        const open = attrs ? `<${node.name} ${attrs}>` : `<${node.name}>`;
+        if (VOID_TAGS.has(node.name)) {
+          return open;
+        }
+        const inner = (node.children || []).map(serializeNode).join("");
+        return `${open}${inner}</${node.name}>`;
+      }
+      function serializeInnerHTML(node) {
+        if (!node || !Array.isArray(node.children)) return "";
+        return node.children.map(serializeNode).join("");
+      }
+      function cloneNode(node, parent = null) {
+        if (!node) return null;
+        const copy = {
+          type: node.type,
+          name: node.name,
+          attribs: { ...node.attribs || {} },
+          children: [],
+          parent
+        };
+        if (node.data !== void 0) {
+          copy.data = node.data;
+        }
+        if (Array.isArray(node.children)) {
+          copy.children = node.children.map((ch) => cloneNode(ch, copy));
+        }
+        return copy;
+      }
+      function splitTopLevel(selector, delimiter) {
+        const parts = [];
+        let current = "";
+        let bracketDepth = 0;
+        let parenDepth = 0;
+        let quote = null;
+        for (let i = 0; i < selector.length; i++) {
+          const ch = selector[i];
+          if (quote) {
+            current += ch;
+            if (ch === quote) quote = null;
+            continue;
+          }
+          if (ch === '"' || ch === "'") {
+            quote = ch;
+            current += ch;
+            continue;
+          }
+          if (ch === "[") {
+            bracketDepth++;
+            current += ch;
+            continue;
+          }
+          if (ch === "]") {
+            bracketDepth = Math.max(0, bracketDepth - 1);
+            current += ch;
+            continue;
+          }
+          if (ch === "(") {
+            parenDepth++;
+            current += ch;
+            continue;
+          }
+          if (ch === ")") {
+            parenDepth = Math.max(0, parenDepth - 1);
+            current += ch;
+            continue;
+          }
+          if (bracketDepth === 0 && parenDepth === 0 && ch === delimiter) {
+            if (current.trim()) {
+              parts.push(current.trim());
+            }
+            current = "";
+            continue;
+          }
+          current += ch;
+        }
+        if (current.trim()) {
+          parts.push(current.trim());
+        }
+        return parts;
+      }
+      function tokenizeCombinators(selector) {
+        const tokens = [];
+        let current = "";
+        let bracketDepth = 0;
+        let parenDepth = 0;
+        let quote = null;
+        for (let i = 0; i < selector.length; i++) {
+          const ch = selector[i];
+          if (quote) {
+            current += ch;
+            if (ch === quote) quote = null;
+            continue;
+          }
+          if (ch === '"' || ch === "'") {
+            quote = ch;
+            current += ch;
+            continue;
+          }
+          if (ch === "[") {
+            bracketDepth++;
+            current += ch;
+            continue;
+          }
+          if (ch === "]") {
+            bracketDepth = Math.max(0, bracketDepth - 1);
+            current += ch;
+            continue;
+          }
+          if (ch === "(") {
+            parenDepth++;
+            current += ch;
+            continue;
+          }
+          if (ch === ")") {
+            parenDepth = Math.max(0, parenDepth - 1);
+            current += ch;
+            continue;
+          }
+          if (bracketDepth === 0 && parenDepth === 0) {
+            if (ch === ">") {
+              if (current.trim()) {
+                tokens.push({ type: "compound", value: current.trim() });
+                current = "";
+              }
+              tokens.push({ type: "combinator", value: ">" });
+              continue;
+            }
+            if (/\s/.test(ch)) {
+              if (current.trim()) {
+                tokens.push({ type: "compound", value: current.trim() });
+                current = "";
+                let j = i + 1;
+                while (j < selector.length && /\s/.test(selector[j])) j++;
+                if (j < selector.length && selector[j] !== ">") {
+                  tokens.push({ type: "combinator", value: " " });
+                }
+                i = j - 1;
+              }
+              continue;
+            }
+          }
+          current += ch;
+        }
+        if (current.trim()) {
+          tokens.push({ type: "compound", value: current.trim() });
+        }
+        return tokens;
+      }
+      function matchesCompound(node, compound) {
+        var _a, _b, _c, _d, _e;
+        if (!node || node.type !== "tag") {
+          return false;
+        }
+        if (compound === "*") {
+          return true;
+        }
+        let rem = compound;
+        const attrChecks = [];
+        rem = rem.replace(/\[([^\]]+)\]/g, (_, inner) => {
+          attrChecks.push(inner.trim());
+          return "";
+        });
+        const pseudoChecks = [];
+        rem = rem.replace(/:([a-zA-Z-]+)(?:\(([^)]*)\))?/g, (_, name, arg) => {
+          pseudoChecks.push({ name: name.toLowerCase(), arg: arg !== void 0 ? arg.trim() : null });
+          return "";
+        });
+        let requiredId = null;
+        rem = rem.replace(/#([a-zA-Z0-9_-]+)/g, (_, id) => {
+          requiredId = id;
+          return "";
+        });
+        const requiredClasses = [];
+        rem = rem.replace(/\.([a-zA-Z0-9_-]+)/g, (_, cls) => {
+          requiredClasses.push(cls);
+          return "";
+        });
+        const tagName = rem.trim().toLowerCase();
+        if (tagName && tagName !== "*" && node.name !== tagName) {
+          return false;
+        }
+        if (requiredId !== null && (((_a = node.attribs) == null ? void 0 : _a.id) || "") !== requiredId) {
+          return false;
+        }
+        if (requiredClasses.length > 0) {
+          const classAttr = ((_b = node.attribs) == null ? void 0 : _b.class) || "";
+          if (!classAttr) return false;
+          const nodeClasses = classAttr.trim().split(/\s+/);
+          for (let i = 0; i < requiredClasses.length; i++) {
+            if (!nodeClasses.includes(requiredClasses[i])) {
+              return false;
+            }
+          }
+        }
+        for (let i = 0; i < attrChecks.length; i++) {
+          const expr = attrChecks[i];
+          const m = /^([a-zA-Z0-9_:@.-]+)\s*(?:([*^$~|]?=)\s*(?:"([^"]*)"|'([^']*)'|([^\s"']*)))?$/.exec(
+            expr
+          );
+          if (!m) return false;
+          const attrName = m[1].toLowerCase();
+          const op = m[2];
+          const expected = m[3] !== void 0 ? m[3] : m[4] !== void 0 ? m[4] : m[5] || "";
+          const hasAttr = node.attribs && Object.prototype.hasOwnProperty.call(node.attribs, attrName);
+          if (!op) {
+            if (!hasAttr) return false;
+            continue;
+          }
+          const actual = hasAttr ? String(node.attribs[attrName]) : "";
+          if (!hasAttr) return false;
+          if (op === "=" && actual !== expected) return false;
+          if (op === "*=" && !actual.includes(expected)) return false;
+          if (op === "^=" && !actual.startsWith(expected)) return false;
+          if (op === "$=" && !actual.endsWith(expected)) return false;
+          if (op === "~=" && !actual.trim().split(/\s+/).includes(expected)) return false;
+          if (op === "|=" && actual !== expected && !actual.startsWith(`${expected}-`))
+            return false;
+        }
+        for (let i = 0; i < pseudoChecks.length; i++) {
+          const { name, arg } = pseudoChecks[i];
+          if (name === "contains") {
+            const needle = (arg || "").replace(/^["']|["']$/g, "");
+            if (!getElementText(node).includes(needle)) {
+              return false;
+            }
+          } else if (name === "not" && arg) {
+            if (matchesSelector(node, arg)) {
+              return false;
+            }
+          } else if (name === "first-child" || name === "first") {
+            const siblings = (((_c = node.parent) == null ? void 0 : _c.children) || []).filter((c) => c.type === "tag");
+            if (siblings[0] !== node) return false;
+          } else if (name === "last-child" || name === "last") {
+            const siblings = (((_d = node.parent) == null ? void 0 : _d.children) || []).filter((c) => c.type === "tag");
+            if (siblings[siblings.length - 1] !== node) return false;
+          } else if (name === "nth-child" && arg) {
+            const siblings = (((_e = node.parent) == null ? void 0 : _e.children) || []).filter((c) => c.type === "tag");
+            const idx = siblings.indexOf(node) + 1;
+            const n = parseInt(arg, 10);
+            if (!Number.isNaN(n) && idx !== n) return false;
+          }
+        }
+        return true;
+      }
+      function matchesTokenSequence(node, tokens, tokenIndex) {
+        if (tokenIndex < 0) return true;
+        const token = tokens[tokenIndex];
+        if (!token || token.type !== "compound") return false;
+        if (!matchesCompound(node, token.value)) return false;
+        if (tokenIndex === 0) return true;
+        const combinator = tokens[tokenIndex - 1];
+        if (!combinator || combinator.type !== "combinator") return false;
+        if (combinator.value === ">") {
+          return node.parent !== null && node.parent.type === "tag" && matchesTokenSequence(node.parent, tokens, tokenIndex - 2);
+        }
+        let curr = node.parent;
+        while (curr && curr.type === "tag") {
+          if (matchesTokenSequence(curr, tokens, tokenIndex - 2)) {
+            return true;
+          }
+          curr = curr.parent;
+        }
+        return false;
+      }
+      function matchesSelector(node, selector) {
+        if (!node || node.type !== "tag" || !selector) return false;
+        const groups = splitTopLevel(selector, ",");
+        for (let i = 0; i < groups.length; i++) {
+          const tokens = tokenizeCombinators(groups[i]);
+          if (tokens.length > 0 && matchesTokenSequence(node, tokens, tokens.length - 1)) {
+            return true;
+          }
+        }
+        return false;
+      }
+      function collectDescendants(rootNode, out) {
+        if (!rootNode || !Array.isArray(rootNode.children)) return;
+        for (let i = 0; i < rootNode.children.length; i++) {
+          const child = rootNode.children[i];
+          if (child.type === "tag") {
+            out.push(child);
+            collectDescendants(child, out);
+          }
+        }
+      }
+      function querySelectorAll(roots, selector) {
+        if (!selector || typeof selector !== "string") return [];
+        const results = [];
+        const seen = /* @__PURE__ */ new Set();
+        const candidates = [];
+        for (let i = 0; i < roots.length; i++) {
+          collectDescendants(roots[i], candidates);
+        }
+        const groups = splitTopLevel(selector, ",");
+        const groupTokens = groups.map(tokenizeCombinators).filter((t) => t.length > 0);
+        for (let i = 0; i < candidates.length; i++) {
+          const el = candidates[i];
+          if (seen.has(el)) continue;
+          for (let g = 0; g < groupTokens.length; g++) {
+            const tokens = groupTokens[g];
+            if (matchesTokenSequence(el, tokens, tokens.length - 1)) {
+              seen.add(el);
+              results.push(el);
+              break;
+            }
+          }
+        }
+        return results;
+      }
+      var CheerioCollection = class _CheerioCollection {
+        constructor(elements = [], root = null) {
+          this._root = root;
+          const list = Array.isArray(elements) ? elements : [elements];
+          this.length = list.length;
+          for (let i = 0; i < list.length; i++) {
+            this[i] = list[i];
+          }
+        }
+        [Symbol.iterator]() {
+          let index = 0;
+          const len = this.length;
+          return {
+            next: () => {
+              if (index < len) {
+                return { value: this[index++], done: false };
+              }
+              return { value: void 0, done: true };
+            }
+          };
+        }
+        toArray() {
+          const arr = [];
+          for (let i = 0; i < this.length; i++) {
+            arr.push(this[i]);
+          }
+          return arr;
+        }
+        get(index) {
+          if (index === void 0) {
+            return this.toArray();
+          }
+          const idx = index < 0 ? this.length + index : index;
+          return this[idx];
+        }
+        eq(index) {
+          const el = this.get(index);
+          return new _CheerioCollection(el ? [el] : [], this._root);
+        }
+        first() {
+          return this.eq(0);
+        }
+        last() {
+          return this.eq(this.length - 1);
+        }
+        find(selector) {
+          return new _CheerioCollection(
+            querySelectorAll(this.toArray(), selector),
+            this._root
+          );
+        }
+        filter(predicate) {
+          const matched = [];
+          for (let i = 0; i < this.length; i++) {
+            const el = this[i];
+            if (typeof predicate === "string") {
+              if (matchesSelector(el, predicate)) {
+                matched.push(el);
+              }
+            } else if (typeof predicate === "function") {
+              if (predicate.call(el, i, el)) {
+                matched.push(el);
+              }
+            }
+          }
+          return new _CheerioCollection(matched, this._root);
+        }
+        not(predicate) {
+          const matched = [];
+          for (let i = 0; i < this.length; i++) {
+            const el = this[i];
+            if (typeof predicate === "string") {
+              if (!matchesSelector(el, predicate)) {
+                matched.push(el);
+              }
+            } else if (typeof predicate === "function") {
+              if (!predicate.call(el, i, el)) {
+                matched.push(el);
+              }
+            }
+          }
+          return new _CheerioCollection(matched, this._root);
+        }
+        children(selector) {
+          var _a;
+          const out = [];
+          const seen = /* @__PURE__ */ new Set();
+          for (let i = 0; i < this.length; i++) {
+            const children = ((_a = this[i]) == null ? void 0 : _a.children) || [];
+            for (let j = 0; j < children.length; j++) {
+              const ch = children[j];
+              if (ch.type === "tag" && !seen.has(ch)) {
+                if (!selector || matchesSelector(ch, selector)) {
+                  seen.add(ch);
+                  out.push(ch);
+                }
+              }
+            }
+          }
+          return new _CheerioCollection(out, this._root);
+        }
+        parent(selector) {
+          var _a;
+          const out = [];
+          const seen = /* @__PURE__ */ new Set();
+          for (let i = 0; i < this.length; i++) {
+            const p = (_a = this[i]) == null ? void 0 : _a.parent;
+            if (p && p.type === "tag" && !seen.has(p)) {
+              if (!selector || matchesSelector(p, selector)) {
+                seen.add(p);
+                out.push(p);
+              }
+            }
+          }
+          return new _CheerioCollection(out, this._root);
+        }
+        parents(selector) {
+          var _a;
+          const out = [];
+          const seen = /* @__PURE__ */ new Set();
+          for (let i = 0; i < this.length; i++) {
+            let p = (_a = this[i]) == null ? void 0 : _a.parent;
+            while (p && p.type === "tag") {
+              if (!seen.has(p) && (!selector || matchesSelector(p, selector))) {
+                seen.add(p);
+                out.push(p);
+              }
+              p = p.parent;
+            }
+          }
+          return new _CheerioCollection(out, this._root);
+        }
+        closest(selector) {
+          const out = [];
+          const seen = /* @__PURE__ */ new Set();
+          for (let i = 0; i < this.length; i++) {
+            let curr = this[i];
+            while (curr && curr.type === "tag") {
+              if (matchesSelector(curr, selector)) {
+                if (!seen.has(curr)) {
+                  seen.add(curr);
+                  out.push(curr);
+                }
+                break;
+              }
+              curr = curr.parent;
+            }
+          }
+          return new _CheerioCollection(out, this._root);
+        }
+        next(selector) {
+          var _a;
+          const out = [];
+          for (let i = 0; i < this.length; i++) {
+            const el = this[i];
+            const siblings = (((_a = el == null ? void 0 : el.parent) == null ? void 0 : _a.children) || []).filter((c) => c.type === "tag");
+            const idx = siblings.indexOf(el);
+            if (idx !== -1 && idx + 1 < siblings.length) {
+              const nxt = siblings[idx + 1];
+              if (!selector || matchesSelector(nxt, selector)) {
+                out.push(nxt);
+              }
+            }
+          }
+          return new _CheerioCollection(out, this._root);
+        }
+        prev(selector) {
+          var _a;
+          const out = [];
+          for (let i = 0; i < this.length; i++) {
+            const el = this[i];
+            const siblings = (((_a = el == null ? void 0 : el.parent) == null ? void 0 : _a.children) || []).filter((c) => c.type === "tag");
+            const idx = siblings.indexOf(el);
+            if (idx > 0) {
+              const prv = siblings[idx - 1];
+              if (!selector || matchesSelector(prv, selector)) {
+                out.push(prv);
+              }
+            }
+          }
+          return new _CheerioCollection(out, this._root);
+        }
+        siblings(selector) {
+          var _a;
+          const out = [];
+          const seen = /* @__PURE__ */ new Set();
+          for (let i = 0; i < this.length; i++) {
+            const el = this[i];
+            const siblings = (((_a = el == null ? void 0 : el.parent) == null ? void 0 : _a.children) || []).filter((c) => c.type === "tag");
+            for (let j = 0; j < siblings.length; j++) {
+              const s = siblings[j];
+              if (s !== el && !seen.has(s) && (!selector || matchesSelector(s, selector))) {
+                seen.add(s);
+                out.push(s);
+              }
+            }
+          }
+          return new _CheerioCollection(out, this._root);
+        }
+        each(callback) {
+          for (let i = 0; i < this.length; i++) {
+            if (callback.call(this[i], i, this[i]) === false) {
+              break;
+            }
+          }
+          return this;
+        }
+        map(callback) {
+          const mapped = [];
+          for (let i = 0; i < this.length; i++) {
+            const res = callback.call(this[i], i, this[i]);
+            if (res !== null && res !== void 0) {
+              mapped.push(res);
+            }
+          }
+          return new _CheerioCollection(mapped, this._root);
+        }
+        text() {
+          let out = "";
+          for (let i = 0; i < this.length; i++) {
+            out += getElementText(this[i]);
+          }
+          return out;
+        }
+        html() {
+          if (this.length === 0) return null;
+          return serializeInnerHTML(this[0]);
+        }
+        attr(name, value) {
+          if (!name) return void 0;
+          const key = String(name).toLowerCase();
+          if (value !== void 0) {
+            for (let i = 0; i < this.length; i++) {
+              if (this[i] && this[i].attribs) {
+                this[i].attribs[key] = String(value);
+              }
+            }
+            return this;
+          }
+          const first = this[0];
+          if (!first || !first.attribs) return void 0;
+          return Object.prototype.hasOwnProperty.call(first.attribs, key) ? first.attribs[key] : void 0;
+        }
+        data(name) {
+          var _a;
+          if (!name) return void 0;
+          const dashed = String(name).replace(/([A-Z])/g, "-$1").toLowerCase();
+          return (_a = this.attr(`data-${dashed}`)) != null ? _a : this.attr(String(name));
+        }
+        val() {
+          if (this.length === 0) return void 0;
+          const first = this[0];
+          if (!first) return void 0;
+          if (first.name === "textarea") {
+            return getElementText(first);
+          }
+          return this.attr("value");
+        }
+        hasClass(className) {
+          var _a, _b;
+          if (!className) return false;
+          for (let i = 0; i < this.length; i++) {
+            const cls = (_b = (_a = this[i]) == null ? void 0 : _a.attribs) == null ? void 0 : _b.class;
+            if (cls && cls.trim().split(/\s+/).includes(className)) {
+              return true;
+            }
+          }
+          return false;
+        }
+        is(selector) {
+          if (!selector) return false;
+          for (let i = 0; i < this.length; i++) {
+            if (matchesSelector(this[i], selector)) {
+              return true;
+            }
+          }
+          return false;
+        }
+        clone() {
+          const cloned = [];
+          for (let i = 0; i < this.length; i++) {
+            cloned.push(cloneNode(this[i], null));
+          }
+          return new _CheerioCollection(cloned, this._root);
+        }
+        remove() {
+          for (let i = 0; i < this.length; i++) {
+            const el = this[i];
+            if (el && el.parent && Array.isArray(el.parent.children)) {
+              const idx = el.parent.children.indexOf(el);
+              if (idx !== -1) {
+                el.parent.children.splice(idx, 1);
+              }
+              el.parent = null;
+            }
+          }
+          return this;
+        }
+      };
+      function load(html) {
+        const root = parseHTML(typeof html === "string" ? html : String(html != null ? html : ""));
+        function $(selector, context) {
+          if (!selector) {
+            return new CheerioCollection([], root);
+          }
+          if (selector instanceof CheerioCollection) {
+            return selector;
+          }
+          if (typeof selector === "object" && selector !== null) {
+            if (Array.isArray(selector)) {
+              return new CheerioCollection(selector, root);
+            }
+            return new CheerioCollection([selector], root);
+          }
+          if (typeof selector === "string") {
+            const trimmed = selector.trim();
+            if (trimmed.charCodeAt(0) === 60 && trimmed.charCodeAt(trimmed.length - 1) === 62) {
+              const frag = parseHTML(trimmed);
+              return new CheerioCollection(frag.children, root);
+            }
+            let searchRoots = [root];
+            if (context) {
+              if (typeof context === "string") {
+                searchRoots = querySelectorAll([root], context);
+              } else if (context instanceof CheerioCollection) {
+                searchRoots = context.toArray();
+              } else if (typeof context === "object") {
+                searchRoots = [context];
+              }
+            }
+            return new CheerioCollection(
+              querySelectorAll(searchRoots, trimmed),
+              root
+            );
+          }
+          return new CheerioCollection([], root);
+        }
+        $.load = load;
+        $.root = () => new CheerioCollection([root], root);
+        $.html = (el) => {
+          if (!el) return serializeNode(root);
+          if (el instanceof CheerioCollection) {
+            return el.toArray().map(serializeNode).join("");
+          }
+          return serializeNode(el);
+        };
+        $.text = (els) => {
+          if (!els) return getElementText(root);
+          if (els instanceof CheerioCollection) return els.text();
+          if (Array.isArray(els)) return els.map(getElementText).join("");
+          return getElementText(els);
+        };
+        return $;
+      }
+      module.exports = {
+        load,
+        default: { load }
+      };
+    }
+  });
+
+  // __temp__/runners/novelfull/scraper.js
+  var require_scraper = __commonJS({
+    "__temp__/runners/novelfull/scraper.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        var desc = Object.getOwnPropertyDescriptor(m, k);
+        if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+          desc = { enumerable: true, get: function() {
+            return m[k];
+          } };
+        }
+        Object.defineProperty(o, k2, desc);
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        o[k2] = m[k];
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
+        Object.defineProperty(o, "default", { enumerable: true, value: v });
+      }) : function(o, v) {
+        o["default"] = v;
+      });
+      var __importStar = exports && exports.__importStar || /* @__PURE__ */ (function() {
+        var ownKeys = function(o) {
+          ownKeys = Object.getOwnPropertyNames || function(o2) {
+            var ar = [];
+            for (var k in o2) if (Object.prototype.hasOwnProperty.call(o2, k)) ar[ar.length] = k;
+            return ar;
+          };
+          return ownKeys(o);
+        };
+        return function(mod) {
+          if (mod && mod.__esModule) return mod;
+          var result = {};
+          if (mod != null) {
+            for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+          }
+          __setModuleDefault(result, mod);
+          return result;
+        };
+      })();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.NovelFullScraperClient = void 0;
+      exports.extractImageSrcFromImg = extractImageSrcFromImg;
+      exports.extractCoverFromElement = extractCoverFromElement;
+      exports.extractNovelCardFromElement = extractNovelCardFromElement;
+      exports.parseNovelCards = parseNovelCards;
+      exports.mapCardToItem = mapCardToItem;
+      exports.filterAndMapNovelCards = filterAndMapNovelCards;
+      exports.isLastListingPage = isLastListingPage;
+      exports.parseChapterNumber = parseChapterNumber;
+      exports.parseAjaxChapterOptions = parseAjaxChapterOptions;
+      exports.parseOnPageChapters = parseOnPageChapters;
+      exports.mapChapterEntriesToChapters = mapChapterEntriesToChapters;
+      exports.extractNumericNovelId = extractNumericNovelId;
+      exports.parseNovelDetail = parseNovelDetail;
+      exports.mapDetailToContent = mapDetailToContent;
+      exports.normalizeTypographyAndEntities = normalizeTypographyAndEntities;
+      exports.formatTranslatorNotes = formatTranslatorNotes;
+      exports.stripAggregatorWatermarks = stripAggregatorWatermarks;
+      exports.sanitizeChapterHtml = sanitizeChapterHtml;
+      var toolchain_1 = require_dist();
+      var cheerio = __importStar(require_cheerio());
+      var api_js_1 = require_api();
+      var constants_js_1 = require_constants();
+      var preferences_js_1 = require_preferences();
+      var NOVEL_CACHE_TTL_MS = 3e4;
+      var NOVEL_CACHE_MAX_ENTRIES = 25;
+      function isCloudflareChallenge(response) {
+        var _a, _b, _c, _d, _e;
+        if (response.status !== 403 && response.status !== 503) {
+          return false;
+        }
+        const headers = (_a = response.headers) != null ? _a : {};
+        const server = String((_c = (_b = headers["server"]) != null ? _b : headers["Server"]) != null ? _c : "").toLowerCase();
+        const cfMitigated = String((_e = (_d = headers["cf-mitigated"]) != null ? _d : headers["CF-Mitigated"]) != null ? _e : "").toLowerCase();
+        const body = typeof response.data === "string" ? response.data : "";
+        return cfMitigated.includes("challenge") || server.includes("cloudflare") || body.includes("cf-browser-verification") || body.includes("Just a moment...") || body.includes("Attention Required! | Cloudflare");
+      }
+      function extractImageSrcFromImg($el) {
+        if (!$el || $el.length === 0)
+          return void 0;
+        const candidates = [
+          $el.attr("data-src"),
+          $el.attr("data-lazy-src"),
+          $el.attr("data-original"),
+          $el.attr("src")
+        ];
+        for (let i = 0; i < candidates.length; i++) {
+          const raw = candidates[i];
+          if (raw && typeof raw === "string") {
+            const trimmed = raw.trim();
+            if (trimmed && !(0, api_js_1.isPlaceholderImageUrl)(trimmed)) {
+              return (0, api_js_1.normalizeImageUrl)(trimmed);
+            }
+          }
+        }
+        const style = $el.attr("style");
+        if (style) {
+          const bgMatch = constants_js_1.BG_IMAGE_URL_REGEX.exec(style);
+          if (bgMatch == null ? void 0 : bgMatch[1]) {
+            const bgUrl = bgMatch[1].trim();
+            if (bgUrl && !(0, api_js_1.isPlaceholderImageUrl)(bgUrl)) {
+              return (0, api_js_1.normalizeImageUrl)(bgUrl);
+            }
+          }
+        }
+        return void 0;
+      }
+      function extractCoverFromElement($container, $) {
+        if (!$container || $container.length === 0) {
+          return constants_js_1.FALLBACK_COVER_URL;
+        }
+        const directSrc = extractImageSrcFromImg($container);
+        if (directSrc) {
+          return directSrc;
+        }
+        const $imgs = $container.find("img");
+        for (let i = 0; i < $imgs.length; i++) {
+          const $img = $($imgs[i]);
+          const extracted = extractImageSrcFromImg($img);
+          if (extracted) {
+            return extracted;
+          }
+        }
+        const $lazyChildren = $container.find("[data-src], [data-lazy-src], [data-original], [style*='background']");
+        for (let i = 0; i < $lazyChildren.length; i++) {
+          const $child = $($lazyChildren[i]);
+          const extracted = extractImageSrcFromImg($child);
+          if (extracted) {
+            return extracted;
+          }
+        }
+        return constants_js_1.FALLBACK_COVER_URL;
+      }
+      function extractNovelCardFromElement($card, $) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
+        if (!$card || $card.length === 0)
+          return null;
+        let novelHref = "";
+        let rawTitle = "";
+        const $titleAnchor = $card.find("h3.truyen-title a, h3.novel-title a, .truyen-title a, .novel-title a, h3.title a, .title a, .book-title a, .caption h3 a, .caption a").first();
+        if ($titleAnchor.length > 0) {
+          novelHref = ((_a = $titleAnchor.attr("href")) != null ? _a : "").trim();
+          rawTitle = $titleAnchor.text().trim() || ((_b = $titleAnchor.attr("title")) != null ? _b : "").trim();
+        }
+        if (!novelHref) {
+          const $anchors = $card.find("a[href]");
+          for (let i = 0; i < $anchors.length; i++) {
+            const $a = $($anchors[i]);
+            const href = ((_c = $a.attr("href")) != null ? _c : "").trim();
+            if (!href || href.startsWith("#") || href.startsWith("javascript:")) {
+              continue;
+            }
+            if (href.includes("/genre/") || href.includes("/author/") || href.includes("/status/") || href.includes("/search")) {
+              continue;
+            }
+            const cleanPath = href.replace(/^https?:\/\/[^/]+/i, "").replace(/^\/+|\/+$/g, "");
+            if (cleanPath.includes("/")) {
+              continue;
+            }
+            const candidateSlug = (0, api_js_1.extractNovelId)(href);
+            if (candidateSlug && !(0, api_js_1.isReservedNovelFullPath)(candidateSlug)) {
+              novelHref = href;
+              rawTitle = rawTitle || ((_d = $a.attr("title")) == null ? void 0 : _d.trim()) || $a.text().trim() || ((_e = $a.find("img").attr("alt")) == null ? void 0 : _e.trim()) || "";
+              break;
+            }
+          }
+        }
+        if (!novelHref) {
+          const selfHref = ((_f = $card.attr("href")) != null ? _f : "").trim();
+          if (selfHref) {
+            novelHref = selfHref;
+          } else {
+            const firstHref = ((_g = $card.find("a[href]").first().attr("href")) != null ? _g : "").trim();
+            if (firstHref && !firstHref.includes("/genre/") && !firstHref.includes("/author/")) {
+              novelHref = firstHref;
+            }
+          }
+        }
+        const id = (0, api_js_1.extractNovelId)(novelHref);
+        if (!id || (0, api_js_1.isReservedNovelFullPath)(id)) {
+          return null;
+        }
+        if (!rawTitle) {
+          rawTitle = $card.find("h3, h4, .title, .truyen-title").first().text().trim() || ((_h = $card.find("img").first().attr("alt")) == null ? void 0 : _h.trim()) || ((_i = $card.attr("title")) == null ? void 0 : _i.trim()) || id.replace(/-/g, " ");
+        }
+        const title = (0, preferences_js_1.decodeHtmlEntities)(rawTitle);
+        if (!title) {
+          return null;
+        }
+        const coverImage = extractCoverFromElement($card, $);
+        const rawAuthor = $card.find(".author, span.author, a[href*='/author/']").first().text().trim() || void 0;
+        const author = rawAuthor ? (0, preferences_js_1.decodeHtmlEntities)(rawAuthor) : void 0;
+        const rawLatestChapter = $card.find(".text-info a, .chr-text, .chapter-text, .latest-chapter a, .col-xs-2 a, a[href*='/chapter']").first().text().trim() || void 0;
+        const latestChapter = rawLatestChapter ? (0, preferences_js_1.decodeHtmlEntities)(rawLatestChapter) : void 0;
+        const isFull = $card.find(".label-full, .label-completed, .full-label").length > 0 || $card.hasClass("full");
+        const isHot = $card.find(".label-hot, .hot-label").length > 0 || $card.hasClass("hot");
+        const isNew = $card.find(".label-new, .new-label").length > 0 || $card.hasClass("new");
+        const status = isFull ? toolchain_1.ContentStatus.COMPLETED : void 0;
+        const genreSet = /* @__PURE__ */ new Set();
+        const dataGenres = (_j = $card.attr("data-genres")) != null ? _j : $card.attr("data-genre");
+        if (dataGenres) {
+          const parts = dataGenres.split(/[,;]/);
+          for (let i = 0; i < parts.length; i++) {
+            const g = (_k = parts[i]) == null ? void 0 : _k.trim();
+            if (g)
+              genreSet.add((0, preferences_js_1.decodeHtmlEntities)(g));
+          }
+        }
+        $card.find("a[href*='/genre/'], .genre, .genres a").each((_i2, el) => {
+          const gText = (0, preferences_js_1.decodeHtmlEntities)($(el).text());
+          if (gText) {
+            genreSet.add(gText);
+          }
+        });
+        const genres = Array.from(genreSet);
+        const rating = (0, api_js_1.detectContentRating)(genres);
+        return {
+          id,
+          title,
+          coverImage,
+          webUrl: (0, api_js_1.buildNovelUrl)(id),
+          author,
+          latestChapter,
+          status,
+          isHot,
+          isFull,
+          isNew,
+          genres,
+          rating
+        };
+      }
+      function parseNovelCards(htmlOrCheerio, $scope) {
+        if (!htmlOrCheerio) {
+          return [];
+        }
+        const $ = typeof htmlOrCheerio === "function" ? htmlOrCheerio : cheerio.load(htmlOrCheerio);
+        const cards = [];
+        const seenIds = /* @__PURE__ */ new Set();
+        const pushCard = ($el) => {
+          const card = extractNovelCardFromElement($el, $);
+          if (card && !seenIds.has(card.id)) {
+            seenIds.add(card.id);
+            cards.push(card);
+          }
+        };
+        if ($scope && $scope.length > 0) {
+          const $candidates = $scope.find(".list-novel .row, .list-truyen .row, .col-novel-main .row, .archive .row, .row, .item, .book, .novel-item");
+          if ($candidates.length > 0) {
+            $candidates.each((_i, el) => pushCard($(el)));
+          } else {
+            $scope.each((_i, el) => pushCard($(el)));
+          }
+          return cards;
+        }
+        const $primaryRows = $(".list-novel .row, .list-truyen .row, #list-page .row, .col-novel-main .row, .archive .row, #list-index .row, #intro-index .item, .index-intro .item, #truyen-slide .item, .MultiCarousel .item, .hot-novel .item, .completed-novel .item, .most-popular .item, .novel-item");
+        $primaryRows.each((_i, el) => pushCard($(el)));
+        if (cards.length === 0) {
+          const $fallbackCards = $(".col-novel-main .book, .list-novel .book, .book, .item, .row");
+          $fallbackCards.each((_i, el) => pushCard($(el)));
+        }
+        return cards;
+      }
+      function mapCardToItem(card) {
+        var _a;
+        const subtitleParts = [];
+        if (card.latestChapter) {
+          subtitleParts.push(card.latestChapter);
+        } else if (card.author) {
+          subtitleParts.push(card.author);
+        }
+        if (card.isFull && !subtitleParts.includes("Completed")) {
+          subtitleParts.push("Completed");
+        }
+        const item = {
+          id: card.id,
+          title: card.title,
+          coverImage: card.coverImage || constants_js_1.FALLBACK_COVER_URL,
+          webUrl: card.webUrl || (0, api_js_1.buildNovelUrl)(card.id),
+          rating: (_a = card.rating) != null ? _a : (0, api_js_1.detectContentRating)(card.genres)
+        };
+        if (subtitleParts.length > 0) {
+          item.subtitle = subtitleParts.join(" \u2022 ");
+        }
+        return item;
+      }
+      function filterAndMapNovelCards(cards, prefs, exploreParams) {
+        var _a, _b, _c, _d;
+        if (!Array.isArray(cards) || cards.length === 0) {
+          return [];
+        }
+        const additionalExcludes = (_a = exploreParams == null ? void 0 : exploreParams.genres) == null ? void 0 : _a.exclude;
+        const ctx = (0, preferences_js_1.compileBlacklistContext)(prefs, additionalExcludes);
+        const requiredGenresLower = [];
+        if (((_b = exploreParams == null ? void 0 : exploreParams.genres) == null ? void 0 : _b.include) && exploreParams.genres.include.length > 0) {
+          for (let i = 0; i < exploreParams.genres.include.length; i++) {
+            const g = (_c = exploreParams.genres.include[i]) == null ? void 0 : _c.trim().toLowerCase();
+            if (g && g !== "all") {
+              requiredGenresLower.push(g);
+            }
+          }
+        } else if ((exploreParams == null ? void 0 : exploreParams.genre) && exploreParams.genre.trim().toLowerCase() !== "all") {
+          requiredGenresLower.push(exploreParams.genre.trim().toLowerCase());
+        }
+        const statusFilter = (_d = exploreParams == null ? void 0 : exploreParams.status) == null ? void 0 : _d.trim().toLowerCase();
+        const items = [];
+        for (let i = 0, len = cards.length; i < len; i++) {
+          const card = cards[i];
+          if (!card || !card.id)
+            continue;
+          if (!(0, preferences_js_1.isNovelAllowed)(card, ctx)) {
+            continue;
+          }
+          if (statusFilter === "completed" && card.status === toolchain_1.ContentStatus.ONGOING) {
+            continue;
+          }
+          if (statusFilter === "ongoing" && card.status === toolchain_1.ContentStatus.COMPLETED) {
+            continue;
+          }
+          if (requiredGenresLower.length > 0 && card.genres.length > 0) {
+            const cardGenresLower = card.genres.map((g) => g.toLowerCase());
+            let matchesGenre = false;
+            for (let gIdx = 0; gIdx < requiredGenresLower.length; gIdx++) {
+              const reqG = requiredGenresLower[gIdx];
+              if (cardGenresLower.includes(reqG)) {
+                matchesGenre = true;
+                break;
+              }
+            }
+            if (!matchesGenre) {
+              continue;
+            }
+          }
+          items.push(mapCardToItem(card));
+        }
+        return items;
+      }
+      function isLastListingPage($, itemCount) {
+        if (itemCount === 0) {
+          return true;
+        }
+        const $pagination = $(".pagination, ul.pagination");
+        if ($pagination.length === 0) {
+          return false;
+        }
+        const $nextLi = $pagination.find("li.next");
+        if ($nextLi.length > 0) {
+          return $nextLi.hasClass("disabled");
+        }
+        const $nextLink = $pagination.find("a[rel='next'], a:contains('Next'), a:contains('>'), a:contains('\xBB')");
+        if ($nextLink.length > 0) {
+          const $parentLi = $nextLink.closest("li");
+          return $parentLi.hasClass("disabled");
+        }
+        return false;
+      }
+      function parseChapterNumber(title, chapterSlug, fallbackNumber) {
+        var _a;
+        let volume;
+        const volMatch = (_a = constants_js_1.VOLUME_NUMBER_REGEX.exec(title)) != null ? _a : constants_js_1.VOLUME_NUMBER_REGEX.exec(chapterSlug);
+        if (volMatch == null ? void 0 : volMatch[1]) {
+          const parsedVol = parseInt(volMatch[1], 10);
+          if (Number.isFinite(parsedVol) && parsedVol > 0) {
+            volume = parsedVol;
+          }
+        }
+        const titleMatch = constants_js_1.CHAPTER_NUMBER_REGEX.exec(title);
+        if (titleMatch == null ? void 0 : titleMatch[1]) {
+          const num = parseFloat(titleMatch[1]);
+          if (Number.isFinite(num) && num >= 0) {
+            return { number: num, volume };
+          }
+        }
+        const slugText = chapterSlug.replace(/-/g, " ");
+        const slugMatch = constants_js_1.CHAPTER_NUMBER_REGEX.exec(slugText);
+        if (slugMatch == null ? void 0 : slugMatch[1]) {
+          const num = parseFloat(slugMatch[1]);
+          if (Number.isFinite(num) && num >= 0) {
+            return { number: num, volume };
+          }
+        }
+        const leadingMatch = constants_js_1.LEADING_NUMBER_REGEX.exec(title.trim());
+        if (leadingMatch == null ? void 0 : leadingMatch[1]) {
+          const num = parseFloat(leadingMatch[1]);
+          if (Number.isFinite(num) && num >= 0) {
+            return { number: num, volume };
+          }
+        }
+        return { number: fallbackNumber, volume };
+      }
+      function parseAjaxChapterOptions(html, novelSlug) {
+        if (!html || typeof html !== "string") {
+          return [];
+        }
+        const $ = cheerio.load(html);
+        const entries = [];
+        const seenIds = /* @__PURE__ */ new Set();
+        const cleanNovelSlug = (0, api_js_1.extractNovelId)(novelSlug);
+        const $options = $("option");
+        $options.each((idx, el) => {
+          var _a;
+          const $opt = $(el);
+          const rawVal = ((_a = $opt.attr("value")) != null ? _a : "").trim();
+          const rawText = (0, preferences_js_1.decodeHtmlEntities)($opt.text());
+          if (!rawVal && !rawText)
+            return;
+          const chapterId = (0, api_js_1.extractChapterId)(rawVal || rawText, cleanNovelSlug);
+          if (!chapterId || seenIds.has(chapterId))
+            return;
+          seenIds.add(chapterId);
+          const title = rawText || `Chapter ${idx + 1}`;
+          const { number, volume } = parseChapterNumber(title, chapterId, idx + 1);
+          const webUrl = (0, api_js_1.buildChapterUrl)(cleanNovelSlug, rawVal || chapterId);
+          entries.push({
+            id: chapterId,
+            chapterId,
+            title,
+            number,
+            volume,
+            webUrl
+          });
+        });
+        return entries;
+      }
+      function parseOnPageChapters($, novelSlug) {
+        const entries = [];
+        const seenIds = /* @__PURE__ */ new Set();
+        const cleanNovelSlug = (0, api_js_1.extractNovelId)(novelSlug);
+        const $links = $("ul.list-chapter li a, .list-chapter li a, #list-chapter li a, .list-chapter a");
+        $links.each((idx, el) => {
+          var _a;
+          const $a = $(el);
+          const href = ((_a = $a.attr("href")) != null ? _a : "").trim();
+          if (!href || href.startsWith("#") || href.startsWith("javascript:")) {
+            return;
+          }
+          const chapterId = (0, api_js_1.extractChapterId)(href, cleanNovelSlug);
+          if (!chapterId || seenIds.has(chapterId))
+            return;
+          seenIds.add(chapterId);
+          const rawText = (0, preferences_js_1.decodeHtmlEntities)($a.find(".chapter-text, .chr-text").text() || $a.text() || $a.attr("title") || `Chapter ${idx + 1}`);
+          const title = rawText || `Chapter ${idx + 1}`;
+          const { number, volume } = parseChapterNumber(title, chapterId, idx + 1);
+          const webUrl = (0, api_js_1.buildChapterUrl)(cleanNovelSlug, href);
+          entries.push({
+            id: chapterId,
+            chapterId,
+            title,
+            number,
+            volume,
+            webUrl
+          });
+        });
+        return entries;
+      }
+      function mapChapterEntriesToChapters(entries, novelSlug) {
+        var _a;
+        if (!Array.isArray(entries) || entries.length === 0) {
+          return [];
+        }
+        const cleanNovelSlug = (0, api_js_1.extractNovelId)(novelSlug);
+        const total = entries.length;
+        const chapters = new Array(total);
+        for (let i = 0; i < total; i++) {
+          const entry = entries[i];
+          const chapter = {
+            id: entry.id,
+            index: i,
+            number: typeof entry.number === "number" && Number.isFinite(entry.number) && entry.number >= 0 ? entry.number : i + 1,
+            title: entry.title || `Chapter ${i + 1}`,
+            language: "en",
+            webUrl: entry.webUrl || (0, api_js_1.buildChapterUrl)(cleanNovelSlug, entry.id),
+            date: (_a = entry.date) != null ? _a : new Date(17e11 + i * 6e4),
+            data: {
+              chapterId: entry.chapterId,
+              contentId: cleanNovelSlug,
+              webUrl: entry.webUrl || (0, api_js_1.buildChapterUrl)(cleanNovelSlug, entry.id)
+            }
+          };
+          if (typeof entry.volume === "number" && Number.isFinite(entry.volume) && entry.volume > 0) {
+            chapter.volume = entry.volume;
+          }
+          chapters[i] = chapter;
+        }
+        return chapters;
+      }
+      function extractNumericNovelId($, html) {
+        var _a, _b, _c, _d, _e;
+        const fromRatingDiv = ((_a = $("div#rating[data-novel-id]").attr("data-novel-id")) == null ? void 0 : _a.trim()) || ((_b = $("#rating").attr("data-novel-id")) == null ? void 0 : _b.trim()) || ((_c = $("[data-novel-id]").first().attr("data-novel-id")) == null ? void 0 : _c.trim()) || ((_d = $("input#truyen-id").val()) == null ? void 0 : _d.trim()) || ((_e = $("input[name='novelId']").val()) == null ? void 0 : _e.trim());
+        if (fromRatingDiv && /^\d+$/.test(fromRatingDiv)) {
+          return fromRatingDiv;
+        }
+        if (html) {
+          const regexMatch = constants_js_1.INLINE_NOVEL_ID_REGEX.exec(html);
+          if (regexMatch == null ? void 0 : regexMatch[1]) {
+            return regexMatch[1];
+          }
+        }
+        return void 0;
+      }
+      function parseNovelDetail(html, contentIdOrUrl) {
+        var _a, _b, _c, _d, _e;
+        const $ = cheerio.load(html);
+        const id = (0, api_js_1.extractNovelId)(contentIdOrUrl);
+        const rawTitle = $(".books .desc h3.title, .info-holder h3.title, h3.title, .desc .title, .title, h1, h3").first().text().trim() || ((_a = $("meta[property='og:title']").attr("content")) == null ? void 0 : _a.trim()) || id.replace(/-/g, " ");
+        const title = (0, preferences_js_1.decodeHtmlEntities)(rawTitle) || "Untitled Novel";
+        const $coverContainer = $(".books .book, .info-holder .book, .book, .info-holder, .col-info-desc").first();
+        const coverImage = $coverContainer.length > 0 ? extractCoverFromElement($coverContainer, $) : (0, api_js_1.normalizeImageUrl)($("meta[property='og:image']").attr("content"));
+        const authorSet = /* @__PURE__ */ new Set();
+        $(".info a[href*='author'], .info-novel a[href*='author']").each((_i, el) => {
+          const aText = (0, preferences_js_1.decodeHtmlEntities)($(el).text());
+          if (aText)
+            authorSet.add(aText);
+        });
+        if (authorSet.size === 0) {
+          $(".info div, .info li, .info p").each((_i, el) => {
+            var _a2;
+            const text = (0, preferences_js_1.decodeHtmlEntities)($(el).text());
+            if (/^author\s*:/i.test(text)) {
+              const afterColon = text.replace(/^author\s*:\s*/i, "").trim();
+              if (afterColon) {
+                const parts = afterColon.split(/[,;]/);
+                for (let i = 0; i < parts.length; i++) {
+                  const p = (_a2 = parts[i]) == null ? void 0 : _a2.trim();
+                  if (p)
+                    authorSet.add(p);
+                }
+              }
+            }
+          });
+        }
+        const authors = Array.from(authorSet);
+        const genreSet = /* @__PURE__ */ new Set();
+        $(".info a[href*='genre'], .info-novel a[href*='genre']").each((_i, el) => {
+          const gText = (0, preferences_js_1.decodeHtmlEntities)($(el).text());
+          if (gText)
+            genreSet.add(gText);
+        });
+        if (genreSet.size === 0) {
+          $(".info div, .info li, .info p").each((_i, el) => {
+            var _a2;
+            const text = (0, preferences_js_1.decodeHtmlEntities)($(el).text());
+            if (/^genre(?:s)?\s*:/i.test(text)) {
+              const afterColon = text.replace(/^genre(?:s)?\s*:\s*/i, "").trim();
+              const parts = afterColon.split(/[,;]/);
+              for (let i = 0; i < parts.length; i++) {
+                const p = (_a2 = parts[i]) == null ? void 0 : _a2.trim();
+                if (p)
+                  genreSet.add(p);
+              }
+            }
+          });
+        }
+        const genres = Array.from(genreSet);
+        let statusText = $(".info a[href*='status']").first().text().trim() || $(".info span.text-primary, .info span.text-success, .info span").last().text().trim() || "";
+        if (!statusText || /^author|^genre|^source|^alternative/i.test(statusText)) {
+          $(".info div, .info li, .info p").each((_i, el) => {
+            const text = (0, preferences_js_1.decodeHtmlEntities)($(el).text());
+            if (/^status\s*:/i.test(text)) {
+              statusText = text.replace(/^status\s*:\s*/i, "").trim();
+            }
+          });
+        }
+        const statusLower = statusText.toLowerCase();
+        let status = toolchain_1.ContentStatus.UNKNOWN;
+        if (statusLower.includes("completed") || statusLower.includes("full")) {
+          status = toolchain_1.ContentStatus.COMPLETED;
+        } else if (statusLower.includes("ongoing")) {
+          status = toolchain_1.ContentStatus.ONGOING;
+        } else if (statusLower.includes("hiatus")) {
+          status = toolchain_1.ContentStatus.HIATUS;
+        } else if (statusLower.includes("cancelled") || statusLower.includes("canceled") || statusLower.includes("dropped")) {
+          status = toolchain_1.ContentStatus.CANCELLED;
+        }
+        const additionalTitles = [];
+        let source;
+        $(".info div, .info li, .info p").each((_i, el) => {
+          var _a2;
+          const text = (0, preferences_js_1.decodeHtmlEntities)($(el).text());
+          if (/^alternative(?:\s+names?)?\s*:/i.test(text)) {
+            const rawAlts = text.replace(/^alternative(?:\s+names?)?\s*:\s*/i, "").trim();
+            const parts = rawAlts.split(/[,;]/);
+            for (let i = 0; i < parts.length; i++) {
+              const alt = (_a2 = parts[i]) == null ? void 0 : _a2.trim();
+              if (alt && alt.toLowerCase() !== title.toLowerCase()) {
+                additionalTitles.push(alt);
+              }
+            }
+          } else if (/^source\s*:/i.test(text)) {
+            const rawSource = text.replace(/^source\s*:\s*/i, "").trim();
+            if (rawSource) {
+              source = rawSource;
+            }
+          }
+        });
+        const $desc = $(".desc-text, #tab-description, [itemprop='description']").first();
+        let summary = "";
+        if ($desc.length > 0) {
+          const $descClone = $desc.clone();
+          $descClone.find("script, style, iframe, .ads").remove();
+          const rawDescHtml = (_c = (_b = $descClone.html()) != null ? _b : $descClone.text()) != null ? _c : "";
+          const withLineBreaks = rawDescHtml.replace(/<br\s*\/?>/gi, "\n").replace(/<\/p>/gi, "\n\n").replace(/<[^>]+>/g, " ");
+          summary = (0, preferences_js_1.decodeHtmlEntities)(withLineBreaks);
+        }
+        if (!summary) {
+          summary = (0, preferences_js_1.decodeHtmlEntities)($("meta[name='description']").attr("content")) || constants_js_1.DEFAULT_SYNOPSIS_FALLBACK;
+        }
+        let ratingValue;
+        const rawScore = $("[itemprop='ratingValue']").first().text().trim() || ((_d = $("#rateVal").attr("value")) == null ? void 0 : _d.trim()) || ((_e = $("#rating").attr("data-score")) == null ? void 0 : _e.trim());
+        if (rawScore) {
+          const parsedScore = parseFloat(rawScore);
+          if (Number.isFinite(parsedScore) && parsedScore > 0) {
+            ratingValue = parsedScore;
+          }
+        }
+        const numericNovelId = extractNumericNovelId($, html);
+        const onPageChapters = parseOnPageChapters($, id);
+        const $relatedScope = $(".list-side .row, .col-truyen-side .row, .related-novels .item");
+        const relatedItems = $relatedScope.length > 0 ? parseNovelCards($, $relatedScope) : [];
+        return {
+          id,
+          numericNovelId,
+          title,
+          additionalTitles,
+          coverImage,
+          webUrl: (0, api_js_1.buildNovelUrl)(id),
+          authors,
+          genres,
+          source,
+          status,
+          summary,
+          ratingValue,
+          contentRating: (0, api_js_1.detectContentRating)(genres),
+          onPageChapters,
+          relatedItems
+        };
+      }
+      function mapDetailToContent(detail, prefs) {
+        const credits = detail.authors.map((authorName) => ({
+          name: authorName,
+          role: "Author"
+        }));
+        const genreTags = detail.genres.map((genreName) => ({
+          id: genreName,
+          title: genreName,
+          rating: (0, api_js_1.detectContentRating)([genreName])
+        }));
+        const properties = [];
+        if (genreTags.length > 0) {
+          properties.push({
+            id: "genres",
+            title: "Genres",
+            tags: genreTags
+          });
+        }
+        const additionalDetails = {
+          Format: "Web Novel"
+        };
+        if (detail.authors.length > 0) {
+          additionalDetails["Author"] = detail.authors.join(", ");
+        }
+        if (detail.source) {
+          additionalDetails["Source"] = detail.source;
+        }
+        const collections = [];
+        if (detail.relatedItems.length > 0) {
+          const filteredRelated = filterAndMapNovelCards(detail.relatedItems, prefs);
+          if (filteredRelated.length > 0) {
+            collections.push({
+              id: "related_novels",
+              title: "Related Novels",
+              items: filteredRelated
+            });
+          }
+        }
+        const content = {
+          title: detail.title,
+          coverImage: detail.coverImage || constants_js_1.FALLBACK_COVER_URL,
+          webUrl: detail.webUrl,
+          rating: detail.contentRating,
+          status: detail.status,
+          contentType: toolchain_1.ContentType.NOVEL,
+          readingMode: toolchain_1.ReadingMode.VERTICAL,
+          summary: detail.summary || constants_js_1.DEFAULT_SYNOPSIS_FALLBACK,
+          additionalDetails,
+          ...detail.additionalTitles.length > 0 ? { additionalTitles: detail.additionalTitles } : {},
+          ...credits.length > 0 ? { credits } : {},
+          ...genreTags.length > 0 ? { genres: genreTags } : {},
+          ...properties.length > 0 ? { properties } : {},
+          ...collections.length > 0 ? { collections } : {},
+          ...detail.ratingValue !== void 0 ? { statistics: { rating: detail.ratingValue } } : {}
+        };
+        return content;
+      }
+      function normalizeTypographyAndEntities(html) {
+        return html.replace(/&nbsp;|\u00a0|&#160;|&#xa0;/gi, " ").replace(/&rsquo;|&lsquo;|&#8217;|&#8216;|&#x2019;|&#x2018;|\u2019|\u2018/gi, "'").replace(/&rdquo;|&ldquo;|&#8221;|&#8220;|&#x201d;|&#x201c;|\u201d|\u201c/gi, '"').replace(/&hellip;|&#8230;|&#x2026;|\u2026/gi, "...").replace(/&mdash;|&#8212;|&#x2014;|\u2014/gi, "\u2014").replace(/&ndash;|&#8211;|&#x2013;|\u2013/gi, "\u2013");
+      }
+      function formatTranslatorNotes(textOrHtml) {
+        return textOrHtml.replace(constants_js_1.TLN_BRACKET_REGEX, (_match, noteBody) => `> \u{1F4A1} **Translator Note:** ${noteBody.trim()}`);
+      }
+      function stripAggregatorWatermarks(textOrHtml) {
+        let cleaned = textOrHtml;
+        for (let i = 0, len = constants_js_1.WATERMARK_PATTERNS.length; i < len; i++) {
+          const pattern = constants_js_1.WATERMARK_PATTERNS[i];
+          cleaned = cleaned.replace(pattern, "");
+        }
+        return cleaned;
+      }
+      function sanitizeChapterHtml(rawHtml, prefs) {
+        var _a, _b;
+        if (!rawHtml || typeof rawHtml !== "string") {
+          return "<p>No chapter text available.</p>";
+        }
+        const sanitizeAds = (prefs == null ? void 0 : prefs.sanitizeAds) !== false;
+        const formatTln = (prefs == null ? void 0 : prefs.formatTln) !== false;
+        const normalizeSpacing = (prefs == null ? void 0 : prefs.normalizeSpacing) !== false;
+        const withoutComments = rawHtml.replace(/<!--[\s\S]*?-->/g, "");
+        const $ = cheerio.load(withoutComments);
+        let $container = $("div#chapter-content, #chapter-content, div.chapter-c, .chapter-c").first();
+        if ($container.length === 0) {
+          $container = $("#chr-content, .chr-c, .chapter-content").first();
+        }
+        if ($container.length === 0) {
+          $container = $("body");
+        }
+        $container.find("script, style, iframe, noscript, object, embed, form, input, button").remove();
+        if (sanitizeAds) {
+          $container.find(".ads, .ads-holder, .ads-content, .ad, ins, div[align='center'], [class*='ads-'], [id*='ads-']").remove();
+          $container.find("a").each((_i, el) => {
+            var _a2;
+            const $a = $(el);
+            const href = ((_a2 = $a.attr("href")) != null ? _a2 : "").trim();
+            const text = $a.text().trim();
+            if (constants_js_1.PROMO_LINK_HREF_REGEX.test(href) || constants_js_1.PROMO_LINK_HREF_REGEX.test(text) || /\b(?:patreon|discord|paypal|ko-fi|novelfull)\b/i.test(text)) {
+              $a.remove();
+            }
+          });
+        }
+        let bodyHtml = (_b = (_a = $container.html()) != null ? _a : $container.text()) != null ? _b : "";
+        bodyHtml = bodyHtml.replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+        if (sanitizeAds) {
+          bodyHtml = stripAggregatorWatermarks(bodyHtml);
+        }
+        if (normalizeSpacing) {
+          bodyHtml = normalizeTypographyAndEntities(bodyHtml);
+        }
+        if (formatTln) {
+          bodyHtml = formatTranslatorNotes(bodyHtml);
+        }
+        if (normalizeSpacing) {
+          bodyHtml = bodyHtml.replace(/(?:<br\s*\/?>\s*){2,}/gi, "</p>\n\n<p>").replace(/<br\s*\/?>/gi, "<br>");
+          bodyHtml = bodyHtml.replace(/<p\b[^>]*>/gi, "<p>").replace(/<div\b[^>]*>/gi, "<p>").replace(/<\/div>/gi, "</p>");
+          bodyHtml = bodyHtml.replace(/<p>\s*<p>/gi, "<p>").replace(/<\/p>\s*<\/p>/gi, "</p>").replace(/<p>(?:\s|&nbsp;|\u00a0|<br>)*<\/p>/gi, "");
+          const $clean = cheerio.load(`<div id="nf-root">${bodyHtml}</div>`);
+          const paragraphs = [];
+          const $pNodes = $clean("#nf-root p");
+          if ($pNodes.length > 0) {
+            $pNodes.each((_i, pEl) => {
+              var _a2;
+              const inner = ((_a2 = $clean(pEl).html()) != null ? _a2 : "").trim();
+              const textOnly = $clean(pEl).text().trim();
+              if (inner && textOnly) {
+                paragraphs.push(`<p>${inner}</p>`);
+              }
+            });
+          } else {
+            const blocks = bodyHtml.split(/\r?\n\s*\r?\n|\r?\n/).map((line) => line.trim()).filter((line) => line.length > 0);
+            for (let i = 0; i < blocks.length; i++) {
+              const b = blocks[i];
+              paragraphs.push(b.startsWith("<p>") ? b : `<p>${b}</p>`);
+            }
+          }
+          if (paragraphs.length > 0) {
+            bodyHtml = normalizeTypographyAndEntities(paragraphs.join("\n\n"));
+          } else {
+            bodyHtml = normalizeTypographyAndEntities(bodyHtml.trim());
+          }
+        } else {
+          bodyHtml = bodyHtml.replace(/<p>\s*<\/p>/gi, "").trim();
+        }
+        if (!bodyHtml) {
+          return "<p>No chapter text available.</p>";
+        }
+        return bodyHtml;
+      }
+      var NovelFullScraperClient = class {
+        constructor(client) {
+          __publicField(this, "client");
+          __publicField(this, "novelCache", /* @__PURE__ */ new Map());
+          __publicField(this, "inflightDetailRequests", /* @__PURE__ */ new Map());
+          if (client) {
+            this.client = client;
+            return;
+          }
+          const builder = new toolchain_1.NetworkClientBuilder().setRateLimit(constants_js_1.RATE_LIMIT_PER_SECOND, 1).setTimeout(2e4).setMaxRetries(2);
+          for (const [key, value] of Object.entries(constants_js_1.DEFAULT_HEADERS)) {
+            builder.addHeader(key, value);
+          }
+          builder.addRequestInterceptor(async (request) => {
+            var _a;
+            request.headers = {
+              ...constants_js_1.DEFAULT_HEADERS,
+              ...(_a = request.headers) != null ? _a : {},
+              Referer: constants_js_1.REFERER_URL,
+              Origin: constants_js_1.ORIGIN_URL
+            };
+            return request;
+          });
+          builder.addResponseInterceptor(async (response) => {
+            if (isCloudflareChallenge(response)) {
+              throw new CloudflareError(constants_js_1.CLOUDFLARE_RESOLUTION_URL);
+            }
+            return response;
+          });
+          this.client = builder.build();
+        }
+        async configureImageRequest(request) {
+          var _a;
+          request.headers = {
+            ...constants_js_1.IMAGE_HEADERS,
+            ...(_a = request.headers) != null ? _a : {},
+            Referer: constants_js_1.REFERER_URL,
+            Origin: constants_js_1.ORIGIN_URL
+          };
+          return request;
+        }
+        async fetchHtml(url, headers = constants_js_1.DEFAULT_HEADERS) {
+          let response;
+          try {
+            response = await this.client.get(url, {
+              headers: { ...headers }
+            });
+          } catch (error) {
+            if (error instanceof CloudflareError) {
+              throw error;
+            }
+            const message = error instanceof Error ? error.message : String(error);
+            if (message.toLowerCase().includes("cloudflare") || message.includes("403") || message.includes("503")) {
+              throw new CloudflareError(constants_js_1.CLOUDFLARE_RESOLUTION_URL);
+            }
+            throw new Error(`Network request failed for ${url}: ${message}`);
+          }
+          if (isCloudflareChallenge(response)) {
+            throw new CloudflareError(constants_js_1.CLOUDFLARE_RESOLUTION_URL);
+          }
+          if (response.status < 200 || response.status >= 300) {
+            throw new Error(`NovelFull returned HTTP ${response.status} for ${url}`);
+          }
+          return typeof response.data === "string" ? response.data : "";
+        }
+        /**
+         * Scrapes the multi-shelf home dashboard from `https://novelfull.com` and category feeds concurrently.
+         */
+        async fetchHomeShelves(preloadedPrefs) {
+          const prefs = preloadedPrefs != null ? preloadedPrefs : await (0, preferences_js_1.getUserPreferences)();
+          const [homeHtml, hotHtml, latestHtml, completedHtml, popularHtml] = await Promise.all([
+            this.fetchHtml(constants_js_1.BASE_URL).catch(() => ""),
+            this.fetchHtml((0, api_js_1.buildFeedUrl)(constants_js_1.BROWSE_FEED_KEYS.HOT_NOVEL, 1)).catch(() => ""),
+            this.fetchHtml((0, api_js_1.buildFeedUrl)(constants_js_1.BROWSE_FEED_KEYS.LATEST_RELEASES, 1)).catch(() => ""),
+            this.fetchHtml((0, api_js_1.buildFeedUrl)(constants_js_1.BROWSE_FEED_KEYS.COMPLETED_NOVELS, 1)).catch(() => ""),
+            this.fetchHtml((0, api_js_1.buildFeedUrl)(constants_js_1.BROWSE_FEED_KEYS.MOST_POPULAR, 1)).catch(() => "")
+          ]);
+          let homeSpotlightCards = [];
+          let homeHotCards = [];
+          let homeLatestCards = [];
+          let homeCompletedCards = [];
+          let homePopularCards = [];
+          let allHomeCards = [];
+          if (homeHtml) {
+            const $home = cheerio.load(homeHtml);
+            allHomeCards = parseNovelCards($home);
+            const $spotlightScope = $home("#intro-index, .index-intro, .featured-novel, .spotlight, .carousel");
+            if ($spotlightScope.length > 0) {
+              homeSpotlightCards = parseNovelCards($home, $spotlightScope);
+            }
+            const $hotScope = $home("#intro-index, .hot-novel, .index-intro");
+            if ($hotScope.length > 0) {
+              homeHotCards = parseNovelCards($home, $hotScope);
+            }
+            const $latestScope = $home("#list-index, .list-index, .latest-release, .latest-novel");
+            if ($latestScope.length > 0) {
+              homeLatestCards = parseNovelCards($home, $latestScope);
+            }
+            const $completedScope = $home("#truyen-slide, .MultiCarousel, .completed-novel, .novel-completed");
+            if ($completedScope.length > 0) {
+              homeCompletedCards = parseNovelCards($home, $completedScope);
+            }
+            const $popularScope = $home(".most-popular, .top-novel, .popular-novel");
+            if ($popularScope.length > 0) {
+              homePopularCards = parseNovelCards($home, $popularScope);
+            }
+          }
+          const hotFeedCards = hotHtml ? parseNovelCards(hotHtml) : [];
+          const latestFeedCards = latestHtml ? parseNovelCards(latestHtml) : [];
+          const completedFeedCards = completedHtml ? parseNovelCards(completedHtml) : [];
+          const popularFeedCards = popularHtml ? parseNovelCards(popularHtml) : [];
+          const effectiveHotCards = hotFeedCards.length > 0 ? hotFeedCards : homeHotCards.length > 0 ? homeHotCards : allHomeCards;
+          const effectiveSpotlightCards = homeSpotlightCards.length > 0 ? homeSpotlightCards : effectiveHotCards.slice(0, 10);
+          const effectiveLatestCards = latestFeedCards.length > 0 ? latestFeedCards : homeLatestCards.length > 0 ? homeLatestCards : allHomeCards;
+          const effectiveCompletedCards = completedFeedCards.length > 0 ? completedFeedCards : homeCompletedCards.length > 0 ? homeCompletedCards : allHomeCards;
+          const effectivePopularCards = popularFeedCards.length > 0 ? popularFeedCards : homePopularCards.length > 0 ? homePopularCards : effectiveHotCards;
+          return {
+            spotlight: filterAndMapNovelCards(effectiveSpotlightCards, prefs).slice(0, 10),
+            hotNovels: filterAndMapNovelCards(effectiveHotCards, prefs),
+            latestReleases: filterAndMapNovelCards(effectiveLatestCards, prefs),
+            completedMasterpieces: filterAndMapNovelCards(effectiveCompletedCards, prefs),
+            mostPopular: filterAndMapNovelCards(effectivePopularCards, prefs)
+          };
+        }
+        /**
+         * Fetches a paginated category feed (`Hot Novel`, `Latest Releases`, `Most Popular`, `Completed Novels`).
+         * Guarantees returning `{ items: [] }` on empty results, never `null` or `undefined`.
+         */
+        async fetchFeedItems(feedKey, page = 1, preloadedPrefs, sortBy) {
+          const prefs = preloadedPrefs != null ? preloadedPrefs : await (0, preferences_js_1.getUserPreferences)();
+          const url = (0, api_js_1.buildFeedUrl)(feedKey, page, sortBy);
+          const html = await this.fetchHtml(url);
+          if (!html) {
+            return { items: [], isLastPage: true };
+          }
+          const $ = cheerio.load(html);
+          const rawCards = parseNovelCards($);
+          if (rawCards.length === 0) {
+            return { items: [], isLastPage: true };
+          }
+          const items = filterAndMapNovelCards(rawCards, prefs);
+          const isLastPage = isLastListingPage($, rawCards.length);
+          return {
+            items,
+            isLastPage
+          };
+        }
+        /**
+         * Executes search or filtered browse queries with O(1) blacklist exclusion.
+         * Guarantees returning `{ items: [] }` on empty results, never `null` or `undefined`.
+         */
+        async fetchSearchResults(params, preloadedPrefs) {
+          const prefs = preloadedPrefs != null ? preloadedPrefs : await (0, preferences_js_1.getUserPreferences)();
+          const url = (0, api_js_1.buildSearchUrl)(params);
+          const html = await this.fetchHtml(url);
+          if (!html) {
+            return { items: [], isLastPage: true };
+          }
+          const $ = cheerio.load(html);
+          const rawCards = parseNovelCards($);
+          if (rawCards.length === 0) {
+            return { items: [], isLastPage: true };
+          }
+          const items = filterAndMapNovelCards(rawCards, prefs, params);
+          const isLastPage = isLastListingPage($, rawCards.length);
+          return {
+            items,
+            isLastPage
+          };
+        }
+        /**
+         * Fetches and caches parsed `NovelFullDetail` so back-to-back `getContent` and `getChapters`
+         * calls share the same HTML parse without redundant network requests.
+         */
+        async fetchNovelDetail(contentId) {
+          const slug = (0, api_js_1.extractNovelId)(contentId);
+          if (!slug) {
+            throw new Error("Invalid novel contentId.");
+          }
+          const now = Date.now();
+          const cached = this.novelCache.get(slug);
+          if (cached && now - cached.timestamp < NOVEL_CACHE_TTL_MS) {
+            return cached.detail;
+          }
+          const inflight = this.inflightDetailRequests.get(slug);
+          if (inflight) {
+            return inflight;
+          }
+          const requestPromise = (async () => {
+            const url = (0, api_js_1.buildNovelUrl)(slug);
+            const html = await this.fetchHtml(url);
+            const detail = parseNovelDetail(html, slug);
+            if (this.novelCache.size >= NOVEL_CACHE_MAX_ENTRIES) {
+              const oldestKey = this.novelCache.keys().next().value;
+              if (oldestKey !== void 0) {
+                this.novelCache.delete(oldestKey);
+              }
+            }
+            this.novelCache.set(slug, {
+              timestamp: Date.now(),
+              detail
+            });
+            return detail;
+          })();
+          this.inflightDetailRequests.set(slug, requestPromise);
+          try {
+            return await requestPromise;
+          } finally {
+            this.inflightDetailRequests.delete(slug);
+          }
+        }
+        /**
+         * Fetches full `Content` details for a novel.
+         */
+        async fetchContent(contentId) {
+          const [prefs, detail] = await Promise.all([
+            (0, preferences_js_1.getUserPreferences)(),
+            this.fetchNovelDetail(contentId)
+          ]);
+          return mapDetailToContent(detail, prefs);
+        }
+        /**
+         * High-velocity 1-pass chapter list loader:
+         * 1. Extracts numeric `novelId` from `div#rating[data-novel-id]` on the novel page (using cache if available).
+         * 2. Issues a single AJAX GET request to `https://novelfull.com/ajax-chapter-option?novelId=${novelId}`.
+         * 3. Falls back to the on-page `.list-chapter` table if `novelId` is missing or the AJAX call fails.
+         */
+        async fetchChapters(contentId) {
+          const slug = (0, api_js_1.extractNovelId)(contentId);
+          const detail = await this.fetchNovelDetail(slug);
+          if (detail.numericNovelId) {
+            try {
+              const ajaxUrl = (0, api_js_1.buildAjaxChapterUrl)(detail.numericNovelId);
+              const ajaxHtml = await this.fetchHtml(ajaxUrl, constants_js_1.AJAX_HEADERS);
+              const ajaxEntries = parseAjaxChapterOptions(ajaxHtml, slug);
+              if (ajaxEntries.length > 0) {
+                return mapChapterEntriesToChapters(ajaxEntries, slug);
+              }
+            } catch (error) {
+              if (error instanceof CloudflareError) {
+                throw error;
+              }
+            }
+          }
+          return mapChapterEntriesToChapters(detail.onPageChapters, slug);
+        }
+        /**
+         * Fetches and sanitizes a novel chapter's HTML text from `https://novelfull.com/${contentId}/${chapterId}.html`.
+         */
+        async fetchChapterText(contentId, chapterId) {
+          const url = (0, api_js_1.buildChapterUrl)(contentId, chapterId);
+          const [prefs, html] = await Promise.all([
+            (0, preferences_js_1.getUserPreferences)(),
+            this.fetchHtml(url)
+          ]);
+          const body = sanitizeChapterHtml(html, prefs);
+          return {
+            format: toolchain_1.SourceChapterTextFormat.HTML,
+            body,
+            resources: []
+          };
+        }
+      };
+      exports.NovelFullScraperClient = NovelFullScraperClient;
+    }
+  });
+
+  // __temp__/runners/novelfull/index.js
+  var require_novelfull = __commonJS({
+    "__temp__/runners/novelfull/index.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.Target = exports.stripAggregatorWatermarks = exports.sanitizeChapterHtml = exports.parseNovelDetail = exports.parseNovelCards = exports.parseAjaxChapterOptions = exports.normalizeTypographyAndEntities = exports.normalizeImageUrl = exports.mapCardToItem = exports.isNovelAllowed = exports.formatTranslatorNotes = exports.filterAndMapNovelCards = exports.extractCoverFromElement = exports.compileBlacklistContext = exports.canResolveNovelFullUrl = void 0;
+      var toolchain_1 = require_dist();
+      var api_js_1 = require_api();
+      Object.defineProperty(exports, "canResolveNovelFullUrl", { enumerable: true, get: function() {
+        return api_js_1.canResolveNovelFullUrl;
+      } });
+      Object.defineProperty(exports, "normalizeImageUrl", { enumerable: true, get: function() {
+        return api_js_1.normalizeImageUrl;
+      } });
+      var constants_js_1 = require_constants();
+      var filters_js_1 = require_filters();
+      var preferences_js_1 = require_preferences();
+      Object.defineProperty(exports, "compileBlacklistContext", { enumerable: true, get: function() {
+        return preferences_js_1.compileBlacklistContext;
+      } });
+      Object.defineProperty(exports, "isNovelAllowed", { enumerable: true, get: function() {
+        return preferences_js_1.isNovelAllowed;
+      } });
+      var scraper_js_1 = require_scraper();
+      Object.defineProperty(exports, "extractCoverFromElement", { enumerable: true, get: function() {
+        return scraper_js_1.extractCoverFromElement;
+      } });
+      Object.defineProperty(exports, "filterAndMapNovelCards", { enumerable: true, get: function() {
+        return scraper_js_1.filterAndMapNovelCards;
+      } });
+      Object.defineProperty(exports, "formatTranslatorNotes", { enumerable: true, get: function() {
+        return scraper_js_1.formatTranslatorNotes;
+      } });
+      Object.defineProperty(exports, "mapCardToItem", { enumerable: true, get: function() {
+        return scraper_js_1.mapCardToItem;
+      } });
+      Object.defineProperty(exports, "normalizeTypographyAndEntities", { enumerable: true, get: function() {
+        return scraper_js_1.normalizeTypographyAndEntities;
+      } });
+      Object.defineProperty(exports, "parseAjaxChapterOptions", { enumerable: true, get: function() {
+        return scraper_js_1.parseAjaxChapterOptions;
+      } });
+      Object.defineProperty(exports, "parseNovelCards", { enumerable: true, get: function() {
+        return scraper_js_1.parseNovelCards;
+      } });
+      Object.defineProperty(exports, "parseNovelDetail", { enumerable: true, get: function() {
+        return scraper_js_1.parseNovelDetail;
+      } });
+      Object.defineProperty(exports, "sanitizeChapterHtml", { enumerable: true, get: function() {
+        return scraper_js_1.sanitizeChapterHtml;
+      } });
+      Object.defineProperty(exports, "stripAggregatorWatermarks", { enumerable: true, get: function() {
+        return scraper_js_1.stripAggregatorWatermarks;
+      } });
+      var SPOTLIGHT_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.HOT_NOVEL }, "Hot Novel");
+      var HOT_NOVELS_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.HOT_NOVEL }, "Hot Novels");
+      var LATEST_RELEASES_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.LATEST_RELEASES }, "Latest Releases");
+      var COMPLETED_MASTERPIECES_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.COMPLETED_NOVELS }, "Completed Masterpieces");
+      var MOST_POPULAR_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.MOST_POPULAR }, "Most Popular All-Time");
+      var STATIC_CUSTOM_FEEDS = [
+        {
+          id: constants_js_1.BROWSE_FEED_KEYS.DISCOVER,
+          title: "Discover",
+          content: {
+            page: "home"
+          }
+        },
+        {
+          id: constants_js_1.BROWSE_FEED_KEYS.HOT_NOVEL,
+          title: "Hot Novel",
+          content: {
+            list: {
+              key: constants_js_1.BROWSE_FEED_KEYS.HOT_NOVEL
+            }
+          }
+        },
+        {
+          id: constants_js_1.BROWSE_FEED_KEYS.LATEST_RELEASES,
+          title: "Latest Releases",
+          content: {
+            list: {
+              key: constants_js_1.BROWSE_FEED_KEYS.LATEST_RELEASES
+            }
+          }
+        },
+        {
+          id: constants_js_1.BROWSE_FEED_KEYS.MOST_POPULAR,
+          title: "Most Popular",
+          content: {
+            list: {
+              key: constants_js_1.BROWSE_FEED_KEYS.MOST_POPULAR
+            }
+          }
+        },
+        {
+          id: constants_js_1.BROWSE_FEED_KEYS.COMPLETED_NOVELS,
+          title: "Completed Novels",
+          content: {
+            list: {
+              key: constants_js_1.BROWSE_FEED_KEYS.COMPLETED_NOVELS
+            }
+          }
+        }
+      ];
+      var _Target = class _Target {
+        constructor(scraper) {
+          __publicField(this, "info", _Target.info);
+          __publicField(this, "scraper");
+          __publicField(this, "parseNovelCards", scraper_js_1.parseNovelCards);
+          __publicField(this, "parseNovelDetail", scraper_js_1.parseNovelDetail);
+          __publicField(this, "parseAjaxChapterOptions", scraper_js_1.parseAjaxChapterOptions);
+          __publicField(this, "sanitizeChapterHtml", scraper_js_1.sanitizeChapterHtml);
+          __publicField(this, "filterAndMapNovelCards", scraper_js_1.filterAndMapNovelCards);
+          __publicField(this, "compileBlacklistContext", preferences_js_1.compileBlacklistContext);
+          __publicField(this, "isNovelAllowed", preferences_js_1.isNovelAllowed);
+          __publicField(this, "cachedHomeSections", null);
+          this.scraper = scraper instanceof scraper_js_1.NovelFullScraperClient ? scraper : new scraper_js_1.NovelFullScraperClient();
+        }
+        getConfiguration() {
+          return constants_js_1.STATIC_CONFIGURATION;
+        }
+        async willRequestImage(request) {
+          return this.scraper.configureImageRequest(request);
+        }
+        // =========================================================================
+        // HomeProvider
+        // =========================================================================
+        async getHomePage() {
+          const homeSections = await this.getItemPage("home", 1);
+          return {
+            feeds: STATIC_CUSTOM_FEEDS,
+            sections: homeSections.sections,
+            isLastPage: homeSections.isLastPage
+          };
+        }
+        async getItemPage(key, page) {
+          if (page > 1 && key === "home") {
+            return {
+              sections: [],
+              isLastPage: true
+            };
+          }
+          const now = Date.now();
+          if (this.cachedHomeSections && now - this.cachedHomeSections.timestamp < 1e4) {
+            return this.cachedHomeSections.data;
+          }
+          const prefs = await (0, preferences_js_1.getUserPreferences)();
+          const shelves = await this.scraper.fetchHomeShelves(prefs);
+          const sections = [
+            {
+              id: constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT,
+              title: "Spotlight",
+              subtitle: "Featured & top-trending web novels on NovelFull",
+              style: toolchain_1.PageSectionStyle.BANNER,
+              ...shelves.spotlight.length > 0 ? { items: shelves.spotlight } : {},
+              destination: SPOTLIGHT_DESTINATION
+            },
+            {
+              id: constants_js_1.HOME_SECTION_KEYS.HOT_NOVELS,
+              title: "Hot Novels",
+              subtitle: "High-momentum web novels trending right now",
+              style: toolchain_1.PageSectionStyle.DEFAULT,
+              ...shelves.hotNovels.length > 0 ? { items: shelves.hotNovels } : {},
+              destination: HOT_NOVELS_DESTINATION
+            },
+            {
+              id: constants_js_1.HOME_SECTION_KEYS.LATEST_RELEASES,
+              title: "Latest Releases",
+              subtitle: "Newly updated chapters across all ongoing series",
+              style: toolchain_1.PageSectionStyle.DEFAULT,
+              ...shelves.latestReleases.length > 0 ? { items: shelves.latestReleases } : {},
+              destination: LATEST_RELEASES_DESTINATION
+            },
+            {
+              id: constants_js_1.HOME_SECTION_KEYS.COMPLETED_MASTERPIECES,
+              title: "Completed Masterpieces",
+              subtitle: "Fully translated, binge-ready completed web novels",
+              style: toolchain_1.PageSectionStyle.DEFAULT,
+              ...shelves.completedMasterpieces.length > 0 ? { items: shelves.completedMasterpieces } : {},
+              destination: COMPLETED_MASTERPIECES_DESTINATION
+            },
+            {
+              id: constants_js_1.HOME_SECTION_KEYS.MOST_POPULAR,
+              title: "Most Popular All-Time",
+              subtitle: "All-time highest traffic web novels on NovelFull",
+              style: toolchain_1.PageSectionStyle.DEFAULT,
+              ...shelves.mostPopular.length > 0 ? { items: shelves.mostPopular } : {},
+              destination: MOST_POPULAR_DESTINATION
+            }
+          ];
+          const response = {
+            sections,
+            isLastPage: true
+          };
+          this.cachedHomeSections = { timestamp: now, data: response };
+          return response;
+        }
+        async getPageSectionItems(sectionKey, _pageKey) {
+          const prefs = await (0, preferences_js_1.getUserPreferences)();
+          const res = await this.scraper.fetchFeedItems(sectionKey, 1, prefs);
+          return res.items;
+        }
+        // =========================================================================
+        // DirectoryHandler
+        // =========================================================================
+        async getCustomFeeds() {
+          return STATIC_CUSTOM_FEEDS;
+        }
+        async getItemList(request, page) {
+          var _a, _b, _c, _d, _e;
+          const key = (_a = request.key) != null ? _a : constants_js_1.BROWSE_FEED_KEYS.HOT_NOVEL;
+          const sortBy = (_b = request.sort) == null ? void 0 : _b.key;
+          if (key.toLowerCase() === constants_js_1.BROWSE_FEED_KEYS.DISCOVER && !sortBy && page === 1) {
+            const home = await this.getHomePage();
+            const sections = (_c = home.sections) != null ? _c : [];
+            const combined = [];
+            const seen = /* @__PURE__ */ new Set();
+            for (let i = 0; i < sections.length; i++) {
+              const secItems = (_e = (_d = sections[i]) == null ? void 0 : _d.items) != null ? _e : [];
+              for (let j = 0; j < secItems.length; j++) {
+                const it = secItems[j];
+                if (it && !seen.has(it.id)) {
+                  seen.add(it.id);
+                  combined.push(it);
+                }
+              }
+            }
+            if (combined.length > 0) {
+              return {
+                items: combined,
+                isLastPage: false
+              };
+            }
+          }
+          const prefs = await (0, preferences_js_1.getUserPreferences)();
+          return this.scraper.fetchFeedItems(key, page, prefs, sortBy);
+        }
+        // =========================================================================
+        // Searchable & Filterable
+        // =========================================================================
+        async getSearchFilters() {
+          return (0, filters_js_1.getSearchFilters)();
+        }
+        async getSortOptions() {
+          return (0, filters_js_1.getSortOptions)();
+        }
+        async getSearchResults(request, page) {
+          const exploreParams = (0, filters_js_1.mapFiltersToExploreParams)(request.filters, request.sort, request.query, page);
+          const prefs = await (0, preferences_js_1.getUserPreferences)();
+          return this.scraper.fetchSearchResults(exploreParams, prefs);
+        }
+        // =========================================================================
+        // ContentResolver
+        // =========================================================================
+        canResolveUrl(url) {
+          return (0, api_js_1.canResolveNovelFullUrl)(url);
+        }
+        async resolveUrl(url) {
+          return this.getContent(url);
+        }
+        async getContent(contentId) {
+          return this.scraper.fetchContent(contentId);
+        }
+        // =========================================================================
+        // NovelChapterProvider (100% Text Runner — No getChapterPages)
+        // =========================================================================
+        async getChapters(contentId) {
+          return this.scraper.fetchChapters(contentId);
+        }
+        async getChapterText(contentId, chapterId) {
+          return this.scraper.fetchChapterText(contentId, chapterId);
+        }
+        // =========================================================================
+        // PreferenceProvider
+        // =========================================================================
+        async getSettingsPage() {
+          return (0, preferences_js_1.buildSettingsForm)();
+        }
+        async getPreferenceMenu() {
+          return (0, preferences_js_1.buildSettingsForm)();
+        }
+        async onFormSubmitted(_id, data) {
+          this.cachedHomeSections = null;
+          await (0, preferences_js_1.updateUserPreferences)(data);
+        }
+      };
+      __publicField(_Target, "info", {
+        id: constants_js_1.SOURCE_ID,
+        name: constants_js_1.SOURCE_NAME,
+        version: constants_js_1.SOURCE_VERSION,
+        website: constants_js_1.BASE_URL,
+        rating: constants_js_1.SOURCE_CONTENT_RATING,
+        thumbnail: constants_js_1.THUMBNAIL_FILENAME,
+        languages: [...constants_js_1.SOURCE_LANGUAGES]
+      });
+      __publicField(_Target, "parseNovelCards", scraper_js_1.parseNovelCards);
+      __publicField(_Target, "parseNovelDetail", scraper_js_1.parseNovelDetail);
+      __publicField(_Target, "parseAjaxChapterOptions", scraper_js_1.parseAjaxChapterOptions);
+      __publicField(_Target, "sanitizeChapterHtml", scraper_js_1.sanitizeChapterHtml);
+      __publicField(_Target, "filterAndMapNovelCards", scraper_js_1.filterAndMapNovelCards);
+      __publicField(_Target, "compileBlacklistContext", preferences_js_1.compileBlacklistContext);
+      __publicField(_Target, "isNovelAllowed", preferences_js_1.isNovelAllowed);
+      var Target = _Target;
+      exports.default = Target;
+      exports.Target = Target;
+      Target.info.version = constants_js_1.SOURCE_VERSION;
+    }
+  });
+
+  // __temp__/sources/org.novelfull/index.js
+  var require_org = __commonJS({
+    "__temp__/sources/org.novelfull/index.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        var desc = Object.getOwnPropertyDescriptor(m, k);
+        if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+          desc = { enumerable: true, get: function() {
+            return m[k];
+          } };
+        }
+        Object.defineProperty(o, k2, desc);
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        o[k2] = m[k];
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
+        Object.defineProperty(o, "default", { enumerable: true, value: v });
+      }) : function(o, v) {
+        o["default"] = v;
+      });
+      var __importStar = exports && exports.__importStar || /* @__PURE__ */ (function() {
+        var ownKeys = function(o) {
+          ownKeys = Object.getOwnPropertyNames || function(o2) {
+            var ar = [];
+            for (var k in o2) if (Object.prototype.hasOwnProperty.call(o2, k)) ar[ar.length] = k;
+            return ar;
+          };
+          return ownKeys(o);
+        };
+        return function(mod) {
+          if (mod && mod.__esModule) return mod;
+          var result = {};
+          if (mod != null) {
+            for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+          }
+          __setModuleDefault(result, mod);
+          return result;
+        };
+      })();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.stripAggregatorWatermarks = exports.sanitizeChapterHtml = exports.parseNovelDetail = exports.parseNovelCards = exports.parseAjaxChapterOptions = exports.normalizeTypographyAndEntities = exports.normalizeImageUrl = exports.mapCardToItem = exports.isNovelAllowed = exports.formatTranslatorNotes = exports.filterAndMapNovelCards = exports.extractCoverFromElement = exports.compileBlacklistContext = exports.canResolveNovelFullUrl = exports.Target = void 0;
+      var index_js_1 = __importStar(require_novelfull());
+      exports.Target = index_js_1.default;
+      Object.defineProperty(exports, "canResolveNovelFullUrl", { enumerable: true, get: function() {
+        return index_js_1.canResolveNovelFullUrl;
+      } });
+      Object.defineProperty(exports, "compileBlacklistContext", { enumerable: true, get: function() {
+        return index_js_1.compileBlacklistContext;
+      } });
+      Object.defineProperty(exports, "extractCoverFromElement", { enumerable: true, get: function() {
+        return index_js_1.extractCoverFromElement;
+      } });
+      Object.defineProperty(exports, "filterAndMapNovelCards", { enumerable: true, get: function() {
+        return index_js_1.filterAndMapNovelCards;
+      } });
+      Object.defineProperty(exports, "formatTranslatorNotes", { enumerable: true, get: function() {
+        return index_js_1.formatTranslatorNotes;
+      } });
+      Object.defineProperty(exports, "isNovelAllowed", { enumerable: true, get: function() {
+        return index_js_1.isNovelAllowed;
+      } });
+      Object.defineProperty(exports, "mapCardToItem", { enumerable: true, get: function() {
+        return index_js_1.mapCardToItem;
+      } });
+      Object.defineProperty(exports, "normalizeImageUrl", { enumerable: true, get: function() {
+        return index_js_1.normalizeImageUrl;
+      } });
+      Object.defineProperty(exports, "normalizeTypographyAndEntities", { enumerable: true, get: function() {
+        return index_js_1.normalizeTypographyAndEntities;
+      } });
+      Object.defineProperty(exports, "parseAjaxChapterOptions", { enumerable: true, get: function() {
+        return index_js_1.parseAjaxChapterOptions;
+      } });
+      Object.defineProperty(exports, "parseNovelCards", { enumerable: true, get: function() {
+        return index_js_1.parseNovelCards;
+      } });
+      Object.defineProperty(exports, "parseNovelDetail", { enumerable: true, get: function() {
+        return index_js_1.parseNovelDetail;
+      } });
+      Object.defineProperty(exports, "sanitizeChapterHtml", { enumerable: true, get: function() {
+        return index_js_1.sanitizeChapterHtml;
+      } });
+      Object.defineProperty(exports, "stripAggregatorWatermarks", { enumerable: true, get: function() {
+        return index_js_1.stripAggregatorWatermarks;
+      } });
+      exports.default = index_js_1.default;
+    }
+  });
+
+  // __temp__/wrappers/org.novelfull.js
+  var require_org_novelfull = __commonJS({
+    "__temp__/wrappers/org.novelfull.js"(exports) {
+      init_Buffer();
+      init_process();
+      var runtime = require_runtime();
+      var sourceModule = require_org();
+      var cls = runtime.resolveDefaultExport(sourceModule);
+      exports.SourceMetadata = { "id": "org.novelfull", "name": "NovelFull", "version": 1, "website": "https://novelfull.com", "rating": 0, "thumbnail": "novelfull.png", "languages": ["en"] };
+      exports.SourceConfiguration = null;
+      exports.bootstrap = function bootstrap() {
+        var args = null;
+        return runtime.instantiateSource(cls, args ? { args } : void 0);
+      };
+    }
+  });
+  return require_org_novelfull();
+})();

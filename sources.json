@@ -1,6 +1,6 @@
 {
   "catalogVersion": 2,
-  "generatedAt": "2026-10-21T20:07:14.911Z",
+  "generatedAt": "2026-10-21T23:02:45.535Z",
   "listName": "Atsumaru Source",
   "sources": [
     {
@@ -37,6 +37,21 @@
       "path": "org.imhentai",
       "variantId": "org.imhentai",
       "sourceId": "org.imhentai",
+      "environment": "jsc"
+    },
+    {
+      "id": "org.novelfull",
+      "name": "NovelFull",
+      "version": 1,
+      "website": "https://novelfull.com",
+      "rating": 0,
+      "thumbnail": "novelfull.png",
+      "languages": [
+        "en"
+      ],
+      "path": "org.novelfull",
+      "variantId": "org.novelfull",
+      "sourceId": "org.novelfull",
       "environment": "jsc"
     }
   ]
