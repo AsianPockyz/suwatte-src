@@ -833,14 +833,14 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.EXTENSION_CODE_MAP = exports.IMHENTAI_POPULAR_PARODIES = exports.IMHENTAI_TAGS = exports.IMHENTAI_FILTER_LANGUAGES = exports.IMHENTAI_SORT_OPTIONS = exports.BROWSE_FEED_DEFINITIONS = exports.BROWSE_FEED_KEYS = exports.HOME_SECTION_KEYS = exports.DEFAULT_TITLE_PREFERENCE = exports.TITLE_PREFERENCE_OPTIONS = exports.HEAVY_TROPE_SYNONYM_MAP = exports.TROPE_SERVER_NEGATIVE_MAP = exports.TROPE_ALIASES = exports.HEAVY_TROPE_OPTIONS = exports.LANGUAGE_QUERY_MAP = exports.DEFAULT_LANGUAGE = exports.LANGUAGE_OPTIONS = exports.CATEGORY_QUERY_MAP = exports.ALL_CATEGORIES = exports.DEFAULT_CATEGORIES = exports.CATEGORY_OPTIONS = exports.PREF_KEYS = exports.SERVER_PREFIX_REGEX = exports.SERVER_FROM_URL_REGEX = exports.VIEW_PATH_REGEX = exports.GALLERY_PATH_REGEX = exports.GALLERY_URL_REGEX = exports.DEFAULT_IMAGE_EXT = exports.DEFAULT_SERVER_ID = exports.RATE_LIMIT_PER_SECOND = exports.STATIC_CONFIGURATION = exports.PAGE_IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.STANDARD_HEADERS = exports.DEFAULT_USER_AGENT = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_RESOLUTION_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.SOURCE_CONTENT_RATING = exports.SOURCE_LANGUAGES = exports.SOURCE_ENVIRONMENT = exports.THUMBNAIL_FILENAME = exports.VARIANT_ID = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = exports.ContentRating = void 0;
+      exports.EXTENSION_CODE_MAP = exports.IMHENTAI_POPULAR_PARODIES = exports.IMHENTAI_TAGS = exports.IMHENTAI_FILTER_LANGUAGES = exports.SEARCH_CATEGORY_OPTIONS = exports.IMHENTAI_SORT_OPTIONS = exports.BROWSE_FEED_DEFINITIONS = exports.BROWSE_FEED_KEYS = exports.HOME_SECTION_KEYS = exports.DEFAULT_TITLE_PREFERENCE = exports.TITLE_PREFERENCE_OPTIONS = exports.HEAVY_TROPE_SYNONYM_MAP = exports.TROPE_SERVER_NEGATIVE_MAP = exports.TROPE_ALIASES = exports.HEAVY_TROPE_OPTIONS = exports.LANGUAGE_QUERY_MAP = exports.DEFAULT_LANGUAGE = exports.LANGUAGE_OPTIONS = exports.CATEGORY_QUERY_MAP = exports.ALL_CATEGORIES = exports.DEFAULT_CATEGORIES = exports.CATEGORY_OPTIONS = exports.PREF_KEYS = exports.SERVER_PREFIX_REGEX = exports.SERVER_FROM_URL_REGEX = exports.VIEW_PATH_REGEX = exports.GALLERY_PATH_REGEX = exports.GALLERY_URL_REGEX = exports.DEFAULT_IMAGE_EXT = exports.DEFAULT_SERVER_ID = exports.RATE_LIMIT_PER_SECOND = exports.STATIC_CONFIGURATION = exports.PAGE_IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.STANDARD_HEADERS = exports.DEFAULT_USER_AGENT = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_RESOLUTION_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.SOURCE_CONTENT_RATING = exports.SOURCE_LANGUAGES = exports.SOURCE_ENVIRONMENT = exports.THUMBNAIL_FILENAME = exports.VARIANT_ID = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = exports.ContentRating = void 0;
       var toolchain_1 = require_dist();
       require_types2();
       toolchain_1.ContentRating.ADULT = toolchain_1.ContentRating.MATURE;
       exports.ContentRating = toolchain_1.ContentRating;
       exports.SOURCE_ID = "org.imhentai";
       exports.SOURCE_NAME = "IMHentai";
-      exports.SOURCE_VERSION = 1.4;
+      exports.SOURCE_VERSION = 1.5;
       exports.BASE_URL = "https://imhentai.xxx";
       exports.VARIANT_ID = "org.imhentai";
       exports.THUMBNAIL_FILENAME = "imhentai.png";
@@ -888,11 +888,15 @@ var SourcePackage = (() => {
       exports.SERVER_FROM_URL_REGEX = /https?:\/\/m(\d+)\.imhentai\.xxx\/([^/]+)\/(\d+)\//i;
       exports.SERVER_PREFIX_REGEX = /https?:\/\/m(\d+)\.imhentai\.xxx/i;
       exports.PREF_KEYS = {
-        CATEGORIES: "imhentai_pref_categories",
-        LANGUAGE: "imhentai_pref_language",
+        CATEGORIES: "enabled_categories",
+        LANGUAGE: "content_languages",
+        TITLE_PREFERENCE: "title_language_preference",
+        // Legacy aliases
+        LEGACY_CATEGORIES: "imhentai_pref_categories",
+        LEGACY_LANGUAGE: "imhentai_pref_language",
+        LEGACY_TITLE_PREFERENCE: "imhentai_pref_title_preference",
         EXCLUDED_TROPES: "imhentai_pref_excluded_tropes",
         CUSTOM_BLACKLIST: "imhentai_pref_custom_blacklist",
-        TITLE_PREFERENCE: "imhentai_pref_title_preference",
         ALIAS_EXCLUDED_TROPES: "blacklist_heavy_tropes",
         ALIAS_CUSTOM_BLACKLIST: "custom_blacklist_tags"
       };
@@ -1138,11 +1142,17 @@ var SourcePackage = (() => {
         }
       ]);
       exports.IMHENTAI_SORT_OPTIONS = Object.freeze([
-        { id: "latest", title: "Date Added" },
-        { id: "popular", title: "Popularity" },
-        { id: "trending", title: "Trending" },
-        { id: "top_rated", title: "Top Rated" },
-        { id: "title", title: "Title" }
+        { id: "latest", title: "Date Added / Latest" },
+        { id: "popular", title: "Popularity / Most Viewed" },
+        { id: "title", title: "Title / Alphabetical" }
+      ]);
+      exports.SEARCH_CATEGORY_OPTIONS = Object.freeze([
+        { id: "all", title: "All Categories" },
+        { id: "doujinshi", title: "Doujinshi", queryParam: "d" },
+        { id: "manga", title: "Manga", queryParam: "m" },
+        { id: "western", title: "Western", queryParam: "w" },
+        { id: "imageset", title: "Artist CG", queryParam: "i" },
+        { id: "cosplay", title: "Cosplay", queryParam: "c" }
       ]);
       exports.IMHENTAI_FILTER_LANGUAGES = Object.freeze([
         { id: "all", title: "All Languages" },
@@ -1300,7 +1310,7 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.FILTER_IDS = exports.FilterType = void 0;
+      exports.CACHED_SEARCH_FILTERS = exports.CACHED_SORT_OPTIONS = exports.SORT_OPTION_LIST = exports.CATEGORY_PICKER_OPTIONS = exports.FILTER_IDS = exports.FilterType = void 0;
       exports.createTriStateFilter = createTriStateFilter;
       exports.getSearchFilters = getSearchFilters;
       exports.getSortOptions = getSortOptions;
@@ -1315,77 +1325,40 @@ var SourcePackage = (() => {
         FilterType2["TEXT"] = "text";
       })(FilterType || (exports.FilterType = FilterType = {}));
       exports.FILTER_IDS = {
+        CATEGORY: "category",
         CATEGORIES: "categories",
         TAGS: "tags",
         LANGUAGE: "language"
       };
-      var CATEGORY_FILTER_OPTIONS = constants_js_1.CATEGORY_OPTIONS.map((opt) => ({
+      exports.CATEGORY_PICKER_OPTIONS = constants_js_1.SEARCH_CATEGORY_OPTIONS.map((opt) => ({
         id: opt.id,
         title: opt.title
       }));
-      var TAG_FILTER_OPTIONS = constants_js_1.IMHENTAI_TAGS.map((opt) => ({
+      exports.SORT_OPTION_LIST = constants_js_1.IMHENTAI_SORT_OPTIONS.map((opt) => ({
         id: opt.id,
         title: opt.title
       }));
-      var LANGUAGE_FILTER_OPTIONS = constants_js_1.IMHENTAI_FILTER_LANGUAGES.map((opt) => ({
-        id: opt.id,
-        title: opt.title
-      }));
-      var SORT_OPTION_LIST = constants_js_1.IMHENTAI_SORT_OPTIONS.map((opt) => ({
-        id: opt.id,
-        title: opt.title
-      }));
-      var CACHED_SORT_OPTIONS = {
-        options: SORT_OPTION_LIST,
+      exports.CACHED_SORT_OPTIONS = {
+        options: exports.SORT_OPTION_LIST,
         disableOrdering: false
       };
       function createTriStateFilter(id, title, options, subtitle) {
-        const _type = FilterType.TRI_STATE;
-        void _type;
         return (0, toolchain_1.SearchFilter)(id, title, (0, toolchain_1.SelectFilter)(options.map((opt) => ({ id: opt.id, title: opt.title })), true), subtitle);
       }
-      var CACHED_SEARCH_FILTERS = [
-        createTriStateFilter(exports.FILTER_IDS.CATEGORIES, "Categories", CATEGORY_FILTER_OPTIONS, "Tap once to Include (+), twice to Exclude (-)"),
-        createTriStateFilter(exports.FILTER_IDS.TAGS, "Tags & Themes", TAG_FILTER_OPTIONS, "Tap once to Include (+), twice to Exclude (-)"),
-        (0, toolchain_1.SearchFilter)(exports.FILTER_IDS.LANGUAGE, "Language", (0, toolchain_1.PickerFilter)(LANGUAGE_FILTER_OPTIONS), "Filter galleries by translation language")
+      exports.CACHED_SEARCH_FILTERS = [
+        (0, toolchain_1.SearchFilter)(exports.FILTER_IDS.CATEGORY, "Category", (0, toolchain_1.PickerFilter)(exports.CATEGORY_PICKER_OPTIONS), "Select content category")
       ];
       async function getSearchFilters() {
-        return CACHED_SEARCH_FILTERS;
+        return exports.CACHED_SEARCH_FILTERS;
       }
       async function getSortOptions() {
-        return CACHED_SORT_OPTIONS;
+        return exports.CACHED_SORT_OPTIONS;
       }
       function isRecord(value) {
         return typeof value === "object" && value !== null && !Array.isArray(value);
       }
-      function normalizeTriState(value) {
-        if (!isRecord(value)) {
-          return void 0;
-        }
-        const include = [];
-        if (Array.isArray(value.include)) {
-          for (let i = 0, len = value.include.length; i < len; i++) {
-            const s = String(value.include[i]).trim();
-            if (s.length > 0) {
-              include.push(s);
-            }
-          }
-        }
-        const exclude = [];
-        if (Array.isArray(value.exclude)) {
-          for (let i = 0, len = value.exclude.length; i < len; i++) {
-            const s = String(value.exclude[i]).trim();
-            if (s.length > 0) {
-              exclude.push(s);
-            }
-          }
-        }
-        if (include.length === 0 && exclude.length === 0) {
-          return void 0;
-        }
-        return { include, exclude };
-      }
       function mapFiltersToExploreParams(filters, sort, query, page = 1) {
+        var _a;
         const params = {
           query: (query == null ? void 0 : query.trim()) || void 0,
           page
@@ -1394,20 +1367,11 @@ var SourcePackage = (() => {
           params.sortBy = sort.key;
           params.sortAscending = sort.ascending;
         }
-        if (!isRecord(filters)) {
-          return params;
-        }
-        const categories = normalizeTriState(filters[exports.FILTER_IDS.CATEGORIES]);
-        if (categories) {
-          params.categories = categories;
-        }
-        const tags = normalizeTriState(filters[exports.FILTER_IDS.TAGS]);
-        if (tags) {
-          params.tags = tags;
-        }
-        const lang = filters[exports.FILTER_IDS.LANGUAGE];
-        if (typeof lang === "string" && lang.trim().length > 0) {
-          params.language = lang.trim();
+        if (isRecord(filters)) {
+          const rawCategory = (_a = filters[exports.FILTER_IDS.CATEGORY]) != null ? _a : filters[exports.FILTER_IDS.CATEGORIES];
+          if (typeof rawCategory === "string" && rawCategory.trim().length > 0) {
+            params.category = rawCategory.trim().toLowerCase();
+          }
         }
         return params;
       }
@@ -1452,26 +1416,20 @@ var SourcePackage = (() => {
         id: opt.id,
         title: opt.title
       }));
-      var UI_HEAVY_TROPE_OPTIONS = constants_js_1.HEAVY_TROPE_OPTIONS.map((opt) => ({
-        id: opt.id,
-        title: opt.title
-      }));
       var UI_TITLE_PREFERENCE_OPTIONS = constants_js_1.TITLE_PREFERENCE_OPTIONS.map((opt) => ({
         id: opt.id,
         title: opt.title
       }));
       var VALID_CATEGORIES_SET = new Set(constants_js_1.ALL_CATEGORIES);
-      var VALID_TROPES_SET = new Set(constants_js_1.HEAVY_TROPE_OPTIONS.map((t) => t.id));
       var memoryPreferences = {
         categories: [...constants_js_1.DEFAULT_CATEGORIES],
         language: constants_js_1.DEFAULT_LANGUAGE,
+        titlePreference: constants_js_1.DEFAULT_TITLE_PREFERENCE,
         excludedTropes: [],
-        customBlacklist: [],
-        titlePreference: constants_js_1.DEFAULT_TITLE_PREFERENCE
+        customBlacklist: []
       };
       var isHydrated = false;
       var inflightHydration = null;
-      var blacklistContextCache = /* @__PURE__ */ new WeakMap();
       function hasObjectStore() {
         return typeof ObjectStore !== "undefined" && ObjectStore !== null;
       }
@@ -1593,9 +1551,6 @@ var SourcePackage = (() => {
         const lower = raw.trim().toLowerCase();
         if (!lower)
           return null;
-        if (VALID_TROPES_SET.has(lower)) {
-          return lower;
-        }
         if (lower === "netorare" || lower.includes("ntr") || lower.includes("netorare"))
           return "ntr";
         if (lower.includes("futa"))
@@ -1609,7 +1564,7 @@ var SourcePackage = (() => {
         }
         if (lower.includes("snuff"))
           return "snuff";
-        return null;
+        return lower;
       }
       function normalizeTropesList(raw) {
         const list = parseStringList(raw);
@@ -1658,93 +1613,49 @@ var SourcePackage = (() => {
         }
         return Array.from(unique);
       }
-      function buildNegativeSearchTerms(prefs) {
-        var _a, _b, _c;
-        const terms = [];
-        const added = /* @__PURE__ */ new Set();
-        const tropes = (_a = prefs.excludedTropes) != null ? _a : [];
-        for (let i = 0, len = tropes.length; i < len; i++) {
-          const rawTrope = tropes[i];
-          if (!rawTrope)
-            continue;
-          const norm = rawTrope.trim().toLowerCase();
-          const serverNegative = constants_js_1.TROPE_SERVER_NEGATIVE_MAP[norm];
-          if (serverNegative && serverNegative.length > 0) {
-            for (let j = 0; j < serverNegative.length; j++) {
-              const neg = serverNegative[j];
-              if (neg && !added.has(neg)) {
-                added.add(neg);
-                terms.push(neg);
-              }
-            }
-          } else {
-            const clean = norm.replace(/^[-+]/, "").trim();
-            if (clean) {
-              const formatted = clean.includes(" ") ? `-"${clean}"` : `-${clean}`;
-              if (!added.has(formatted)) {
-                added.add(formatted);
-                terms.push(formatted);
-              }
-            }
-          }
-        }
-        const custom = (_b = prefs.customBlacklist) != null ? _b : [];
-        for (let i = 0, len = custom.length; i < len; i++) {
-          let raw = custom[i];
-          if (!raw)
-            continue;
-          let clean = raw.trim().toLowerCase();
-          if (clean.includes(":")) {
-            clean = ((_c = clean.split(":").pop()) == null ? void 0 : _c.trim()) || clean;
-          }
-          clean = clean.replace(/^[-+]/, "").trim();
-          if (!clean)
-            continue;
-          const formatted = clean.includes(" ") ? `-"${clean}"` : `-${clean}`;
-          if (!added.has(formatted)) {
-            added.add(formatted);
-            terms.push(formatted);
-          }
-        }
-        return terms;
+      function buildNegativeSearchTerms(_prefs) {
+        return [];
       }
-      function buildNegativeSearchQuery(prefs) {
-        return buildNegativeSearchTerms(prefs).join(" ");
+      function buildNegativeSearchQuery(_prefs) {
+        return "";
       }
       async function hydratePreferencesFromStore() {
+        var _a, _b;
         if (!hasObjectStore()) {
           isHydrated = true;
           return memoryPreferences;
         }
         try {
-          const [storedCategories, storedLanguage, storedExcludedTropes, storedCustomBlacklist, storedTitlePref, aliasTropes, aliasBlacklist] = await Promise.all([
+          const [storedCategories, legacyCategories, storedLanguage, legacyLanguage, storedTitlePref, legacyTitlePref, legacyTropes, legacyBlacklist] = await Promise.all([
             ObjectStore.get(constants_js_1.PREF_KEYS.CATEGORIES).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.LEGACY_CATEGORIES).catch(() => null),
             ObjectStore.string(constants_js_1.PREF_KEYS.LANGUAGE).catch(() => null),
-            ObjectStore.get(constants_js_1.PREF_KEYS.EXCLUDED_TROPES).catch(() => null),
-            ObjectStore.get(constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST).catch(() => null),
+            ObjectStore.string(constants_js_1.PREF_KEYS.LEGACY_LANGUAGE).catch(() => null),
             ObjectStore.string(constants_js_1.PREF_KEYS.TITLE_PREFERENCE).catch(() => null),
-            ObjectStore.get(constants_js_1.PREF_KEYS.ALIAS_EXCLUDED_TROPES).catch(() => null),
-            ObjectStore.get(constants_js_1.PREF_KEYS.ALIAS_CUSTOM_BLACKLIST).catch(() => null)
+            ObjectStore.string(constants_js_1.PREF_KEYS.LEGACY_TITLE_PREFERENCE).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.EXCLUDED_TROPES).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST).catch(() => null)
           ]);
           let categories = memoryPreferences.categories;
-          if (storedCategories !== null && storedCategories !== void 0) {
-            const parsed = normalizeCategoriesList(storedCategories);
+          const rawCat = storedCategories != null ? storedCategories : legacyCategories;
+          if (rawCat !== null && rawCat !== void 0) {
+            const parsed = normalizeCategoriesList(rawCat);
             if (parsed.length > 0) {
               categories = parsed;
             }
           }
-          const language = storedLanguage !== null && storedLanguage !== void 0 ? normalizeLanguageToken(storedLanguage) : memoryPreferences.language;
-          const rawTropes = storedExcludedTropes !== null && storedExcludedTropes !== void 0 ? storedExcludedTropes : aliasTropes;
-          const excludedTropes = rawTropes !== null && rawTropes !== void 0 ? normalizeTropesList(rawTropes) : memoryPreferences.excludedTropes;
-          const rawCustom = storedCustomBlacklist !== null && storedCustomBlacklist !== void 0 ? storedCustomBlacklist : aliasBlacklist;
-          const customBlacklist = rawCustom !== null && rawCustom !== void 0 ? parseCustomBlacklist(rawCustom) : memoryPreferences.customBlacklist;
-          const titlePreference = storedTitlePref !== null && storedTitlePref !== void 0 ? normalizeTitlePreference(storedTitlePref) : memoryPreferences.titlePreference;
+          const rawLang = storedLanguage != null ? storedLanguage : legacyLanguage;
+          const language = rawLang !== null && rawLang !== void 0 ? normalizeLanguageToken(rawLang) : memoryPreferences.language;
+          const rawTitle = storedTitlePref != null ? storedTitlePref : legacyTitlePref;
+          const titlePreference = rawTitle !== null && rawTitle !== void 0 ? normalizeTitlePreference(rawTitle) : memoryPreferences.titlePreference;
+          const excludedTropes = legacyTropes !== null && legacyTropes !== void 0 ? normalizeTropesList(legacyTropes) : (_a = memoryPreferences.excludedTropes) != null ? _a : [];
+          const customBlacklist = legacyBlacklist !== null && legacyBlacklist !== void 0 ? parseCustomBlacklist(legacyBlacklist) : (_b = memoryPreferences.customBlacklist) != null ? _b : [];
           memoryPreferences = {
             categories,
             language,
+            titlePreference,
             excludedTropes,
-            customBlacklist,
-            titlePreference
+            customBlacklist
           };
         } catch {
         }
@@ -1763,153 +1674,16 @@ var SourcePackage = (() => {
         });
         return inflightHydration;
       }
-      function compileBlacklistContext(prefs, extraExcludedTags) {
-        var _a, _b, _c, _d, _e, _f;
-        const hasExtra = Array.isArray(extraExcludedTags) && extraExcludedTags.length > 0;
-        if (!hasExtra) {
-          const cached = blacklistContextCache.get(prefs);
-          if (cached) {
-            return cached;
-          }
-        }
-        const blacklistSet = /* @__PURE__ */ new Set();
-        const tropes = (_a = prefs.excludedTropes) != null ? _a : [];
-        for (let i = 0, len = tropes.length; i < len; i++) {
-          const tropeId = tropes[i];
-          if (!tropeId)
-            continue;
-          const norm = tropeId.trim().toLowerCase();
-          blacklistSet.add(norm);
-          const synonyms = (_b = constants_js_1.TROPE_ALIASES[norm]) != null ? _b : constants_js_1.HEAVY_TROPE_SYNONYM_MAP.get(norm);
-          if (synonyms) {
-            for (let j = 0, sLen = synonyms.length; j < sLen; j++) {
-              const syn = synonyms[j];
-              if (syn) {
-                blacklistSet.add(syn);
-                blacklistSet.add(syn.replace(/\s+/g, "-"));
-                blacklistSet.add(syn.replace(/-/g, " "));
-              }
-            }
-          }
-        }
-        const custom = (_c = prefs.customBlacklist) != null ? _c : [];
-        for (let i = 0, len = custom.length; i < len; i++) {
-          const rawTag = custom[i];
-          if (!rawTag)
-            continue;
-          const clean = rawTag.trim().toLowerCase();
-          if (!clean)
-            continue;
-          blacklistSet.add(clean);
-          blacklistSet.add(clean.replace(/\s+/g, "-"));
-          blacklistSet.add(clean.replace(/-/g, " "));
-          if (clean.includes(":")) {
-            const stripped = (_d = clean.split(":").pop()) == null ? void 0 : _d.trim();
-            if (stripped) {
-              blacklistSet.add(stripped);
-              blacklistSet.add(stripped.replace(/\s+/g, "-"));
-            }
-          }
-        }
-        if (hasExtra && extraExcludedTags) {
-          for (let i = 0, len = extraExcludedTags.length; i < len; i++) {
-            const rawTag = extraExcludedTags[i];
-            if (!rawTag)
-              continue;
-            const clean = rawTag.trim().toLowerCase();
-            if (!clean)
-              continue;
-            blacklistSet.add(clean);
-            blacklistSet.add(clean.replace(/\s+/g, "-"));
-            blacklistSet.add(clean.replace(/-/g, " "));
-            const synonyms = constants_js_1.HEAVY_TROPE_SYNONYM_MAP.get(clean);
-            if (synonyms) {
-              for (let j = 0, sLen = synonyms.length; j < sLen; j++) {
-                const syn = synonyms[j];
-                if (syn) {
-                  blacklistSet.add(syn);
-                  blacklistSet.add(syn.replace(/\s+/g, "-"));
-                }
-              }
-            }
-          }
-        }
+      function compileBlacklistContext(prefs, _extraExcludedTags) {
+        var _a, _b;
         const allowedCategoriesSet = new Set(prefs.categories && prefs.categories.length > 0 ? prefs.categories : constants_js_1.DEFAULT_CATEGORIES);
-        const blacklistTerms = Array.from(blacklistSet);
-        const compiled = {
-          blacklistSet,
-          blacklistTerms,
-          hasExclusions: blacklistSet.size > 0,
+        return {
           allowedCategoriesSet,
-          language: (_e = prefs.language) != null ? _e : constants_js_1.DEFAULT_LANGUAGE,
-          titlePreference: (_f = prefs.titlePreference) != null ? _f : constants_js_1.DEFAULT_TITLE_PREFERENCE
+          language: (_a = prefs.language) != null ? _a : constants_js_1.DEFAULT_LANGUAGE,
+          titlePreference: (_b = prefs.titlePreference) != null ? _b : constants_js_1.DEFAULT_TITLE_PREFERENCE
         };
-        if (!hasExtra) {
-          blacklistContextCache.set(prefs, compiled);
-        }
-        return compiled;
       }
-      function isCardBlacklisted(card, context, extraExcludedTags) {
-        var _a, _b, _c, _d, _e, _f;
-        if (!context.hasExclusions && (!extraExcludedTags || extraExcludedTags.length === 0)) {
-          return false;
-        }
-        const { blacklistSet, blacklistTerms } = context;
-        const tags = card.tags;
-        if (Array.isArray(tags)) {
-          for (let i = 0, len = tags.length; i < len; i++) {
-            const raw = tags[i];
-            if (!raw)
-              continue;
-            const normalized = raw.trim().toLowerCase();
-            if (!normalized)
-              continue;
-            if (blacklistSet.has(normalized)) {
-              return true;
-            }
-            if (normalized.includes(":")) {
-              const withoutPrefix = (_a = normalized.split(":").pop()) == null ? void 0 : _a.trim();
-              if (withoutPrefix && blacklistSet.has(withoutPrefix)) {
-                return true;
-              }
-            }
-          }
-        }
-        const title = ((_b = card.title) != null ? _b : "").trim().toLowerCase();
-        const jTitle = ((_c = card.japaneseTitle) != null ? _c : "").trim().toLowerCase();
-        const subtitle = ((_d = card.subtitle) != null ? _d : "").trim().toLowerCase();
-        const webUrl = ((_e = card.webUrl) != null ? _e : "").trim().toLowerCase();
-        const combinedText = `${title} ${jTitle} ${subtitle} ${webUrl}`;
-        if (combinedText.trim()) {
-          const tokens = combinedText.split(/[\s,._\-[\]()/\\+:#?&=]+/);
-          for (let i = 0, len = tokens.length; i < len; i++) {
-            const tok = tokens[i];
-            if (tok && blacklistSet.has(tok)) {
-              return true;
-            }
-          }
-          for (let i = 0, len = blacklistTerms.length; i < len; i++) {
-            const term = blacklistTerms[i];
-            if (!term)
-              continue;
-            if (term.includes(" ")) {
-              if (combinedText.includes(term) || combinedText.includes(term.replace(/\s+/g, "-")) || combinedText.includes(term.replace(/\s+/g, "_"))) {
-                return true;
-              }
-            }
-          }
-        }
-        if (Array.isArray(extraExcludedTags) && extraExcludedTags.length > 0) {
-          for (let i = 0, len = extraExcludedTags.length; i < len; i++) {
-            const raw = (_f = extraExcludedTags[i]) == null ? void 0 : _f.trim().toLowerCase();
-            if (!raw)
-              continue;
-            const clean = raw.replace(/^[-+]/, "").trim();
-            if (clean && (blacklistSet.has(clean) || combinedText.includes(clean))) {
-              return true;
-            }
-          }
-        }
+      function isCardBlacklisted(_card, _context, _extraExcludedTags) {
         return false;
       }
       function isCardMatchingLanguage(card, preferredLanguage) {
@@ -1965,37 +1739,7 @@ var SourcePackage = (() => {
         }
         return true;
       }
-      function shouldKeepCard(card, context, options) {
-        var _a, _b, _c;
-        const allowedCategories = (_a = options == null ? void 0 : options.overrideCategories) != null ? _a : context.allowedCategoriesSet;
-        if (allowedCategories && allowedCategories.size > 0) {
-          const cardCat = normalizeCategoryToken(card.category);
-          if (cardCat && !allowedCategories.has(cardCat)) {
-            return false;
-          }
-        }
-        if (context.hasExclusions || (options == null ? void 0 : options.extraExcludedTags) && options.extraExcludedTags.length > 0) {
-          if (isCardBlacklisted(card, context, options == null ? void 0 : options.extraExcludedTags)) {
-            return false;
-          }
-        }
-        const activeLanguage = (_b = options == null ? void 0 : options.overrideLanguage) != null ? _b : context.language;
-        if (activeLanguage && activeLanguage !== "all") {
-          if (!isCardMatchingLanguage(card, activeLanguage)) {
-            return false;
-          }
-        }
-        const reqIncludes = options == null ? void 0 : options.requiredIncludedTags;
-        if (Array.isArray(reqIncludes) && reqIncludes.length > 0) {
-          const cardTagSet = new Set(card.tags.map((t) => t.toLowerCase()));
-          const lowerTitle = card.title.toLowerCase();
-          for (let i = 0, len = reqIncludes.length; i < len; i++) {
-            const req = (_c = reqIncludes[i]) == null ? void 0 : _c.trim().toLowerCase();
-            if (req && !cardTagSet.has(req) && !lowerTitle.includes(req)) {
-              return false;
-            }
-          }
-        }
+      function shouldKeepCard(_card, _context, _options) {
         return true;
       }
       function buildPreferenceQueryFlags(prefs, overrideCategories, overrideLanguage) {
@@ -2040,16 +1784,15 @@ var SourcePackage = (() => {
       }
       async function buildSettingsForm() {
         const prefs = await getUserPreferences();
-        const customBlacklistStr = prefs.customBlacklist.join(", ");
         return {
           sections: [
             {
-              header: "Content & Format Categories",
+              header: "Allowed Categories",
               footer: "Select which content categories to include in browse feeds and search queries (&d=1, &m=1, &w=1, &i=1, &c=1).",
               views: [
                 (0, toolchain_1.UISelect)({
                   id: constants_js_1.PREF_KEYS.CATEGORIES,
-                  title: "Enabled Content Categories",
+                  title: "Allowed Categories",
                   options: UI_CATEGORY_OPTIONS,
                   exclude: false,
                   currentValue: {
@@ -2064,7 +1807,7 @@ var SourcePackage = (() => {
               ]
             },
             {
-              header: "Language Controls",
+              header: "Languages",
               footer: "Filter galleries by preferred translation language (&en=1, &jp=1, &zh=1) or display All Languages.",
               views: [
                 (0, toolchain_1.UIPicker)({
@@ -2077,35 +1820,7 @@ var SourcePackage = (() => {
               ]
             },
             {
-              header: "Content Exclusions / Blacklist",
-              footer: "Silently filter out galleries matching excluded heavy tropes or custom comma-separated tags using O(1) Set lookups.",
-              views: [
-                (0, toolchain_1.UISelect)({
-                  id: constants_js_1.PREF_KEYS.EXCLUDED_TROPES,
-                  title: "Heavy Trope Exclusions",
-                  options: UI_HEAVY_TROPE_OPTIONS,
-                  exclude: false,
-                  currentValue: {
-                    include: prefs.excludedTropes,
-                    exclude: []
-                  },
-                  defaultValue: {
-                    include: [],
-                    exclude: []
-                  }
-                }),
-                (0, toolchain_1.UITextField)({
-                  id: constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST,
-                  title: "Custom Tag Blacklist",
-                  placeholder: "e.g. ugly bastard, mind break, insect",
-                  keyboardType: toolchain_1.UIKeyboardType.ALPHANUMERIC,
-                  currentValue: customBlacklistStr,
-                  defaultValue: ""
-                })
-              ]
-            },
-            {
-              header: "Display Formatting",
+              header: "Title Formatting",
               footer: "Choose whether to display the English title as the primary title (with Japanese in the subtitle) or prioritize the original Japanese title.",
               views: [
                 (0, toolchain_1.UIPicker)({
@@ -2121,63 +1836,55 @@ var SourcePackage = (() => {
         };
       }
       async function updateUserPreferences(data) {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o;
         if (!isRecord(data)) {
           return;
         }
-        let { categories, language, excludedTropes, customBlacklist, titlePreference } = memoryPreferences;
+        let { categories, language, titlePreference, excludedTropes = [], customBlacklist = [] } = memoryPreferences;
         const storeAvailable = hasObjectStore();
         const writeTasks = [];
-        const rawCategories = data[constants_js_1.PREF_KEYS.CATEGORIES];
+        const rawCategories = (_c = (_b = (_a = data[constants_js_1.PREF_KEYS.CATEGORIES]) != null ? _a : data[constants_js_1.PREF_KEYS.LEGACY_CATEGORIES]) != null ? _b : data["enabled_categories"]) != null ? _c : data["categories"];
         if (rawCategories !== void 0 && rawCategories !== null) {
           const parsed = normalizeCategoriesList(rawCategories);
           categories = parsed.length > 0 ? parsed : [...constants_js_1.DEFAULT_CATEGORIES];
           if (storeAvailable) {
             writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.CATEGORIES, categories).catch(() => {
+            }), ObjectStore.set(constants_js_1.PREF_KEYS.LEGACY_CATEGORIES, categories).catch(() => {
             }));
           }
         }
-        const rawLanguage = data[constants_js_1.PREF_KEYS.LANGUAGE];
+        const rawLanguage = (_f = (_e = (_d = data[constants_js_1.PREF_KEYS.LANGUAGE]) != null ? _d : data[constants_js_1.PREF_KEYS.LEGACY_LANGUAGE]) != null ? _e : data["content_languages"]) != null ? _f : data["language"];
         if (typeof rawLanguage === "string") {
           language = normalizeLanguageToken(rawLanguage);
           if (storeAvailable) {
             writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.LANGUAGE, language).catch(() => {
+            }), ObjectStore.set(constants_js_1.PREF_KEYS.LEGACY_LANGUAGE, language).catch(() => {
             }));
           }
         }
-        const rawTropes = (_c = (_b = (_a = data[constants_js_1.PREF_KEYS.EXCLUDED_TROPES]) != null ? _a : data[constants_js_1.PREF_KEYS.ALIAS_EXCLUDED_TROPES]) != null ? _b : data["excluded_tropes"]) != null ? _c : data["heavy_tropes"];
-        if (rawTropes !== void 0 && rawTropes !== null) {
-          excludedTropes = normalizeTropesList(rawTropes);
-          if (storeAvailable) {
-            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.EXCLUDED_TROPES, excludedTropes).catch(() => {
-            }), ObjectStore.set(constants_js_1.PREF_KEYS.ALIAS_EXCLUDED_TROPES, excludedTropes).catch(() => {
-            }));
-          }
-        }
-        const rawCustomBlacklist = (_f = (_e = (_d = data[constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST]) != null ? _d : data[constants_js_1.PREF_KEYS.ALIAS_CUSTOM_BLACKLIST]) != null ? _e : data["custom_blacklist"]) != null ? _f : data["blacklist_tags"];
-        if (rawCustomBlacklist !== void 0 && rawCustomBlacklist !== null) {
-          customBlacklist = parseCustomBlacklist(rawCustomBlacklist);
-          if (storeAvailable) {
-            const valToSave = typeof rawCustomBlacklist === "string" ? rawCustomBlacklist : customBlacklist.join(", ");
-            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST, valToSave).catch(() => {
-            }), ObjectStore.set(constants_js_1.PREF_KEYS.ALIAS_CUSTOM_BLACKLIST, valToSave).catch(() => {
-            }));
-          }
-        }
-        const rawTitlePref = data[constants_js_1.PREF_KEYS.TITLE_PREFERENCE];
+        const rawTitlePref = (_i = (_h = (_g = data[constants_js_1.PREF_KEYS.TITLE_PREFERENCE]) != null ? _g : data[constants_js_1.PREF_KEYS.LEGACY_TITLE_PREFERENCE]) != null ? _h : data["title_language_preference"]) != null ? _i : data["title_preference"];
         if (typeof rawTitlePref === "string") {
           titlePreference = normalizeTitlePreference(rawTitlePref);
           if (storeAvailable) {
             writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.TITLE_PREFERENCE, titlePreference).catch(() => {
+            }), ObjectStore.set(constants_js_1.PREF_KEYS.LEGACY_TITLE_PREFERENCE, titlePreference).catch(() => {
             }));
           }
+        }
+        const rawTropes = (_l = (_k = (_j = data[constants_js_1.PREF_KEYS.EXCLUDED_TROPES]) != null ? _j : data[constants_js_1.PREF_KEYS.ALIAS_EXCLUDED_TROPES]) != null ? _k : data["excluded_tropes"]) != null ? _l : data["heavy_tropes"];
+        if (rawTropes !== void 0 && rawTropes !== null) {
+          excludedTropes = normalizeTropesList(rawTropes);
+        }
+        const rawCustomBlacklist = (_o = (_n = (_m = data[constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST]) != null ? _m : data[constants_js_1.PREF_KEYS.ALIAS_CUSTOM_BLACKLIST]) != null ? _n : data["custom_blacklist"]) != null ? _o : data["blacklist_tags"];
+        if (rawCustomBlacklist !== void 0 && rawCustomBlacklist !== null) {
+          customBlacklist = parseCustomBlacklist(rawCustomBlacklist);
         }
         memoryPreferences = {
           categories,
           language,
+          titlePreference,
           excludedTropes,
-          customBlacklist,
-          titlePreference
+          customBlacklist
         };
         isHydrated = true;
         if (writeTasks.length > 0) {
@@ -3261,9 +2968,11 @@ var SourcePackage = (() => {
           }
         }
         const searchKey = encodeURIComponent(queryParts.join(" ").trim());
-        const sortFlag = params.sortBy === "popular" || params.sortBy === "pp" ? "&lt=0&pp=1" : params.sortBy === "top_rated" ? "&lt=0&pp=1&sort=top_rated" : params.sortBy === "trending" ? "&lt=1&pp=1" : "&lt=1&pp=0";
+        const sortFlag = params.sortBy === "popular" || params.sortBy === "pp" || params.sortBy === "most_viewed" ? "&lt=0&pp=1" : params.sortBy === "top_rated" ? "&lt=0&pp=1&sort=top_rated" : params.sortBy === "trending" ? "&lt=1&pp=1" : "&lt=1&pp=0";
         let overrideCategories;
-        if (params.categories) {
+        if (params.category && params.category !== "all") {
+          overrideCategories = [params.category];
+        } else if (params.categories) {
           const { include, exclude } = params.categories;
           if (include.length > 0) {
             overrideCategories = include;
@@ -3368,6 +3077,7 @@ var SourcePackage = (() => {
       exports.buildChapterPagesFromMeta = buildChapterPagesFromMeta;
       exports.parseChapterPagesFromHtml = parseChapterPagesFromHtml;
       exports.parseGalleryDetail = parseGalleryDetail;
+      exports.parseRelatedGalleryCards = parseRelatedGalleryCards;
       exports.mapDetailToContent = mapDetailToContent;
       exports.buildSingleGalleryChapter = buildSingleGalleryChapter;
       var toolchain_1 = require_dist();
@@ -3702,17 +3412,13 @@ var SourcePackage = (() => {
         });
         return cards;
       }
-      function filterAndMapGalleryCards(cards, prefs, options) {
+      function filterAndMapGalleryCards(cards, prefs, _options) {
         var _a;
-        const context = (0, preferences_js_1.compileBlacklistContext)(prefs, options == null ? void 0 : options.extraExcludedTags);
         const items = [];
         for (let i = 0, len = cards.length; i < len; i++) {
           const card = cards[i];
           if (!card)
             continue;
-          if (!(0, preferences_js_1.shouldKeepCard)(card, context, options)) {
-            continue;
-          }
           const display = (0, preferences_js_1.formatGalleryTitleDisplay)(card.title, card.japaneseTitle, prefs);
           items.push({
             id: card.id,
@@ -3949,6 +3655,15 @@ var SourcePackage = (() => {
               break;
           }
         });
+        const relatedCards = parseRelatedGalleryCards(html);
+        const relatedItems = relatedCards.map((card) => ({
+          id: card.id,
+          title: card.title,
+          subtitle: card.subtitle,
+          coverImage: card.thumbnailUrl,
+          webUrl: card.webUrl,
+          rating: constants_js_1.ContentRating.ADULT
+        }));
         return {
           ...pageMeta,
           totalPages,
@@ -3964,8 +3679,23 @@ var SourcePackage = (() => {
           characters,
           categories,
           languages,
-          tags
+          tags,
+          relatedItems: relatedItems.length > 0 ? relatedItems : void 0
         };
+      }
+      function parseRelatedGalleryCards(html) {
+        if (!html || typeof html !== "string") {
+          return [];
+        }
+        const $ = cheerio.load(html);
+        const container = $(".related_galleries, #related, #related_galleries, .similar_galleries, #similar");
+        if (container.length === 0) {
+          return [];
+        }
+        const containerHtml = container.html();
+        if (!containerHtml)
+          return [];
+        return parseGalleryCards(containerHtml);
       }
       function mapDetailToContent(detail, prefs) {
         var _a, _b;
@@ -3984,19 +3714,23 @@ var SourcePackage = (() => {
           properties.push({
             id: "artist",
             title: "Artist",
+            namespace: "Artist",
             tags: detail.artists.map((a) => ({
-              id: `artist:${a.toLowerCase()}`,
-              title: a
+              id: `artist:${a.toLowerCase().replace(/\s+/g, "-")}`,
+              title: a,
+              namespace: "Artist"
             }))
           });
         }
         if (detail.groups.length > 0) {
           properties.push({
             id: "group",
-            title: "Circle / Group",
+            title: "Circle",
+            namespace: "Circle",
             tags: detail.groups.map((g) => ({
-              id: `group:${g.toLowerCase()}`,
-              title: g
+              id: `group:${g.toLowerCase().replace(/\s+/g, "-")}`,
+              title: g,
+              namespace: "Circle"
             }))
           });
         }
@@ -4004,9 +3738,11 @@ var SourcePackage = (() => {
           properties.push({
             id: "parody",
             title: "Parody",
+            namespace: "Parody",
             tags: detail.parodies.map((p) => ({
-              id: `parody:${p.toLowerCase()}`,
-              title: p
+              id: `parody:${p.toLowerCase().replace(/\s+/g, "-")}`,
+              title: p,
+              namespace: "Parody"
             }))
           });
         }
@@ -4014,9 +3750,11 @@ var SourcePackage = (() => {
           properties.push({
             id: "character",
             title: "Character",
+            namespace: "Character",
             tags: detail.characters.map((c) => ({
-              id: `character:${c.toLowerCase()}`,
-              title: c
+              id: `character:${c.toLowerCase().replace(/\s+/g, "-")}`,
+              title: c,
+              namespace: "Character"
             }))
           });
         }
@@ -4024,9 +3762,11 @@ var SourcePackage = (() => {
           properties.push({
             id: "category",
             title: "Category",
+            namespace: "Category",
             tags: detail.categories.map((cat) => ({
-              id: `category:${cat.toLowerCase()}`,
-              title: cat
+              id: `category:${cat.toLowerCase().replace(/\s+/g, "-")}`,
+              title: cat,
+              namespace: "Category"
             }))
           });
         }
@@ -4034,9 +3774,11 @@ var SourcePackage = (() => {
           properties.push({
             id: "language",
             title: "Language",
+            namespace: "Language",
             tags: detail.languages.map((lang) => ({
-              id: `language:${lang.toLowerCase()}`,
-              title: lang
+              id: `language:${lang.toLowerCase().replace(/\s+/g, "-")}`,
+              title: lang,
+              namespace: "Language"
             }))
           });
         }
@@ -4102,6 +3844,16 @@ var SourcePackage = (() => {
             name,
             role: "Character"
           }));
+        }
+        if (detail.relatedItems && detail.relatedItems.length > 0) {
+          content.collections = [
+            {
+              id: "related",
+              title: "Related Works",
+              items: detail.relatedItems
+            }
+          ];
+          content.relatedContent = detail.relatedItems;
         }
         return content;
       }
@@ -4172,91 +3924,43 @@ var SourcePackage = (() => {
         buildFeedUrl(feedKey, page, prefs, sortBy) {
           const safePage = Math.max(1, page || 1);
           const prefFlags = (0, api_js_1.buildPreferenceQueryFlags)(prefs);
-          const negativeTerms = (0, preferences_js_1.buildNegativeSearchQuery)(prefs);
-          const hasNegative = negativeTerms.length > 0;
-          const encodedNegative = hasNegative ? encodeURIComponent(negativeTerms) : "";
-          const keyParam = hasNegative ? `key=${encodedNegative}&` : "";
           switch (feedKey) {
             case constants_js_1.BROWSE_FEED_KEYS.POPULAR: {
-              return `${constants_js_1.BASE_URL}/search/?${keyParam}lt=0&pp=1&page=${safePage}${prefFlags}`;
+              return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&page=${safePage}${prefFlags}`;
             }
             case constants_js_1.BROWSE_FEED_KEYS.TRENDING:
             case constants_js_1.HOME_SECTION_KEYS.TRENDING_NOW:
             case constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT: {
-              return `${constants_js_1.BASE_URL}/search/?${keyParam}lt=1&pp=1&page=${safePage}${prefFlags}`;
+              return `${constants_js_1.BASE_URL}/search/?lt=1&pp=1&page=${safePage}${prefFlags}`;
             }
             case constants_js_1.BROWSE_FEED_KEYS.TOP_RATED:
             case constants_js_1.HOME_SECTION_KEYS.TOP_RATED: {
-              return `${constants_js_1.BASE_URL}/search/?${keyParam}lt=0&pp=1&sort=top_rated&page=${safePage}${prefFlags}`;
+              return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&sort=top_rated&page=${safePage}${prefFlags}`;
             }
             case constants_js_1.BROWSE_FEED_KEYS.LATEST:
             case constants_js_1.HOME_SECTION_KEYS.FRESH_RELEASES: {
-              if (hasNegative) {
-                return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&lt=1&pp=0&page=${safePage}${prefFlags}`;
-              }
               return `${constants_js_1.BASE_URL}/?page=${safePage}${prefFlags}`;
             }
             case constants_js_1.BROWSE_FEED_KEYS.MANGA:
             case constants_js_1.HOME_SECTION_KEYS.SERIALIZED_MANGA: {
-              if (hasNegative) {
-                return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&m=1&lt=1&pp=0&page=${safePage}${prefFlags}`;
-              }
               return `${constants_js_1.BASE_URL}/category/manga/?page=${safePage}`;
             }
             case constants_js_1.BROWSE_FEED_KEYS.DOUJINSHI:
             case constants_js_1.HOME_SECTION_KEYS.LATEST_DOUJINSHI: {
-              if (hasNegative) {
-                return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&d=1&lt=1&pp=0&page=${safePage}${prefFlags}`;
-              }
               return `${constants_js_1.BASE_URL}/category/doujinshi/?page=${safePage}`;
             }
             case constants_js_1.BROWSE_FEED_KEYS.WESTERN: {
-              if (hasNegative) {
-                return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&w=1&lt=1&pp=0&page=${safePage}${prefFlags}`;
-              }
               return `${constants_js_1.BASE_URL}/category/western/?page=${safePage}`;
             }
             case "imageset": {
-              if (hasNegative) {
-                return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&i=1&lt=1&pp=0&page=${safePage}${prefFlags}`;
-              }
               return `${constants_js_1.BASE_URL}/category/imageset/?page=${safePage}`;
             }
             case "cosplay": {
-              if (hasNegative) {
-                return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&c=1&lt=1&pp=0&page=${safePage}${prefFlags}`;
-              }
               return `${constants_js_1.BASE_URL}/category/cosplay/?page=${safePage}`;
             }
             case constants_js_1.BROWSE_FEED_KEYS.DISCOVER:
-            case "home": {
-              if (hasNegative) {
-                return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&pp=1&page=${safePage}${prefFlags}`;
-              }
-              if (sortBy === "popular") {
-                return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&page=${safePage}${prefFlags}`;
-              }
-              if (sortBy === "top_rated") {
-                return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&sort=top_rated&page=${safePage}${prefFlags}`;
-              }
-              if (sortBy === "trending") {
-                return `${constants_js_1.BASE_URL}/search/?lt=1&pp=1&page=${safePage}${prefFlags}`;
-              }
-              return `${constants_js_1.BASE_URL}/?page=${safePage}${prefFlags}`;
-            }
+            case "home":
             default: {
-              if (hasNegative) {
-                if (sortBy === "popular") {
-                  return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&lt=0&pp=1&page=${safePage}${prefFlags}`;
-                }
-                if (sortBy === "top_rated") {
-                  return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&lt=0&pp=1&sort=top_rated&page=${safePage}${prefFlags}`;
-                }
-                if (sortBy === "trending") {
-                  return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&lt=1&pp=1&page=${safePage}${prefFlags}`;
-                }
-                return `${constants_js_1.BASE_URL}/search/?key=${encodedNegative}&lt=1&pp=0&page=${safePage}${prefFlags}`;
-              }
               if (sortBy === "popular") {
                 return `${constants_js_1.BASE_URL}/search/?lt=0&pp=1&page=${safePage}${prefFlags}`;
               }
@@ -4271,7 +3975,7 @@ var SourcePackage = (() => {
           }
         }
         buildSearchUrl(params, prefs) {
-          var _a, _b, _c, _d, _e;
+          var _a, _b, _c;
           const safePage = Math.max(1, (_a = params.page) != null ? _a : 1);
           const queryParts = [];
           if (params.query) {
@@ -4285,29 +3989,12 @@ var SourcePackage = (() => {
               }
             }
           }
-          const prefNegativeTerms = (0, preferences_js_1.buildNegativeSearchTerms)(prefs);
-          for (let i = 0; i < prefNegativeTerms.length; i++) {
-            const term = prefNegativeTerms[i];
-            if (term && !queryParts.includes(term)) {
-              queryParts.push(term);
-            }
-          }
-          if (((_d = params.tags) == null ? void 0 : _d.exclude) && params.tags.exclude.length > 0) {
-            for (let i = 0; i < params.tags.exclude.length; i++) {
-              const rawTag = (_e = params.tags.exclude[i]) == null ? void 0 : _e.trim().toLowerCase();
-              if (!rawTag)
-                continue;
-              const cleanTag = rawTag.replace(/^[-+]/, "").trim();
-              const formatted = cleanTag.includes(" ") ? `-"${cleanTag}"` : `-${cleanTag}`;
-              if (!queryParts.includes(formatted)) {
-                queryParts.push(formatted);
-              }
-            }
-          }
           const searchKey = encodeURIComponent(queryParts.join(" ").trim());
-          const sortFlag = params.sortBy === "popular" || params.sortBy === "pp" ? "&lt=0&pp=1" : params.sortBy === "top_rated" ? "&lt=0&pp=1&sort=top_rated" : params.sortBy === "trending" ? "&lt=1&pp=1" : "&lt=1&pp=0";
+          const sortFlag = params.sortBy === "popular" || params.sortBy === "pp" || params.sortBy === "most_viewed" ? "&lt=0&pp=1" : params.sortBy === "top_rated" ? "&lt=0&pp=1&sort=top_rated" : params.sortBy === "trending" ? "&lt=1&pp=1" : "&lt=1&pp=0";
           let overrideCategories;
-          if (params.categories) {
+          if (params.category && params.category !== "all") {
+            overrideCategories = [params.category];
+          } else if (params.categories) {
             const { include, exclude } = params.categories;
             if (include.length > 0) {
               overrideCategories = include;
@@ -4434,7 +4121,7 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.Target = exports.parseGalleryDetail = exports.parseGalleryCards = exports.parseChapterPagesFromHtml = exports.mapCardsToItems = exports.filterAndMapGalleryCards = exports.extractPageResolutionMeta = exports.buildChapterPagesFromMeta = void 0;
+      exports.Target = exports.parseRelatedGalleryCards = exports.parseGalleryDetail = exports.parseGalleryCards = exports.parseChapterPagesFromHtml = exports.mapCardsToItems = exports.filterAndMapGalleryCards = exports.extractPageResolutionMeta = exports.buildChapterPagesFromMeta = void 0;
       var toolchain_1 = require_dist();
       var constants_js_1 = require_constants();
       var filters_js_1 = require_filters();
@@ -4693,6 +4380,9 @@ var SourcePackage = (() => {
       Object.defineProperty(exports, "parseGalleryDetail", { enumerable: true, get: function() {
         return scraper_js_2.parseGalleryDetail;
       } });
+      Object.defineProperty(exports, "parseRelatedGalleryCards", { enumerable: true, get: function() {
+        return scraper_js_2.parseRelatedGalleryCards;
+      } });
     }
   });
 
@@ -4776,7 +4466,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_org();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "org.imhentai", "name": "IMHentai", "version": 1.4, "website": "https://imhentai.xxx", "rating": 2, "thumbnail": "imhentai.png", "languages": ["en", "ja", "zh", "es", "fr", "de", "ru"] };
+      exports.SourceMetadata = { "id": "org.imhentai", "name": "IMHentai", "version": 1.5, "website": "https://imhentai.xxx", "rating": 2, "thumbnail": "imhentai.png", "languages": ["en", "ja", "zh", "es", "fr", "de", "ru"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;
