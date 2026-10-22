@@ -12,7 +12,6 @@ import {
   ATSU_GENRES,
   ATSU_THEMES,
   CONTENT_RATING_OPTIONS,
-  DEDUPLICATION_MODE_OPTIONS,
   DEFAULT_ALLOWED_CONTENT_RATINGS,
   DEFAULT_ENABLED_FORMATS,
   FORMAT_PREFERENCE_OPTIONS,
@@ -20,19 +19,10 @@ import {
   NSFW_RATINGS_SET,
   PREF_KEYS,
 } from "./constants.js";
-import type {
-  AtsuUserPreferences,
-  ImageQualityFormat,
-  PreferenceProvider,
-} from "./types.js";
+import type { AtsuUserPreferences, ImageQualityFormat } from "./types.js";
 
 // Pre-allocated static UI option lists to avoid re-mapping on every settings menu open
 const UI_IMAGE_FORMAT_OPTIONS = IMAGE_FORMAT_OPTIONS.map((opt) => ({
-  id: opt.id,
-  title: opt.title,
-}));
-
-const UI_DEDUPLICATION_MODE_OPTIONS = DEDUPLICATION_MODE_OPTIONS.map((opt) => ({
   id: opt.id,
   title: opt.title,
 }));
@@ -90,11 +80,6 @@ export function hasNsfwRating(ratings: readonly string[]): boolean {
     }
   }
   return false;
-}
-
-export function invalidatePreferencesCache(): void {
-  isHydrated = false;
-  inflightHydration = null;
 }
 
 export function parseStringList(raw: unknown): string[] {
@@ -189,44 +174,20 @@ function normalizeRatingsList(rawList: readonly string[]): string[] {
   return Array.from(unique);
 }
 
+const FORMAT_TOKENS: ReadonlyMap<string, string> = new Map([
+  ["manga", "Manga"],
+  ["manhwa", "Manhwa"],
+  ["manwha", "Manhwa"],
+  ["manhua", "Manhua"],
+  ["novel", "Novel"],
+  ["oel", "OEL"],
+  ["comic", "OEL"],
+  ["other", "OTHER"],
+]);
+
+/** Maps any spelling/casing of a format ("manwha", " Comic ") to its canonical name. */
 export function normalizeFormatToken(raw: string): string | null {
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
-  switch (trimmed) {
-    case "Manga":
-    case "manga":
-      return "Manga";
-    case "Manhwa":
-    case "Manwha":
-    case "manhwa":
-    case "manwha":
-      return "Manhwa";
-    case "Manhua":
-    case "manhua":
-      return "Manhua";
-    case "Novel":
-    case "novel":
-      return "Novel";
-    case "OEL":
-    case "oel":
-    case "Comic":
-    case "comic":
-      return "OEL";
-    case "OTHER":
-    case "Other":
-    case "other":
-      return "OTHER";
-    default: {
-      const lower = trimmed.toLowerCase();
-      if (lower === "manga") return "Manga";
-      if (lower === "manhwa" || lower === "manwha") return "Manhwa";
-      if (lower === "manhua") return "Manhua";
-      if (lower === "novel") return "Novel";
-      if (lower === "oel" || lower === "comic") return "OEL";
-      if (lower === "other") return "OTHER";
-      return null;
-    }
-  }
+  return FORMAT_TOKENS.get(raw.trim().toLowerCase()) ?? null;
 }
 
 export function normalizeFormatsList(rawInput: unknown): string[] {
@@ -371,43 +332,11 @@ export async function getUserPreferences(): Promise<AtsuUserPreferences> {
 }
 
 export async function getImageFormatPreference(): Promise<ImageQualityFormat> {
-  const prefs = isHydrated ? memoryPreferences : await getUserPreferences();
-  return prefs.imageFormat;
-}
-
-export async function getDeduplicateChaptersPreference(): Promise<boolean> {
-  const prefs = isHydrated ? memoryPreferences : await getUserPreferences();
-  return prefs.deduplicateChapters;
-}
-
-export async function getScanlatorWhitelistPreference(): Promise<string[]> {
-  const prefs = isHydrated ? memoryPreferences : await getUserPreferences();
-  return prefs.scanlatorWhitelist;
-}
-
-export async function getContentRatingsPreference(): Promise<string[]> {
-  const prefs = isHydrated ? memoryPreferences : await getUserPreferences();
-  return prefs.contentRatings;
-}
-
-export async function getExcludedGenresPreference(): Promise<string[]> {
-  const prefs = isHydrated ? memoryPreferences : await getUserPreferences();
-  return prefs.excludedGenres;
-}
-
-export async function getExcludedTagsPreference(): Promise<string[]> {
-  const prefs = isHydrated ? memoryPreferences : await getUserPreferences();
-  return prefs.excludedTags;
+  return (await getUserPreferences()).imageFormat;
 }
 
 export async function getShowNsfwPreference(): Promise<boolean> {
-  const prefs = isHydrated ? memoryPreferences : await getUserPreferences();
-  return prefs.showNsfw;
-}
-
-export async function getEnabledFormatsPreference(): Promise<string[]> {
-  const prefs = isHydrated ? memoryPreferences : await getUserPreferences();
-  return prefs.enabledFormats ?? [...DEFAULT_ENABLED_FORMATS];
+  return (await getUserPreferences()).showNsfw;
 }
 
 export async function buildSettingsForm(): Promise<UIForm> {
@@ -441,13 +370,6 @@ export async function buildSettingsForm(): Promise<UIForm> {
               "Chapter Deduplication (Prioritize single release per chapter)",
             currentValue: prefs.deduplicateChapters,
             defaultValue: true,
-          }),
-          UIPicker({
-            id: `${PREF_KEYS.DEDUPLICATE_CHAPTERS}_mode`,
-            title: "Chapter Release Mode",
-            options: UI_DEDUPLICATION_MODE_OPTIONS,
-            currentValue: prefs.deduplicateChapters ? "single" : "all",
-            defaultValue: "single",
           }),
           UITextField({
             id: PREF_KEYS.SCANLATOR_WHITELIST,
@@ -559,20 +481,12 @@ export async function updateUserPreferences(
     }
   }
 
-  let deduplicate: boolean | undefined;
   const rawDedup = data[PREF_KEYS.DEDUPLICATE_CHAPTERS];
-  const rawDedupMode = data[`${PREF_KEYS.DEDUPLICATE_CHAPTERS}_mode`];
   if (typeof rawDedup === "boolean") {
-    deduplicate = rawDedup;
-  } else if (typeof rawDedupMode === "string") {
-    deduplicate = rawDedupMode === "single";
-  }
-
-  if (typeof deduplicate === "boolean") {
-    deduplicateChapters = deduplicate;
+    deduplicateChapters = rawDedup;
     if (storeAvailable) {
       writeTasks.push(
-        ObjectStore.set(PREF_KEYS.DEDUPLICATE_CHAPTERS, deduplicate).catch(
+        ObjectStore.set(PREF_KEYS.DEDUPLICATE_CHAPTERS, rawDedup).catch(
           () => {}
         )
       );
@@ -674,19 +588,5 @@ export async function updateUserPreferences(
 
   if (writeTasks.length > 0) {
     await Promise.all(writeTasks);
-  }
-}
-
-export class AtsuPreferenceProvider implements PreferenceProvider {
-  async getSettingsPage(): Promise<UIForm | null> {
-    return buildSettingsForm();
-  }
-
-  async getPreferenceMenu(): Promise<UIForm | null> {
-    return this.getSettingsPage();
-  }
-
-  async onFormSubmitted(_id: string, data: PopulatedForm): Promise<void> {
-    await updateUserPreferences(data);
   }
 }

@@ -203,8 +203,6 @@ const FEED_EXPLORE_CONFIG: Readonly<Record<string, FeedDefaultConfig>> = {
   },
   [DIRECTORY_FEED_KEYS.LATEST]: {
     mode: "latest",
-    defaultSortBy: "updatedAt",
-    defaultSortAscending: false,
   },
   [DIRECTORY_FEED_KEYS.HOT_UPDATES]: {
     mode: "hot_updates",
@@ -216,8 +214,6 @@ const FEED_EXPLORE_CONFIG: Readonly<Record<string, FeedDefaultConfig>> = {
   },
   [DIRECTORY_FEED_KEYS.MOST_BOOKMARKED]: {
     mode: "most_bookmarked",
-    defaultSortBy: "popularity",
-    defaultSortAscending: false,
   },
 };
 
@@ -469,7 +465,7 @@ export default class Target
   }
 }
 
-Target.info.version = 2.3;
+Target.info.version = 2.4;
 
 export { getItemEffectiveFormat } from "./api.js";
 export { Target };
