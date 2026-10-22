@@ -21,8 +21,6 @@ import {
   type WebLink,
 } from "@suwatte/toolchain";
 import {
-  ALL_CONTENT_RATINGS,
-  ALL_ENABLED_FORMATS,
   API_BASE,
   ATSU_GENRES,
   ATSU_THEMES,
@@ -48,7 +46,6 @@ import {
 import {
   getImageFormatPreference,
   getUserPreferences,
-  hasNsfwRating,
   normalizeFormatToken,
 } from "./preferences.js";
 import type {
@@ -61,7 +58,6 @@ import type {
   AtsuMangaDetail,
   AtsuMangaPageResponse,
   AtsuMangaSummary,
-  AtsuPaginatedChaptersResponse,
   AtsuPosterObject,
   AtsuReadChapterResponse,
   AtsuScanlator,
@@ -77,6 +73,42 @@ const DEFAULT_SYNOPSIS_FALLBACK = "No synopsis available for this title.";
 const DEFAULT_SCANLATOR_ID = "atsu-unassigned";
 const DEFAULT_SCANLATOR_NAME = "Atsumaru";
 
+/**
+ * Feeds whose ordering the search index can't express (it has no updated-at or
+ * bookmark field) come from the site's own home endpoints instead.
+ */
+const HOME_ENDPOINT_BY_MODE: Readonly<Record<string, string>> = {
+  popular: "popular",
+  latest: "recentlyUpdated",
+  hot_updates: "hotUpdates",
+  most_bookmarked: "mostBookmarked",
+};
+
+/** Home endpoints to fall back to if the search index is unavailable. */
+const FALLBACK_HOME_ENDPOINT_BY_MODE: Readonly<Record<string, string>> = {
+  ...HOME_ENDPOINT_BY_MODE,
+  recently_added: "recentlyAdded",
+  top_rated: "topRated",
+};
+
+/**
+ * Plain browsing (no query or filters) of a feed backed by a home endpoint goes to
+ * that endpoint; an explicit sort or any filter needs the search index.
+ */
+function resolveHomeEndpoint(params: ExploreParams): string | undefined {
+  const hasFilters =
+    !!params.query?.trim() ||
+    !!params.genres?.include.length ||
+    !!params.genres?.exclude.length ||
+    !!params.tags?.include.length ||
+    !!params.tags?.exclude.length ||
+    (!!params.status && params.status !== "all");
+  if (hasFilters) return undefined;
+  if (params.sortBy === "updatedAt") return "recentlyUpdated";
+  if (params.sortBy) return undefined;
+  return params.mode ? HOME_ENDPOINT_BY_MODE[params.mode] : undefined;
+}
+
 const MANGA_CACHE_TTL_MS = 10_000;
 const MANGA_CACHE_MAX_ENTRIES = 10;
 
@@ -86,14 +118,6 @@ const GENRE_LOOKUP = new Map<string, string>(
 const THEME_LOOKUP = new Map<string, string>(
   ATSU_THEMES.map((t) => [t.id, t.title])
 );
-
-const ALL_RATINGS_SET: ReadonlySet<string> = new Set<string>([
-  "Safe",
-  "Suggestive",
-  "Erotica",
-  "Pornographic",
-  "Adult",
-]);
 
 const filterContextCacheStandard = new WeakMap<
   AtsuUserPreferences,
@@ -149,14 +173,12 @@ export function compileFilterContext(
   );
   const excludedTagSet = buildExclusionSet(prefs.excludedTags, THEME_LOOKUP);
 
-  let allowedRatingsSet: ReadonlySet<string>;
   let allowsSafe: boolean;
   let allowsSuggestive: boolean;
   let allowsErotica: boolean;
   let allowsAdult: boolean;
 
   if (allowNsfwOverride) {
-    allowedRatingsSet = ALL_RATINGS_SET;
     allowsSafe = true;
     allowsSuggestive = true;
     allowsErotica = true;
@@ -171,11 +193,6 @@ export function compileFilterContext(
     allowsSuggestive = ratingSet.has("Suggestive");
     allowsErotica = ratingSet.has("Erotica");
     allowsAdult = ratingSet.has("Adult") || ratingSet.has("Pornographic");
-    if (allowsAdult) {
-      ratingSet.add("Adult");
-      ratingSet.add("Pornographic");
-    }
-    allowedRatingsSet = ratingSet;
   }
 
   const rawFormats =
@@ -183,59 +200,14 @@ export function compileFilterContext(
       ? prefs.enabledFormats
       : DEFAULT_ENABLED_FORMATS;
 
+  // getItemEffectiveFormat always returns the canonical name, so that's all the set needs.
   const formatSet = new Set<string>();
-  let allowsManga = false;
-  let allowsManhwa = false;
-  let allowsManhua = false;
-  let allowsNovel = false;
-  let allowsOel = false;
-  let allowsOther = false;
-
-  for (let i = 0, len = rawFormats.length; i < len; i++) {
-    const rawFmt = rawFormats[i];
-    if (!rawFmt) continue;
-    const canonical = normalizeFormatToken(rawFmt);
-    switch (canonical) {
-      case "Manga":
-        allowsManga = true;
-        formatSet.add("Manga");
-        formatSet.add("manga");
-        break;
-      case "Manhwa":
-        allowsManhwa = true;
-        formatSet.add("Manhwa");
-        formatSet.add("Manwha");
-        formatSet.add("manhwa");
-        formatSet.add("manwha");
-        break;
-      case "Manhua":
-        allowsManhua = true;
-        formatSet.add("Manhua");
-        formatSet.add("manhua");
-        break;
-      case "Novel":
-        allowsNovel = true;
-        formatSet.add("Novel");
-        formatSet.add("novel");
-        break;
-      case "OEL":
-        allowsOel = true;
-        formatSet.add("OEL");
-        formatSet.add("oel");
-        formatSet.add("Comic");
-        formatSet.add("comic");
-        break;
-      case "OTHER":
-        allowsOther = true;
-        formatSet.add("OTHER");
-        formatSet.add("Other");
-        formatSet.add("other");
-        break;
-    }
+  for (const rawFmt of rawFormats) {
+    const canonical = rawFmt ? normalizeFormatToken(rawFmt) : null;
+    if (canonical) formatSet.add(canonical);
   }
 
   const compiled: CompiledFilterContext = {
-    allowedRatingsSet,
     allowedFormatsSet: formatSet,
     excludedGenreSet,
     excludedTagSet,
@@ -243,37 +215,51 @@ export function compileFilterContext(
     allowsSuggestive,
     allowsErotica,
     allowsAdult,
-    allowsManga,
-    allowsManhwa,
-    allowsManhua,
-    allowsNovel,
-    allowsOel,
-    allowsOther,
   };
 
   cache.set(prefs, compiled);
   return compiled;
 }
 
+const CHALLENGE_BODY_MARKERS = [
+  "cf-browser-verification",
+  "/cdn-cgi/challenge-platform/",
+  "Just a moment...",
+  "Attention Required! | Cloudflare",
+] as const;
+
+function hasChallengeMarkers(body: unknown): boolean {
+  return (
+    typeof body === "string" &&
+    CHALLENGE_BODY_MARKERS.some((marker) => body.includes(marker))
+  );
+}
+
+function getHeader(
+  headers: Record<string, string> | undefined,
+  name: string
+): string {
+  if (!headers) return "";
+  for (const key of Object.keys(headers)) {
+    if (key.toLowerCase() === name) return String(headers[key] ?? "");
+  }
+  return "";
+}
+
+/**
+ * True only for an actual Cloudflare challenge. Every response from atsu.moe carries
+ * `server: cloudflare`, so that header can't distinguish a challenge from an ordinary
+ * 403/503 (a removed chapter, maintenance), which would otherwise prompt the user to
+ * solve a challenge that can't help.
+ */
 function isCloudflareBlocked(response: NetworkResponse): boolean {
   if (response.status !== 403 && response.status !== 503) {
     return false;
   }
-  const headers = response.headers ?? {};
-  const server = String(
-    headers["server"] ?? headers["Server"] ?? ""
-  ).toLowerCase();
-  const cfMitigated = String(
-    headers["cf-mitigated"] ?? headers["CF-Mitigated"] ?? ""
-  ).toLowerCase();
-  const body = typeof response.data === "string" ? response.data : "";
-
   return (
-    cfMitigated.includes("challenge") ||
-    server.includes("cloudflare") ||
-    body.includes("cf-browser-verification") ||
-    body.includes("Just a moment...") ||
-    body.includes("Attention Required! | Cloudflare")
+    getHeader(response.headers, "cf-mitigated")
+      .toLowerCase()
+      .includes("challenge") || hasChallengeMarkers(response.data)
   );
 }
 
@@ -511,72 +497,31 @@ export function mapContentRating(manga: AtsuMangaSummary): ContentRating {
   if (manga.isAdult === true) {
     return ContentRating.MATURE;
   }
-  const raw = manga.mbContentRating;
-  if (!raw) {
-    return ContentRating.EVERYONE;
-  }
-  switch (raw) {
-    case "Erotica":
+  switch (manga.mbContentRating?.trim().toLowerCase()) {
     case "erotica":
-    case "Pornographic":
     case "pornographic":
-    case "Adult":
     case "adult":
       return ContentRating.MATURE;
-    case "Suggestive":
     case "suggestive":
       return ContentRating.SUGGESTIVE;
-    case "Safe":
-    case "safe":
+    default:
       return ContentRating.EVERYONE;
-    default: {
-      const lower = raw.trim().toLowerCase();
-      if (lower === "erotica" || lower === "pornographic" || lower === "adult") {
-        return ContentRating.MATURE;
-      }
-      if (lower === "suggestive") {
-        return ContentRating.SUGGESTIVE;
-      }
-      return ContentRating.EVERYONE;
-    }
   }
 }
 
 export function mapContentStatus(status?: string | null): ContentStatus {
-  if (!status) {
-    return ContentStatus.UNKNOWN;
-  }
-  switch (status) {
-    case "Ongoing":
+  switch (status?.trim().toLowerCase()) {
     case "ongoing":
       return ContentStatus.ONGOING;
-    case "Completed":
     case "completed":
       return ContentStatus.COMPLETED;
-    case "Hiatus":
     case "hiatus":
       return ContentStatus.HIATUS;
-    case "Canceled":
-    case "Cancelled":
     case "canceled":
     case "cancelled":
       return ContentStatus.CANCELLED;
-    default: {
-      const normalized = status.trim().toLowerCase();
-      switch (normalized) {
-        case "ongoing":
-          return ContentStatus.ONGOING;
-        case "completed":
-          return ContentStatus.COMPLETED;
-        case "hiatus":
-          return ContentStatus.HIATUS;
-        case "canceled":
-        case "cancelled":
-          return ContentStatus.CANCELLED;
-        default:
-          return ContentStatus.UNKNOWN;
-      }
-    }
+    default:
+      return ContentStatus.UNKNOWN;
   }
 }
 
@@ -602,28 +547,14 @@ export function mapContentType(
 }
 
 export function mapReadingMode(type?: string | null): ReadingMode {
-  if (!type) {
-    return ReadingMode.PAGED_MANGA;
+  switch (type?.trim().toLowerCase()) {
+    case "manhwa":
+    case "manwha":
+    case "manhua":
+      return ReadingMode.VERTICAL;
+    default:
+      return ReadingMode.PAGED_MANGA;
   }
-  if (
-    type === "Manwha" ||
-    type === "Manhwa" ||
-    type === "Manhua" ||
-    type === "manwha" ||
-    type === "manhwa" ||
-    type === "manhua"
-  ) {
-    return ReadingMode.VERTICAL;
-  }
-  const normalized = type.trim().toLowerCase();
-  if (
-    normalized === "manwha" ||
-    normalized === "manhwa" ||
-    normalized === "manhua"
-  ) {
-    return ReadingMode.VERTICAL;
-  }
-  return ReadingMode.PAGED_MANGA;
 }
 
 function parseTimestampToMs(rawDate?: number | string | null): number {
@@ -645,11 +576,24 @@ function parseTimestampToMs(rawDate?: number | string | null): number {
   return 0;
 }
 
-export function parseTimestampToDate(
-  rawDate?: number | string | null
-): Date | undefined {
-  const ms = parseTimestampToMs(rawDate);
-  return ms > 0 ? new Date(ms) : undefined;
+/**
+ * The details endpoint sends `released` as a millisecond timestamp (e.g. 599616000000
+ * for 1989); `releaseYear`/`year` are plain years.
+ */
+export function resolveReleaseYear(manga: AtsuMangaSummary): number | undefined {
+  const plainYear = manga.releaseYear ?? manga.year;
+  if (typeof plainYear === "number" && plainYear > 0) {
+    return plainYear;
+  }
+  const raw = manga.released ?? manga.releaseDate;
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw === 0) {
+    return undefined;
+  }
+  if (Math.abs(raw) < 10_000) {
+    return raw;
+  }
+  const ms = Math.abs(raw) < 1e11 ? raw * 1000 : raw;
+  return new Date(ms).getUTCFullYear();
 }
 
 export function mapSummaryToItem(
@@ -781,41 +725,20 @@ export function isMangaAllowedWithContext(
       return false;
     }
 
-    const rawRating = manga.mbContentRating;
-    if (rawRating) {
-      switch (rawRating) {
-        case "Safe":
-        case "safe":
-          if (!ctx.allowsSafe) return false;
-          break;
-        case "Suggestive":
-        case "suggestive":
-          if (!ctx.allowsSuggestive) return false;
-          break;
-        case "Erotica":
-        case "erotica":
-          if (!ctx.allowsErotica) return false;
-          break;
-        case "Pornographic":
-        case "pornographic":
-        case "Adult":
-        case "adult":
-          if (!ctx.allowsAdult) return false;
-          break;
-        default: {
-          const normalized = rawRating.trim().toLowerCase();
-          if (normalized === "safe" && !ctx.allowsSafe) return false;
-          if (normalized === "suggestive" && !ctx.allowsSuggestive) return false;
-          if (normalized === "erotica" && !ctx.allowsErotica) return false;
-          if (
-            (normalized === "pornographic" || normalized === "adult") &&
-            !ctx.allowsAdult
-          ) {
-            return false;
-          }
-          break;
-        }
-      }
+    switch (manga.mbContentRating?.trim().toLowerCase()) {
+      case "safe":
+        if (!ctx.allowsSafe) return false;
+        break;
+      case "suggestive":
+        if (!ctx.allowsSuggestive) return false;
+        break;
+      case "erotica":
+        if (!ctx.allowsErotica) return false;
+        break;
+      case "pornographic":
+      case "adult":
+        if (!ctx.allowsAdult) return false;
+        break;
     }
   }
 
@@ -844,76 +767,6 @@ export function isMangaAllowedWithContext(
   }
 
   return true;
-}
-
-/**
- * Evaluates whether a manga passes content maturity ratings and exclusion filters using O(1) Set lookups.
- */
-export function isMangaAllowed(
-  manga: AtsuMangaSummary,
-  allowedRatings: ReadonlySet<string> | readonly string[],
-  excludedGenreSet: ReadonlySet<string>,
-  excludedTagSet: ReadonlySet<string>,
-  allowNsfwOverride = false,
-  allowedFormats?: ReadonlySet<string> | readonly string[]
-): boolean {
-  const ratingSet: ReadonlySet<string> =
-    allowedRatings instanceof Set ? allowedRatings : new Set(allowedRatings);
-
-  const rawFormats = allowedFormats
-    ? Array.from(allowedFormats)
-    : ALL_ENABLED_FORMATS;
-  const formatSet = new Set<string>();
-  let allowsManga = false;
-  let allowsManhwa = false;
-  let allowsManhua = false;
-  let allowsNovel = false;
-  let allowsOel = false;
-  let allowsOther = false;
-
-  for (let i = 0, len = rawFormats.length; i < len; i++) {
-    const f = rawFormats[i];
-    if (!f) continue;
-    const canonical = normalizeFormatToken(f);
-    if (canonical === "Manga") {
-      allowsManga = true;
-      formatSet.add("Manga");
-    } else if (canonical === "Manhwa") {
-      allowsManhwa = true;
-      formatSet.add("Manhwa");
-    } else if (canonical === "Manhua") {
-      allowsManhua = true;
-      formatSet.add("Manhua");
-    } else if (canonical === "Novel") {
-      allowsNovel = true;
-      formatSet.add("Novel");
-    } else if (canonical === "OEL") {
-      allowsOel = true;
-      formatSet.add("OEL");
-    } else if (canonical === "OTHER") {
-      allowsOther = true;
-      formatSet.add("OTHER");
-    }
-  }
-
-  const ctx: CompiledFilterContext = {
-    allowedRatingsSet: ratingSet,
-    allowedFormatsSet: formatSet,
-    excludedGenreSet,
-    excludedTagSet,
-    allowsSafe: ratingSet.has("Safe"),
-    allowsSuggestive: ratingSet.has("Suggestive"),
-    allowsErotica: ratingSet.has("Erotica"),
-    allowsAdult: ratingSet.has("Adult") || ratingSet.has("Pornographic"),
-    allowsManga,
-    allowsManhwa,
-    allowsManhua,
-    allowsNovel,
-    allowsOel,
-    allowsOther,
-  };
-
-  return isMangaAllowedWithContext(manga, ctx, allowNsfwOverride);
 }
 
 function normalizeTagList(
@@ -1066,6 +919,14 @@ interface ActiveFormatSpecs {
   readonly overrideFormatSet: ReadonlySet<string> | null;
 }
 
+/** A format chosen in the search filter, or implied by the manga/manhwa modes. */
+function resolveFormatOverride(params: ExploreParams): string | undefined {
+  if (params.format && params.format !== "all") return params.format;
+  if (params.mode === "manga") return "Manga";
+  if (params.mode === "manhwa") return "Manhwa";
+  return undefined;
+}
+
 function resolveActiveFormatSpecs(
   prefs: AtsuUserPreferences,
   formatOverride?: string
@@ -1086,34 +947,9 @@ function resolveActiveFormatSpecs(
     if (rawParts.length > 0) {
       activeInput = rawParts;
       overrideFormatSet = new Set<string>();
-      for (let i = 0, len = rawParts.length; i < len; i++) {
-        const part = rawParts[i]!;
-        overrideFormatSet.add(part);
+      for (const part of rawParts) {
         const canonical = normalizeFormatToken(part);
-        if (canonical === "Manga") {
-          overrideFormatSet.add("Manga");
-          overrideFormatSet.add("manga");
-        } else if (canonical === "Manhwa") {
-          overrideFormatSet.add("Manhwa");
-          overrideFormatSet.add("Manwha");
-          overrideFormatSet.add("manhwa");
-          overrideFormatSet.add("manwha");
-        } else if (canonical === "Manhua") {
-          overrideFormatSet.add("Manhua");
-          overrideFormatSet.add("manhua");
-        } else if (canonical === "Novel") {
-          overrideFormatSet.add("Novel");
-          overrideFormatSet.add("novel");
-        } else if (canonical === "OEL") {
-          overrideFormatSet.add("OEL");
-          overrideFormatSet.add("oel");
-          overrideFormatSet.add("Comic");
-          overrideFormatSet.add("comic");
-        } else if (canonical === "OTHER") {
-          overrideFormatSet.add("OTHER");
-          overrideFormatSet.add("Other");
-          overrideFormatSet.add("other");
-        }
+        if (canonical) overrideFormatSet.add(canonical);
       }
     }
   }
@@ -1284,6 +1120,8 @@ interface ScanlatorInfo {
   readonly id: string;
   readonly name: string;
   readonly whitelistRank: number;
+  /** The site's community score for the group; higher is better. */
+  readonly score: number;
   readonly provider: SuwatteChapterProvider;
 }
 
@@ -1329,10 +1167,15 @@ export function normalizeAndFilterChapters(
   const encodedMangaId = encodeURIComponent(mangaId);
   const mangaWebUrl = `${BASE_URL}/manga/${encodedMangaId}`;
 
-  const buildScanlatorInfo = (id: string, name: string): ScanlatorInfo => ({
+  const buildScanlatorInfo = (
+    id: string,
+    name: string,
+    score = 0
+  ): ScanlatorInfo => ({
     id,
     name,
     whitelistRank: computeWhitelistRank(name),
+    score,
     provider: {
       id,
       name,
@@ -1352,7 +1195,11 @@ export function normalizeAndFilterChapters(
       if (scan?.id && scan?.name) {
         const id = String(scan.id);
         const name = String(scan.name).trim() || DEFAULT_SCANLATOR_NAME;
-        scanlatorInfoMap.set(id, buildScanlatorInfo(id, name));
+        const score =
+          typeof scan.score === "number" && Number.isFinite(scan.score)
+            ? scan.score
+            : 0;
+        scanlatorInfoMap.set(id, buildScanlatorInfo(id, name, score));
       }
     }
   }
@@ -1414,12 +1261,22 @@ export function normalizeAndFilterChapters(
       let bestPages = best.pageCount ?? 0;
       let bestDate = getTimestampMs(best);
 
-      // Find best candidate in O(K) single linear scan instead of O(K log K) array copy + sort
+      // Pick one upload per chapter: the user's whitelist first, then the site's
+      // group score, then page count, then the newest upload.
       for (let i = 1, len = candidates.length; i < len; i++) {
         const cand = candidates[i]!;
         const candInfo = getScanlatorInfo(cand);
         if (candInfo.whitelistRank !== bestInfo.whitelistRank) {
           if (candInfo.whitelistRank < bestInfo.whitelistRank) {
+            best = cand;
+            bestInfo = candInfo;
+            bestPages = cand.pageCount ?? 0;
+            bestDate = getTimestampMs(cand);
+          }
+          continue;
+        }
+        if (candInfo.score !== bestInfo.score) {
+          if (candInfo.score > bestInfo.score) {
             best = cand;
             bestInfo = candInfo;
             bestPages = cand.pageCount ?? 0;
@@ -1522,9 +1379,27 @@ export function normalizeAndFilterChapters(
 }
 
 interface CachedMangaBundle {
-  readonly detail: AtsuMangaDetail;
-  readonly rawChapters: AtsuChapterItem[];
+  readonly detail?: AtsuMangaDetail;
+  readonly detailError?: unknown;
+  readonly rawChapters?: AtsuChapterItem[];
+  readonly chaptersError?: unknown;
   readonly timestamp: number;
+}
+
+interface Settled<T> {
+  readonly value?: T;
+  readonly error?: unknown;
+}
+
+/** Resolves to the value or the error, except Cloudflare challenges, which must reach Suwatte. */
+function settle<T>(promise: Promise<T>): Promise<Settled<T>> {
+  return promise.then(
+    (value) => ({ value }),
+    (error) => {
+      if (error instanceof CloudflareError) throw error;
+      return { error };
+    }
+  );
 }
 
 export class AtsuApiClient {
@@ -1534,13 +1409,6 @@ export class AtsuApiClient {
     string,
     Promise<CachedMangaBundle>
   >();
-  private readonly knownNovelIds = new Set<string>();
-
-  public getItemEffectiveFormat(
-    item: any
-  ): "Novel" | "Manga" | "Manhwa" | "Manhua" | "OEL" | "OTHER" {
-    return getItemEffectiveFormat(item);
-  }
 
   constructor(client?: NetworkClient) {
     if (client) {
@@ -1603,12 +1471,20 @@ export class AtsuApiClient {
       if (error instanceof CloudflareError) {
         throw error;
       }
+      // Judge by the attached response when the client provides one; fall back to the
+      // message only when it doesn't.
+      const attached =
+        (error as { response?: NetworkResponse; res?: NetworkResponse } | null)
+          ?.response ??
+        (error as { res?: NetworkResponse } | null)?.res;
       const message = error instanceof Error ? error.message : String(error);
-      if (
-        message.toLowerCase().includes("cloudflare") ||
-        message.includes("403") ||
-        message.includes("503")
-      ) {
+      const isChallenge =
+        attached && typeof attached.status === "number"
+          ? isCloudflareBlocked(attached)
+          : message.toLowerCase().includes("cloudflare") ||
+            message.includes("403") ||
+            message.includes("503");
+      if (isChallenge) {
         throw new CloudflareError(CLOUDFLARE_FALLBACK_URL);
       }
       throw new Error(`Network request failed for ${url}: ${message}`);
@@ -1631,11 +1507,7 @@ export class AtsuApiClient {
     try {
       return JSON.parse(response.data) as T;
     } catch (parseErr) {
-      const snippet = response.data.slice(0, 120);
-      if (
-        snippet.includes("<!DOCTYPE html") ||
-        snippet.includes("Cloudflare")
-      ) {
+      if (hasChallengeMarkers(response.data)) {
         throw new CloudflareError(CLOUDFLARE_FALLBACK_URL);
       }
       throw new Error(
@@ -1644,35 +1516,6 @@ export class AtsuApiClient {
         }`
       );
     }
-  }
-
-  /**
-   * Evaluates and filters raw manga summaries against content maturity ratings and exclusion preferences
-   * using memoized O(1) Set lookups and early-exit evaluation.
-   */
-  public filterSummaryItems(
-    items: AtsuMangaSummary[],
-    prefs: AtsuUserPreferences,
-    allowNsfwOverride = false
-  ): AtsuMangaSummary[] {
-    if (!Array.isArray(items) || items.length === 0) {
-      return [];
-    }
-
-    const ctx = compileFilterContext(prefs, allowNsfwOverride);
-    const result: AtsuMangaSummary[] = [];
-
-    for (let i = 0, len = items.length; i < len; i++) {
-      const item = items[i];
-      if (
-        item &&
-        isMangaAllowedWithContext(item, ctx, allowNsfwOverride)
-      ) {
-        result.push(item);
-      }
-    }
-
-    return result;
   }
 
   /**
@@ -1690,9 +1533,6 @@ export class AtsuApiClient {
     for (let i = 0, len = rawDocs.length; i < len; i++) {
       const doc = rawDocs[i];
       if (!doc || !doc.id) continue;
-      if (isNovelSummary(doc)) {
-        this.knownNovelIds.add(extractMangaId(doc.id));
-      }
       if (isMangaAllowedWithContext(doc, ctx, allowNsfwOverride)) {
         items.push(mapSummaryToItem(doc, imageFormat));
       }
@@ -1707,35 +1547,12 @@ export class AtsuApiClient {
    */
   public buildTypesenseFilterBy(
     params: ExploreParams,
-    prefsOrShowNsfw: AtsuUserPreferences | boolean
+    prefs: AtsuUserPreferences,
+    formatSpecs: ActiveFormatSpecs = resolveActiveFormatSpecs(
+      prefs,
+      resolveFormatOverride(params)
+    )
   ): string {
-    const prefs: AtsuUserPreferences =
-      typeof prefsOrShowNsfw === "object" && prefsOrShowNsfw !== null
-        ? prefsOrShowNsfw
-        : {
-            imageFormat: "webp",
-            deduplicateChapters: true,
-            scanlatorWhitelist: [],
-            showNsfw: Boolean(prefsOrShowNsfw),
-            contentRatings: prefsOrShowNsfw
-              ? [...ALL_CONTENT_RATINGS]
-              : [...DEFAULT_ALLOWED_CONTENT_RATINGS],
-            excludedGenres: [],
-            excludedTags: [],
-            enabledFormats: [...DEFAULT_ENABLED_FORMATS],
-          };
-
-    const effectiveFormatOverride =
-      params.format && params.format !== "all"
-        ? params.format
-        : params.mode === "manga"
-          ? "Manga"
-          : params.mode === "manhwa"
-            ? "Manhwa"
-            : undefined;
-
-    const formatSpecs = resolveActiveFormatSpecs(prefs, effectiveFormatOverride);
-
     const clauses: string[] = ["hidden:!=true"];
     if (formatSpecs.hasNovel && !formatSpecs.hasComic) {
       // ONLY Novel: filter by medium Novel, do not restrict type so novels of any origin pass
@@ -1897,18 +1714,27 @@ export class AtsuApiClient {
     const perPage = params.perPage ?? DEFAULT_PAGE_SIZE;
     const isSearchNsfwOverride = params.includeNsfw === true;
 
+    const formatSpecs = resolveActiveFormatSpecs(
+      prefs,
+      resolveFormatOverride(params)
+    );
+
+    const homeEndpoint = resolveHomeEndpoint(params);
+    if (homeEndpoint) {
+      return this.fetchHomeEndpoint(
+        homeEndpoint,
+        page,
+        perPage,
+        prefs,
+        isSearchNsfwOverride,
+        formatSpecs.apiTypesParam,
+        formatSpecs.apiMediumsParam
+      );
+    }
+
     const queryText = params.query?.trim() || "*";
-    const filterBy = this.buildTypesenseFilterBy(params, prefs);
+    const filterBy = this.buildTypesenseFilterBy(params, prefs, formatSpecs);
     const sortBy = this.buildTypesenseSortBy(params);
-    const effectiveFormatOverride =
-      params.format && params.format !== "all"
-        ? params.format
-        : params.mode === "manga"
-          ? "Manga"
-          : params.mode === "manhwa"
-            ? "Manhwa"
-            : undefined;
-    const formatSpecs = resolveActiveFormatSpecs(prefs, effectiveFormatOverride);
     const overrideFormatSet = formatSpecs.overrideFormatSet;
 
     const searchParams: Record<string, string | number | boolean | undefined> =
@@ -1947,9 +1773,6 @@ export class AtsuApiClient {
       for (let i = 0, len = hits.length; i < len; i++) {
         const doc = hits[i]?.document;
         if (!doc || !doc.id) continue;
-        if (isNovelSummary(doc)) {
-          this.knownNovelIds.add(extractMangaId(doc.id));
-        }
         if (!isMangaAllowedWithContext(doc, ctx, isSearchNsfwOverride)) {
           continue;
         }
@@ -1979,17 +1802,8 @@ export class AtsuApiClient {
       }
       if (queryText === "*") {
         const fallbackEndpoint =
-          params.mode === "latest"
-            ? "recentlyUpdated"
-            : params.mode === "hot_updates"
-              ? "hotUpdates"
-              : params.mode === "recently_added"
-                ? "recentlyAdded"
-                : params.mode === "top_rated"
-                  ? "topRated"
-                  : params.mode === "most_bookmarked"
-                    ? "mostBookmarked"
-                    : "popular";
+          (params.mode && FALLBACK_HOME_ENDPOINT_BY_MODE[params.mode]) ||
+          "popular";
         return this.fetchHomeEndpoint(
           fallbackEndpoint,
           page,
@@ -2043,6 +1857,15 @@ export class AtsuApiClient {
       ...(allowAdult ? { adult: 1 } : {}),
     };
 
+    // Home items carry no genre/tag IDs, so exclusions can only be applied server-side.
+    const excludedIds = [
+      ...(prefs.excludedGenres ?? []),
+      ...(prefs.excludedTags ?? []),
+    ];
+    if (excludedIds.length > 0) {
+      params.excludedTags = excludedIds.join(",");
+    }
+
     const data = await this.getJson<AtsuBrowseResponse>(
       `${API_BASE}/home2/${endpoint}`,
       params
@@ -2057,176 +1880,40 @@ export class AtsuApiClient {
   }
 
   /**
-   * Fetches the complete chapter list for a novel from `/api/novel/allChapters` or `/api/novel/chapters`,
-   * with fallback to `/api/manga/allChapters`.
+   * Fetches the full chapter list. `/api/manga/allChapters` serves manga and novels alike.
    */
-  public async fetchRawNovelChapters(
-    novelId: string,
-    fallbackChapters?: AtsuChapterItem[] | null
-  ): Promise<AtsuChapterItem[]> {
-    const cleanId = extractMangaId(novelId);
-    try {
-      const response = await this.getJson<AtsuAllChaptersResponse>(
-        `${API_BASE}/novel/allChapters`,
-        { novelId: cleanId, mangaId: cleanId, id: cleanId }
-      );
-      const list = response?.novelChapters ?? response?.chapters;
-      if (Array.isArray(list) && list.length > 0) {
-        return list;
-      }
-    } catch (error) {
-      if (error instanceof CloudflareError) {
-        throw error;
-      }
-    }
-
-    try {
-      const paged = await this.getJson<AtsuPaginatedChaptersResponse>(
-        `${API_BASE}/novel/chapters`,
-        {
-          id: cleanId,
-          novelId: cleanId,
-          filter: "all",
-          sort: "desc",
-          page: 0,
-        }
-      );
-      const list = paged?.novelChapters ?? paged?.chapters;
-      if (Array.isArray(list) && list.length > 0) {
-        return list;
-      }
-    } catch (error) {
-      if (error instanceof CloudflareError) {
-        throw error;
-      }
-    }
-
-    return this.fetchRawChapters(cleanId, fallbackChapters);
+  public async fetchRawChapters(mangaId: string): Promise<AtsuChapterItem[]> {
+    const response = await this.getJson<AtsuAllChaptersResponse>(
+      `${API_BASE}/manga/allChapters`,
+      { mangaId: extractMangaId(mangaId) }
+    );
+    return Array.isArray(response?.chapters) ? response.chapters : [];
   }
 
   /**
-   * Fetches the complete chapter list for a manga from `/api/manga/allChapters?mangaId={id}`,
-   * with a defensive fallback to `/api/manga/chapters` if needed.
+   * Fetches series details. `/api/manga/page` serves manga and novels alike
+   * (the site has no `/api/novel/*` endpoints).
    */
-  public async fetchRawChapters(
-    mangaId: string,
-    fallbackChapters?: AtsuChapterItem[] | null
-  ): Promise<AtsuChapterItem[]> {
-    const cleanId = extractMangaId(mangaId);
-    try {
-      const response = await this.getJson<AtsuAllChaptersResponse>(
-        `${API_BASE}/manga/allChapters`,
-        { mangaId: cleanId }
-      );
-      const list = response?.chapters ?? response?.novelChapters;
-      if (Array.isArray(list) && list.length > 0) {
-        return list;
-      }
-    } catch (error) {
-      if (error instanceof CloudflareError) {
-        throw error;
-      }
-    }
-
-    try {
-      const paged = await this.getJson<AtsuPaginatedChaptersResponse>(
-        `${API_BASE}/manga/chapters`,
-        {
-          id: cleanId,
-          filter: "all",
-          sort: "desc",
-          page: 0,
-        }
-      );
-      const list = paged?.chapters ?? paged?.novelChapters;
-      if (Array.isArray(list) && list.length > 0) {
-        return list;
-      }
-    } catch (error) {
-      if (error instanceof CloudflareError) {
-        throw error;
-      }
-    }
-
-    return Array.isArray(fallbackChapters) ? fallbackChapters : [];
-  }
-
-  private async fetchPageDetailWithDualRoute(
-    cleanId: string,
-    preferNovelRoute: boolean
+  private async fetchPageDetail(
+    cleanId: string
   ): Promise<AtsuMangaDetail | undefined> {
-    const extractDetail = (
-      res?: AtsuMangaPageResponse | AtsuMangaDetail | null
-    ): AtsuMangaDetail | undefined => {
-      if (!res || typeof res !== "object") return undefined;
-      if ("novelPage" in res && res.novelPage?.id) return res.novelPage;
-      if ("mangaPage" in res && res.mangaPage?.id) return res.mangaPage;
-      if ("novel" in res && res.novel?.id) return res.novel;
-      if ("manga" in res && res.manga?.id) return res.manga;
-      if ("id" in res && typeof res.id === "string" && res.id) {
-        return res as AtsuMangaDetail;
-      }
-      return undefined;
-    };
-
-    const primaryUrl = preferNovelRoute
-      ? `${API_BASE}/novel/page`
-      : `${API_BASE}/manga/page`;
-    const secondaryUrl = preferNovelRoute
-      ? `${API_BASE}/manga/page`
-      : `${API_BASE}/novel/page`;
-
-    try {
-      const primaryRes = await this.getJson<AtsuMangaPageResponse>(primaryUrl, {
-        id: cleanId,
-        ...(preferNovelRoute ? { novelId: cleanId } : {}),
-      });
-      const detail = extractDetail(primaryRes);
-      if (detail) {
-        return detail;
-      }
-    } catch (error) {
-      if (error instanceof CloudflareError) {
-        throw error;
-      }
-    }
-
-    try {
-      const secondaryRes = await this.getJson<AtsuMangaPageResponse>(
-        secondaryUrl,
-        {
-          id: cleanId,
-          ...(!preferNovelRoute ? { novelId: cleanId } : {}),
-        }
-      );
-      const detail = extractDetail(secondaryRes);
-      if (detail) {
-        return detail;
-      }
-    } catch (error) {
-      if (error instanceof CloudflareError) {
-        throw error;
-      }
-    }
-
-    return undefined;
+    const response = await this.getJson<AtsuMangaPageResponse>(
+      `${API_BASE}/manga/page`,
+      { id: cleanId }
+    );
+    return response?.mangaPage?.id ? response.mangaPage : undefined;
   }
 
   /**
-   * Concurrently fetches metadata and chapters via `Promise.all` (routing to novel or manga endpoints),
-   * deduplicating in-flight requests and caching results briefly so back-to-back
-   * `getContent` and `getChapters` calls do not duplicate network requests.
+   * Fetches details and chapters in parallel. Suwatte calls `getContent` and
+   * `getChapters` together, so concurrent callers share one in-flight request,
+   * and complete results are cached briefly.
    */
-  private async fetchMangaBundle(
-    idOrUrl: string
-  ): Promise<CachedMangaBundle> {
+  private async fetchMangaBundle(idOrUrl: string): Promise<CachedMangaBundle> {
     const mangaId = extractMangaId(idOrUrl);
-    const preferNovel =
-      isNovelIdentifier(idOrUrl) || this.knownNovelIds.has(mangaId);
 
-    const now = Date.now();
     const cached = this.mangaCache.get(mangaId);
-    if (cached && now - cached.timestamp < MANGA_CACHE_TTL_MS) {
+    if (cached && Date.now() - cached.timestamp < MANGA_CACHE_TTL_MS) {
       return cached;
     }
 
@@ -2236,51 +1923,29 @@ export class AtsuApiClient {
     }
 
     const requestPromise = (async (): Promise<CachedMangaBundle> => {
-      const [detail, initialChapters] = await Promise.all([
-        this.fetchPageDetailWithDualRoute(mangaId, preferNovel),
-        preferNovel
-          ? this.fetchRawNovelChapters(mangaId)
-          : this.fetchRawChapters(mangaId),
+      const [detail, chapters] = await Promise.all([
+        settle(this.fetchPageDetail(mangaId)),
+        settle(this.fetchRawChapters(mangaId)),
       ]);
 
-      if (!detail || !detail.id) {
-        throw new Error(`Content details not found for ID "${mangaId}".`);
-      }
-
-      const detectedNovel = preferNovel || isNovelSummary(detail);
-      if (detectedNovel) {
-        this.knownNovelIds.add(mangaId);
-      }
-
-      let rawChapters = initialChapters;
-      if (rawChapters.length === 0 && detectedNovel && !preferNovel) {
-        rawChapters = await this.fetchRawNovelChapters(
-          mangaId,
-          detail.chapters
-        );
-      }
-
-      const effectiveChapters =
-        rawChapters.length > 0
-          ? rawChapters
-          : Array.isArray(detail.chapters)
-            ? detail.chapters
-            : [];
-
       const bundle: CachedMangaBundle = {
-        detail,
-        rawChapters: effectiveChapters,
+        detail: detail.value,
+        detailError: detail.error,
+        rawChapters: chapters.value,
+        chaptersError: chapters.error,
         timestamp: Date.now(),
       };
 
-      // Evict oldest entry if cache exceeds bounded limit
-      if (this.mangaCache.size >= MANGA_CACHE_MAX_ENTRIES) {
-        const oldestKey = this.mangaCache.keys().next().value;
-        if (oldestKey !== undefined) {
-          this.mangaCache.delete(oldestKey);
+      // Only cache complete results, so a failed half is retried next time.
+      if (bundle.detail && bundle.rawChapters) {
+        if (this.mangaCache.size >= MANGA_CACHE_MAX_ENTRIES) {
+          const oldestKey = this.mangaCache.keys().next().value;
+          if (oldestKey !== undefined) {
+            this.mangaCache.delete(oldestKey);
+          }
         }
+        this.mangaCache.set(mangaId, bundle);
       }
-      this.mangaCache.set(mangaId, bundle);
       return bundle;
     })();
 
@@ -2298,18 +1963,20 @@ export class AtsuApiClient {
    */
   public async fetchMangaDetails(idOrUrl: string): Promise<MangaDetailsResult> {
     const mangaId = extractMangaId(idOrUrl);
-    const [prefs, { detail, rawChapters }] = await Promise.all([
+    const [prefs, bundle] = await Promise.all([
       getUserPreferences(),
       this.fetchMangaBundle(idOrUrl),
     ]);
-
-    const isNovel =
-      isNovelIdentifier(idOrUrl) ||
-      isNovelSummary(detail) ||
-      this.knownNovelIds.has(mangaId);
-    if (isNovel) {
-      this.knownNovelIds.add(mangaId);
+    const detail = bundle.detail;
+    if (!detail) {
+      throw (
+        bundle.detailError ??
+        new Error(`Content details not found for ID "${mangaId}".`)
+      );
     }
+    const rawChapters = bundle.rawChapters ?? [];
+
+    const isNovel = isNovelIdentifier(idOrUrl) || isNovelSummary(detail);
 
     const chapters = normalizeAndFilterChapters(
       mangaId,
@@ -2440,7 +2107,7 @@ export class AtsuApiClient {
       additionalDetails["Status"] = String(detail.status);
       hasAdditionalDetails = true;
     }
-    const releaseYear = detail.released ?? detail.releaseYear ?? detail.year;
+    const releaseYear = resolveReleaseYear(detail);
     if (releaseYear) {
       additionalDetails["Released"] = String(releaseYear);
       hasAdditionalDetails = true;
@@ -2496,80 +2163,27 @@ export class AtsuApiClient {
   }
 
   /**
-   * Retrieves the deduplicated/filtered chapter list concurrently using Promise.all,
-   * automatically routing to novel or manga endpoints based on title medium/ID.
+   * Retrieves the deduplicated/filtered chapter list, sharing the request made for `getContent`.
    */
   public async fetchChapters(idOrUrl: string): Promise<Chapter[]> {
     const mangaId = extractMangaId(idOrUrl);
-    const preferNovel =
-      isNovelIdentifier(idOrUrl) || this.knownNovelIds.has(mangaId);
-
-    const cached = this.mangaCache.get(mangaId);
-    if (cached && Date.now() - cached.timestamp < MANGA_CACHE_TTL_MS) {
-      const prefs = await getUserPreferences();
-      return normalizeAndFilterChapters(
-        mangaId,
-        cached.rawChapters,
-        cached.detail.scanlators,
-        {
-          deduplicate: prefs.deduplicateChapters,
-          whitelist: prefs.scanlatorWhitelist,
-        }
-      );
-    }
-
-    const [prefs, detail, initialChapters] = await Promise.all([
+    const [prefs, bundle] = await Promise.all([
       getUserPreferences(),
-      this.fetchPageDetailWithDualRoute(mangaId, preferNovel).catch((error) => {
-        if (error instanceof CloudflareError) {
-          throw error;
-        }
-        return undefined;
-      }),
-      preferNovel
-        ? this.fetchRawNovelChapters(mangaId)
-        : this.fetchRawChapters(mangaId),
+      this.fetchMangaBundle(idOrUrl),
     ]);
-
-    const detectedNovel = preferNovel || isNovelSummary(detail);
-    if (detectedNovel) {
-      this.knownNovelIds.add(mangaId);
+    // Surface the error rather than returning an empty list that looks like "no chapters".
+    if (!bundle.rawChapters) {
+      throw bundle.chaptersError;
     }
-
-    let rawChapters = initialChapters;
-    if (rawChapters.length === 0 && detectedNovel && !preferNovel) {
-      rawChapters = await this.fetchRawNovelChapters(
-        mangaId,
-        detail?.chapters
-      );
-    }
-
-    const scanlators = detail?.scanlators;
-    const effectiveChapters =
-      rawChapters.length > 0
-        ? rawChapters
-        : Array.isArray(detail?.chapters)
-          ? detail.chapters
-          : [];
-
-    if (detail?.id) {
-      if (this.mangaCache.size >= MANGA_CACHE_MAX_ENTRIES) {
-        const oldestKey = this.mangaCache.keys().next().value;
-        if (oldestKey !== undefined) {
-          this.mangaCache.delete(oldestKey);
-        }
+    return normalizeAndFilterChapters(
+      mangaId,
+      bundle.rawChapters,
+      bundle.detail?.scanlators,
+      {
+        deduplicate: prefs.deduplicateChapters,
+        whitelist: prefs.scanlatorWhitelist,
       }
-      this.mangaCache.set(mangaId, {
-        detail,
-        rawChapters: effectiveChapters,
-        timestamp: Date.now(),
-      });
-    }
-
-    return normalizeAndFilterChapters(mangaId, effectiveChapters, scanlators, {
-      deduplicate: prefs.deduplicateChapters,
-      whitelist: prefs.scanlatorWhitelist,
-    });
+    );
   }
 
   /**
@@ -2640,55 +2254,24 @@ export class AtsuApiClient {
       return null;
     };
 
-    const endpoints = [
-      {
-        url: `${API_BASE}/novel/chapter`,
-        params: {
-          novelId: cleanId,
-          mangaId: cleanId,
-          chapterId: cleanChapterId,
-          id: cleanChapterId,
-        },
-      },
-      {
-        url: `${API_BASE}/read/chapter`,
-        params: {
-          mangaId: cleanId,
-          novelId: cleanId,
-          chapterId: cleanChapterId,
-        },
-      },
-    ];
-
-    for (let i = 0, len = endpoints.length; i < len; i++) {
-      const ep = endpoints[i]!;
-      try {
-        const response = await this.getJson<AtsuReadChapterResponse>(
-          ep.url,
-          ep.params
-        );
-        const extracted = extractRawTextFromPayload(response);
-        if (extracted) {
-          const sanitizedBody = sanitizeNovelHtml(
-            extracted.rawText,
-            extracted.title
-          );
-          return {
-            format: SourceChapterTextFormat.HTML,
-            body: sanitizedBody,
-            resources: [],
-          };
-        }
-      } catch (error) {
-        if (error instanceof CloudflareError) {
-          throw error;
-        }
-      }
-    }
-
-    throw new Error(
-      `No chapter text returned for novel "${cleanId}" chapter "${cleanChapterId}".`
+    // `/api/read/chapter` is the only chapter endpoint the site has; `/api/novel/chapter`
+    // returns an error. As of Oct 2026 it sends an empty `pages` array and no text for
+    // novel chapters, so novel reading needs the endpoint the site's own reader uses.
+    const response = await this.getJson<AtsuReadChapterResponse>(
+      `${API_BASE}/read/chapter`,
+      { mangaId: cleanId, chapterId: cleanChapterId }
     );
+    const extracted = extractRawTextFromPayload(response);
+    if (!extracted) {
+      throw new Error(
+        `No chapter text returned for novel "${cleanId}" chapter "${cleanChapterId}".`
+      );
+    }
+    return {
+      format: SourceChapterTextFormat.HTML,
+      body: sanitizeNovelHtml(extracted.rawText, extracted.title),
+      resources: [],
+    };
   }
 
   /**
@@ -2770,4 +2353,3 @@ export class AtsuApiClient {
   }
 }
 
-export { hasNsfwRating };

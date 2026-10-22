@@ -23,7 +23,7 @@ import {
   type SourceInfo,
   type UIForm,
 } from "@suwatte/toolchain";
-import { AtsuApiClient, getItemEffectiveFormat } from "./api.js";
+import { AtsuApiClient } from "./api.js";
 import {
   BASE_URL,
   CLOUDFLARE_FALLBACK_URL,
@@ -203,8 +203,6 @@ const FEED_EXPLORE_CONFIG: Readonly<Record<string, FeedDefaultConfig>> = {
   },
   [DIRECTORY_FEED_KEYS.LATEST]: {
     mode: "latest",
-    defaultSortBy: "updatedAt",
-    defaultSortAscending: false,
   },
   [DIRECTORY_FEED_KEYS.HOT_UPDATES]: {
     mode: "hot_updates",
@@ -216,8 +214,6 @@ const FEED_EXPLORE_CONFIG: Readonly<Record<string, FeedDefaultConfig>> = {
   },
   [DIRECTORY_FEED_KEYS.MOST_BOOKMARKED]: {
     mode: "most_bookmarked",
-    defaultSortBy: "popularity",
-    defaultSortAscending: false,
   },
 };
 
@@ -244,8 +240,6 @@ export default class Target
 
   public readonly info: SourceInfo = Target.info;
   public readonly api: AtsuApiClient;
-  static readonly getItemEffectiveFormat = getItemEffectiveFormat;
-  public readonly getItemEffectiveFormat = getItemEffectiveFormat;
 
   constructor(api?: AtsuApiClient) {
     this.api = api instanceof AtsuApiClient ? api : new AtsuApiClient();
@@ -469,7 +463,4 @@ export default class Target
   }
 }
 
-Target.info.version = 2.3;
-
-export { getItemEffectiveFormat } from "./api.js";
 export { Target };

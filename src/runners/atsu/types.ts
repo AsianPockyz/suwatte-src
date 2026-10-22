@@ -190,13 +190,6 @@ export interface AtsuAllChaptersResponse {
   novelChapters?: AtsuChapterItem[];
 }
 
-export interface AtsuPaginatedChaptersResponse {
-  chapters?: AtsuChapterItem[];
-  novelChapters?: AtsuChapterItem[];
-  pages: number;
-  page: number;
-}
-
 export interface AtsuChapterPageImage {
   id: string;
   image: string;
@@ -254,7 +247,6 @@ export interface AtsuUserPreferences {
 }
 
 export interface CompiledFilterContext {
-  readonly allowedRatingsSet: ReadonlySet<string>;
   readonly allowedFormatsSet: ReadonlySet<string>;
   readonly excludedGenreSet: ReadonlySet<string>;
   readonly excludedTagSet: ReadonlySet<string>;
@@ -262,12 +254,6 @@ export interface CompiledFilterContext {
   readonly allowsSuggestive: boolean;
   readonly allowsErotica: boolean;
   readonly allowsAdult: boolean;
-  readonly allowsManga: boolean;
-  readonly allowsManhwa: boolean;
-  readonly allowsManhua: boolean;
-  readonly allowsNovel: boolean;
-  readonly allowsOel: boolean;
-  readonly allowsOther: boolean;
 }
 
 export interface AtsuSourceConfiguration extends SourceConfiguration {

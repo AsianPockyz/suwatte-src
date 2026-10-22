@@ -1,11 +1,10 @@
 export const SOURCE_ID = "moe.atsu";
 export const SOURCE_NAME = "Atsumaru";
-export const SOURCE_VERSION = 2.3;
+export const SOURCE_VERSION = 2.4;
 
 export const BASE_URL = "https://atsu.moe";
 export const API_BASE = "https://atsu.moe/api";
 export const SEARCH_ENDPOINT = `${BASE_URL}/collections/manga/documents/search`;
-export const STATIC_BASE = `${BASE_URL}/static`;
 export const CDN_STATIC_BASE = "https://cdn.atsu.moe/static";
 
 export const REFERER_URL = "https://atsu.moe/";
@@ -72,15 +71,6 @@ export const DEFAULT_ENABLED_FORMATS: readonly string[] = Object.freeze([
   "Manhua",
 ]);
 
-export const ALL_ENABLED_FORMATS: readonly string[] = Object.freeze([
-  "Manga",
-  "Manhwa",
-  "Manhua",
-  "Novel",
-  "OEL",
-  "OTHER",
-]);
-
 export const CONTENT_RATING_OPTIONS = [
   { id: "Safe", title: "Safe (All Audiences)" },
   { id: "Suggestive", title: "Suggestive (Ecchi / Mild Fanservice)" },
@@ -108,11 +98,6 @@ export const NSFW_RATINGS_SET: ReadonlySet<string> = new Set<string>([
 export const IMAGE_FORMAT_OPTIONS = [
   { id: "webp", title: "WebP (Bandwidth / Battery Saving)" },
   { id: "original", title: "Original / AVIF (Maximum Resolution)" },
-] as const;
-
-export const DEDUPLICATION_MODE_OPTIONS = [
-  { id: "all", title: "Show all scanlation groups" },
-  { id: "single", title: "Prioritize single release per chapter" },
 ] as const;
 
 export const ATSU_GENRES: ReadonlyArray<{ id: string; title: string; nsfw?: boolean }> = [
