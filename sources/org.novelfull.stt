@@ -828,7 +828,7 @@ var SourcePackage = (() => {
       } });
       exports.SOURCE_ID = "org.novelfull";
       exports.SOURCE_NAME = "NovelFull";
-      exports.SOURCE_VERSION = 1;
+      exports.SOURCE_VERSION = 1.1;
       exports.BASE_URL = "https://novelfull.com";
       exports.VARIANT_ID = "org.novelfull";
       exports.THUMBNAIL_FILENAME = "novelfull.png";
@@ -3161,15 +3161,22 @@ var SourcePackage = (() => {
             volume = parsedVol;
           }
         }
-        const titleMatch = constants_js_1.CHAPTER_NUMBER_REGEX.exec(title);
+        const titleMatch = title.match(/(?:chapter|ch\.?)\s*(\d+(?:\.\d+)?)/i);
         if (titleMatch == null ? void 0 : titleMatch[1]) {
           const num = parseFloat(titleMatch[1]);
           if (Number.isFinite(num) && num >= 0) {
             return { number: num, volume };
           }
         }
-        const slugText = chapterSlug.replace(/-/g, " ");
-        const slugMatch = constants_js_1.CHAPTER_NUMBER_REGEX.exec(slugText);
+        const epMatch = title.match(/(?:episode|ep\.?|part)\s*(\d+(?:\.\d+)?)/i);
+        if (epMatch == null ? void 0 : epMatch[1]) {
+          const num = parseFloat(epMatch[1]);
+          if (Number.isFinite(num) && num >= 0) {
+            return { number: num, volume };
+          }
+        }
+        const slugText = chapterSlug.replace(/[-_/]/g, " ");
+        const slugMatch = slugText.match(/(?:chapter|ch\.?|episode|ep\.?|part)\s*(\d+(?:\.\d+)?)/i);
         if (slugMatch == null ? void 0 : slugMatch[1]) {
           const num = parseFloat(slugMatch[1]);
           if (Number.isFinite(num) && num >= 0) {
@@ -3179,6 +3186,13 @@ var SourcePackage = (() => {
         const leadingMatch = constants_js_1.LEADING_NUMBER_REGEX.exec(title.trim());
         if (leadingMatch == null ? void 0 : leadingMatch[1]) {
           const num = parseFloat(leadingMatch[1]);
+          if (Number.isFinite(num) && num >= 0) {
+            return { number: num, volume };
+          }
+        }
+        const slugNumMatch = slugText.match(/\b(?:c)?(\d+(?:\.\d+)?)\b/i);
+        if (slugNumMatch == null ? void 0 : slugNumMatch[1]) {
+          const num = parseFloat(slugNumMatch[1]);
           if (Number.isFinite(num) && num >= 0) {
             return { number: num, volume };
           }
@@ -3251,23 +3265,44 @@ var SourcePackage = (() => {
         return entries;
       }
       function mapChapterEntriesToChapters(entries, novelSlug) {
-        var _a;
+        var _a, _b, _c, _d, _e;
         if (!Array.isArray(entries) || entries.length === 0) {
           return [];
         }
         const cleanNovelSlug = (0, api_js_1.extractNovelId)(novelSlug);
-        const total = entries.length;
+        const indexedEntries = entries.map((entry, originalIndex) => ({
+          entry,
+          originalIndex
+        }));
+        const firstNum = (_b = (_a = entries[0]) == null ? void 0 : _a.number) != null ? _b : 0;
+        const lastNum = (_d = (_c = entries[entries.length - 1]) == null ? void 0 : _c.number) != null ? _d : 0;
+        const isSourceDescending = firstNum > lastNum;
+        indexedEntries.sort((a, b) => {
+          const numA = typeof a.entry.number === "number" && Number.isFinite(a.entry.number) ? a.entry.number : 0;
+          const numB = typeof b.entry.number === "number" && Number.isFinite(b.entry.number) ? b.entry.number : 0;
+          if (numA !== numB) {
+            return numA - numB;
+          }
+          const volA = typeof a.entry.volume === "number" && Number.isFinite(a.entry.volume) ? a.entry.volume : 0;
+          const volB = typeof b.entry.volume === "number" && Number.isFinite(b.entry.volume) ? b.entry.volume : 0;
+          if (volA !== volB) {
+            return volA - volB;
+          }
+          return isSourceDescending ? b.originalIndex - a.originalIndex : a.originalIndex - b.originalIndex;
+        });
+        const total = indexedEntries.length;
         const chapters = new Array(total);
         for (let i = 0; i < total; i++) {
-          const entry = entries[i];
+          const { entry } = indexedEntries[i];
+          const chapterNumber = typeof entry.number === "number" && Number.isFinite(entry.number) && entry.number >= 0 ? entry.number : i + 1;
           const chapter = {
             id: entry.id,
             index: i,
-            number: typeof entry.number === "number" && Number.isFinite(entry.number) && entry.number >= 0 ? entry.number : i + 1,
-            title: entry.title || `Chapter ${i + 1}`,
+            number: chapterNumber,
+            title: entry.title || `Chapter ${chapterNumber}`,
             language: "en",
             webUrl: entry.webUrl || (0, api_js_1.buildChapterUrl)(cleanNovelSlug, entry.id),
-            date: (_a = entry.date) != null ? _a : new Date(17e11 + i * 6e4),
+            date: (_e = entry.date) != null ? _e : new Date(17e11 + i * 6e4),
             data: {
               chapterId: entry.chapterId,
               contentId: cleanNovelSlug,
@@ -3299,8 +3334,9 @@ var SourcePackage = (() => {
         var _a, _b, _c, _d, _e;
         const $ = cheerio.load(html);
         const id = (0, api_js_1.extractNovelId)(contentIdOrUrl);
-        const rawTitle = $(".books .desc h3.title, .info-holder h3.title, h3.title, .desc .title, .title, h1, h3").first().text().trim() || ((_a = $("meta[property='og:title']").attr("content")) == null ? void 0 : _a.trim()) || id.replace(/-/g, " ");
-        const title = (0, preferences_js_1.decodeHtmlEntities)(rawTitle) || "Untitled Novel";
+        const rawTitle = $("div.desc > h3.title").text().trim() || $("h3.title").first().text().trim() || $(".col-novel-main h3").first().text().trim() || $(".books .desc h3.title").first().text().trim() || ((_a = $("meta[property='og:title']").attr("content")) == null ? void 0 : _a.trim()) || id.replace(/-/g, " ");
+        const cleanedTitle = (0, preferences_js_1.decodeHtmlEntities)(rawTitle).replace(/\s*-\s*Read Novel Online Free.*$/i, "").replace(/\s*-\s*NovelFull.*$/i, "").trim();
+        const title = cleanedTitle || id.replace(/-/g, " ") || "Untitled Novel";
         const $coverContainer = $(".books .book, .info-holder .book, .book, .info-holder, .col-info-desc").first();
         const coverImage = $coverContainer.length > 0 ? extractCoverFromElement($coverContainer, $) : (0, api_js_1.normalizeImageUrl)($("meta[property='og:image']").attr("content"));
         const authorSet = /* @__PURE__ */ new Set();
@@ -3328,8 +3364,8 @@ var SourcePackage = (() => {
         }
         const authors = Array.from(authorSet);
         const genreSet = /* @__PURE__ */ new Set();
-        $(".info a[href*='genre'], .info-novel a[href*='genre']").each((_i, el) => {
-          const gText = (0, preferences_js_1.decodeHtmlEntities)($(el).text());
+        $(".info div:contains('Genre') a, .info a[href*='/genre/'], .info-novel a[href*='/genre/'], .info a[href*='genre']").each((_i, el) => {
+          const gText = (0, preferences_js_1.decodeHtmlEntities)($(el).text()).trim();
           if (gText)
             genreSet.add(gText);
         });
@@ -4259,7 +4295,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_org();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "org.novelfull", "name": "NovelFull", "version": 1, "website": "https://novelfull.com", "rating": 0, "thumbnail": "novelfull.png", "languages": ["en"] };
+      exports.SourceMetadata = { "id": "org.novelfull", "name": "NovelFull", "version": 1.1, "website": "https://novelfull.com", "rating": 0, "thumbnail": "novelfull.png", "languages": ["en"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;
