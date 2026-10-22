@@ -828,7 +828,7 @@ var SourcePackage = (() => {
       } });
       exports.SOURCE_ID = "org.novelfull";
       exports.SOURCE_NAME = "NovelFull";
-      exports.SOURCE_VERSION = 1.1;
+      exports.SOURCE_VERSION = 1.2;
       exports.BASE_URL = "https://novelfull.com";
       exports.VARIANT_ID = "org.novelfull";
       exports.THUMBNAIL_FILENAME = "novelfull.png";
@@ -2862,6 +2862,29 @@ var SourcePackage = (() => {
       var preferences_js_1 = require_preferences();
       var NOVEL_CACHE_TTL_MS = 3e4;
       var NOVEL_CACHE_MAX_ENTRIES = 25;
+      var TAG_SCANNER_REGEX = /<\/?div\b[^>]*>/gi;
+      var CHAPTER_CONTAINER_START_REGEX = /<(?:div|section|article)\b[^>]*(?:id\s*=\s*["'](?:chapter-content|chr-content)["']|class\s*=\s*["'][^"']*\b(?:chapter-c|chr-c|chapter-content|desc-text)\b)[^>]*>/i;
+      var DESC_FALLBACK_START_REGEX = /<div\b[^>]*\bclass\s*=\s*["'][^"']*\bdesc\b[^"']*>/i;
+      var P_TAG_EXTRACTOR_REGEX = /<p\b[^>]*>([\s\S]*?)<\/p>/gi;
+      var STRIP_TAGS_REGEX = /<[^>]+>/g;
+      var PROMO_KEYWORD_REGEX = /\b(?:patreon|discord|paypal|ko-fi|novelfull)\b/i;
+      var INLINE_ON_HANDLER_REGEX = /\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi;
+      var REPEATED_BR_REGEX = /(?:<br\s*\/?>\s*){2,}/gi;
+      var SINGLE_BR_REGEX = /<br\s*\/?>/gi;
+      var OPEN_P_DIV_REGEX = /<(?:p|div)\b[^>]*>/gi;
+      var CLOSE_DIV_REGEX = /<\/div>/gi;
+      var NESTED_P_REGEX = /<p>\s*<p>/gi;
+      var NESTED_CLOSE_P_REGEX = /<\/p>\s*<\/p>/gi;
+      var EMPTY_P_REGEX = /<p>(?:\s|&nbsp;|\u00a0|<br>)*<\/p>/gi;
+      var HTML_COMMENTS_REGEX = /<!--[\s\S]*?-->/g;
+      var LINE_BREAK_BLOCK_REGEX = /\r?\n\s*\r?\n|\r?\n/;
+      var OPTION_TAG_REGEX = /<option\b[^>]*\bvalue\s*=\s*(?:"([^"]*)"|'([^']*)'|([^>\s]+))[^>]*>([\s\S]*?)<\/option>/gi;
+      var ENTITIES_NBSP_REGEX = /&nbsp;|\u00a0|&#160;|&#xa0;/gi;
+      var ENTITIES_APOS_REGEX = /&rsquo;|&lsquo;|&#8217;|&#8216;|&#x2019;|&#x2018;|\u2019|\u2018/gi;
+      var ENTITIES_QUOT_REGEX = /&rdquo;|&ldquo;|&#8221;|&#8220;|&#x201d;|&#x201c;|\u201d|\u201c/gi;
+      var ENTITIES_HELLIP_REGEX = /&hellip;|&#8230;|&#x2026;|\u2026/gi;
+      var ENTITIES_MDASH_REGEX = /&mdash;|&#8212;|&#x2014;|\u2014/gi;
+      var ENTITIES_NDASH_REGEX = /&ndash;|&#8211;|&#x2013;|\u2013/gi;
       function isCloudflareChallenge(response) {
         var _a, _b, _c, _d, _e;
         if (response.status !== 403 && response.status !== 503) {
@@ -3200,24 +3223,24 @@ var SourcePackage = (() => {
         return { number: fallbackNumber, volume };
       }
       function parseAjaxChapterOptions(html, novelSlug) {
+        var _a, _b, _c, _d;
         if (!html || typeof html !== "string") {
           return [];
         }
-        const $ = cheerio.load(html);
+        const cleanNovelSlug = (0, api_js_1.extractNovelId)(novelSlug);
         const entries = [];
         const seenIds = /* @__PURE__ */ new Set();
-        const cleanNovelSlug = (0, api_js_1.extractNovelId)(novelSlug);
-        const $options = $("option");
-        $options.each((idx, el) => {
-          var _a;
-          const $opt = $(el);
-          const rawVal = ((_a = $opt.attr("value")) != null ? _a : "").trim();
-          const rawText = (0, preferences_js_1.decodeHtmlEntities)($opt.text());
+        OPTION_TAG_REGEX.lastIndex = 0;
+        let match;
+        let idx = 0;
+        while ((match = OPTION_TAG_REGEX.exec(html)) !== null) {
+          const rawVal = ((_c = (_b = (_a = match[1]) != null ? _a : match[2]) != null ? _b : match[3]) != null ? _c : "").trim();
+          const rawText = (0, preferences_js_1.decodeHtmlEntities)((_d = match[4]) != null ? _d : "");
           if (!rawVal && !rawText)
-            return;
+            continue;
           const chapterId = (0, api_js_1.extractChapterId)(rawVal || rawText, cleanNovelSlug);
           if (!chapterId || seenIds.has(chapterId))
-            return;
+            continue;
           seenIds.add(chapterId);
           const title = rawText || `Chapter ${idx + 1}`;
           const { number, volume } = parseChapterNumber(title, chapterId, idx + 1);
@@ -3230,7 +3253,35 @@ var SourcePackage = (() => {
             volume,
             webUrl
           });
-        });
+          idx++;
+        }
+        if (entries.length === 0) {
+          const $ = cheerio.load(html);
+          const $options = $("option");
+          $options.each((i, el) => {
+            var _a2;
+            const $opt = $(el);
+            const rawVal = ((_a2 = $opt.attr("value")) != null ? _a2 : "").trim();
+            const rawText = (0, preferences_js_1.decodeHtmlEntities)($opt.text());
+            if (!rawVal && !rawText)
+              return;
+            const chapterId = (0, api_js_1.extractChapterId)(rawVal || rawText, cleanNovelSlug);
+            if (!chapterId || seenIds.has(chapterId))
+              return;
+            seenIds.add(chapterId);
+            const title = rawText || `Chapter ${i + 1}`;
+            const { number, volume } = parseChapterNumber(title, chapterId, i + 1);
+            const webUrl = (0, api_js_1.buildChapterUrl)(cleanNovelSlug, rawVal || chapterId);
+            entries.push({
+              id: chapterId,
+              chapterId,
+              title,
+              number,
+              volume,
+              webUrl
+            });
+          });
+        }
         return entries;
       }
       function parseOnPageChapters($, novelSlug) {
@@ -3525,8 +3576,36 @@ var SourcePackage = (() => {
         };
         return content;
       }
+      function extractChapterFragment(html) {
+        const startMatch = CHAPTER_CONTAINER_START_REGEX.exec(html);
+        if (!startMatch) {
+          const descMatch = DESC_FALLBACK_START_REGEX.exec(html);
+          if (!descMatch)
+            return html;
+          const startIndex2 = descMatch.index + descMatch[0].length;
+          return extractDivSlice(html, startIndex2);
+        }
+        const startIndex = startMatch.index + startMatch[0].length;
+        return extractDivSlice(html, startIndex);
+      }
+      function extractDivSlice(html, startIndex) {
+        let depth = 1;
+        TAG_SCANNER_REGEX.lastIndex = startIndex;
+        let match;
+        while ((match = TAG_SCANNER_REGEX.exec(html)) !== null) {
+          if (match[0].startsWith("</")) {
+            depth--;
+            if (depth === 0) {
+              return html.slice(startIndex, match.index);
+            }
+          } else if (!match[0].endsWith("/>")) {
+            depth++;
+          }
+        }
+        return html.slice(startIndex);
+      }
       function normalizeTypographyAndEntities(html) {
-        return html.replace(/&nbsp;|\u00a0|&#160;|&#xa0;/gi, " ").replace(/&rsquo;|&lsquo;|&#8217;|&#8216;|&#x2019;|&#x2018;|\u2019|\u2018/gi, "'").replace(/&rdquo;|&ldquo;|&#8221;|&#8220;|&#x201d;|&#x201c;|\u201d|\u201c/gi, '"').replace(/&hellip;|&#8230;|&#x2026;|\u2026/gi, "...").replace(/&mdash;|&#8212;|&#x2014;|\u2014/gi, "\u2014").replace(/&ndash;|&#8211;|&#x2013;|\u2013/gi, "\u2013");
+        return html.replace(ENTITIES_NBSP_REGEX, " ").replace(ENTITIES_APOS_REGEX, "'").replace(ENTITIES_QUOT_REGEX, '"').replace(ENTITIES_HELLIP_REGEX, "...").replace(ENTITIES_MDASH_REGEX, "\u2014").replace(ENTITIES_NDASH_REGEX, "\u2013");
       }
       function formatTranslatorNotes(textOrHtml) {
         return textOrHtml.replace(constants_js_1.TLN_BRACKET_REGEX, (_match, noteBody) => `> \u{1F4A1} **Translator Note:** ${noteBody.trim()}`);
@@ -3540,22 +3619,17 @@ var SourcePackage = (() => {
         return cleaned;
       }
       function sanitizeChapterHtml(rawHtml, prefs) {
-        var _a, _b;
+        var _a, _b, _c;
         if (!rawHtml || typeof rawHtml !== "string") {
           return "<p>No chapter text available.</p>";
         }
         const sanitizeAds = (prefs == null ? void 0 : prefs.sanitizeAds) !== false;
         const formatTln = (prefs == null ? void 0 : prefs.formatTln) !== false;
         const normalizeSpacing = (prefs == null ? void 0 : prefs.normalizeSpacing) !== false;
-        const withoutComments = rawHtml.replace(/<!--[\s\S]*?-->/g, "");
-        const $ = cheerio.load(withoutComments);
-        let $container = $("div#chapter-content, #chapter-content, div.chapter-c, .chapter-c").first();
-        if ($container.length === 0) {
-          $container = $("#chr-content, .chr-c, .chapter-content").first();
-        }
-        if ($container.length === 0) {
-          $container = $("body");
-        }
+        const rawFragment = extractChapterFragment(rawHtml);
+        const withoutComments = rawFragment.replace(HTML_COMMENTS_REGEX, "");
+        const $ = cheerio.load(`<div id="nf-frag">${withoutComments}</div>`);
+        const $container = $("#nf-frag");
         $container.find("script, style, iframe, noscript, object, embed, form, input, button").remove();
         if (sanitizeAds) {
           $container.find(".ads, .ads-holder, .ads-content, .ad, ins, div[align='center'], [class*='ads-'], [id*='ads-']").remove();
@@ -3564,13 +3638,13 @@ var SourcePackage = (() => {
             const $a = $(el);
             const href = ((_a2 = $a.attr("href")) != null ? _a2 : "").trim();
             const text = $a.text().trim();
-            if (constants_js_1.PROMO_LINK_HREF_REGEX.test(href) || constants_js_1.PROMO_LINK_HREF_REGEX.test(text) || /\b(?:patreon|discord|paypal|ko-fi|novelfull)\b/i.test(text)) {
+            if (constants_js_1.PROMO_LINK_HREF_REGEX.test(href) || constants_js_1.PROMO_LINK_HREF_REGEX.test(text) || PROMO_KEYWORD_REGEX.test(text)) {
               $a.remove();
             }
           });
         }
-        let bodyHtml = (_b = (_a = $container.html()) != null ? _a : $container.text()) != null ? _b : "";
-        bodyHtml = bodyHtml.replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+        let bodyHtml = (_a = $container.html()) != null ? _a : "";
+        bodyHtml = bodyHtml.replace(INLINE_ON_HANDLER_REGEX, "");
         if (sanitizeAds) {
           bodyHtml = stripAggregatorWatermarks(bodyHtml);
         }
@@ -3581,23 +3655,19 @@ var SourcePackage = (() => {
           bodyHtml = formatTranslatorNotes(bodyHtml);
         }
         if (normalizeSpacing) {
-          bodyHtml = bodyHtml.replace(/(?:<br\s*\/?>\s*){2,}/gi, "</p>\n\n<p>").replace(/<br\s*\/?>/gi, "<br>");
-          bodyHtml = bodyHtml.replace(/<p\b[^>]*>/gi, "<p>").replace(/<div\b[^>]*>/gi, "<p>").replace(/<\/div>/gi, "</p>");
-          bodyHtml = bodyHtml.replace(/<p>\s*<p>/gi, "<p>").replace(/<\/p>\s*<\/p>/gi, "</p>").replace(/<p>(?:\s|&nbsp;|\u00a0|<br>)*<\/p>/gi, "");
-          const $clean = cheerio.load(`<div id="nf-root">${bodyHtml}</div>`);
+          bodyHtml = bodyHtml.replace(REPEATED_BR_REGEX, "</p>\n\n<p>").replace(SINGLE_BR_REGEX, "<br>").replace(OPEN_P_DIV_REGEX, "<p>").replace(CLOSE_DIV_REGEX, "</p>").replace(NESTED_P_REGEX, "<p>").replace(NESTED_CLOSE_P_REGEX, "</p>").replace(EMPTY_P_REGEX, "");
           const paragraphs = [];
-          const $pNodes = $clean("#nf-root p");
-          if ($pNodes.length > 0) {
-            $pNodes.each((_i, pEl) => {
-              var _a2;
-              const inner = ((_a2 = $clean(pEl).html()) != null ? _a2 : "").trim();
-              const textOnly = $clean(pEl).text().trim();
-              if (inner && textOnly) {
-                paragraphs.push(`<p>${inner}</p>`);
-              }
-            });
-          } else {
-            const blocks = bodyHtml.split(/\r?\n\s*\r?\n|\r?\n/).map((line) => line.trim()).filter((line) => line.length > 0);
+          P_TAG_EXTRACTOR_REGEX.lastIndex = 0;
+          let pMatch;
+          while ((pMatch = P_TAG_EXTRACTOR_REGEX.exec(bodyHtml)) !== null) {
+            const inner = (_c = (_b = pMatch[1]) == null ? void 0 : _b.trim()) != null ? _c : "";
+            const textOnly = inner.replace(STRIP_TAGS_REGEX, "").trim();
+            if (inner && textOnly) {
+              paragraphs.push(`<p>${inner}</p>`);
+            }
+          }
+          if (paragraphs.length === 0) {
+            const blocks = bodyHtml.split(LINE_BREAK_BLOCK_REGEX).map((line) => line.trim()).filter((line) => line.length > 0 && line.replace(STRIP_TAGS_REGEX, "").trim().length > 0);
             for (let i = 0; i < blocks.length; i++) {
               const b = blocks[i];
               paragraphs.push(b.startsWith("<p>") ? b : `<p>${b}</p>`);
@@ -3609,7 +3679,7 @@ var SourcePackage = (() => {
             bodyHtml = normalizeTypographyAndEntities(bodyHtml.trim());
           }
         } else {
-          bodyHtml = bodyHtml.replace(/<p>\s*<\/p>/gi, "").trim();
+          bodyHtml = bodyHtml.replace(EMPTY_P_REGEX, "").trim();
         }
         if (!bodyHtml) {
           return "<p>No chapter text available.</p>";
@@ -4295,7 +4365,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_org();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "org.novelfull", "name": "NovelFull", "version": 1.1, "website": "https://novelfull.com", "rating": 0, "thumbnail": "novelfull.png", "languages": ["en"] };
+      exports.SourceMetadata = { "id": "org.novelfull", "name": "NovelFull", "version": 1.2, "website": "https://novelfull.com", "rating": 0, "thumbnail": "novelfull.png", "languages": ["en"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;
