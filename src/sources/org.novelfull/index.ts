@@ -1,0 +1,35 @@
+import Target, {
+  canResolveNovelFullUrl,
+  compileBlacklistContext,
+  extractCoverFromElement,
+  filterAndMapNovelCards,
+  formatTranslatorNotes,
+  isNovelAllowed,
+  mapCardToItem,
+  normalizeImageUrl,
+  normalizeTypographyAndEntities,
+  parseAjaxChapterOptions,
+  parseNovelCards,
+  parseNovelDetail,
+  sanitizeChapterHtml,
+  stripAggregatorWatermarks,
+} from "../../runners/novelfull/index.js";
+
+export {
+  Target,
+  canResolveNovelFullUrl,
+  compileBlacklistContext,
+  extractCoverFromElement,
+  filterAndMapNovelCards,
+  formatTranslatorNotes,
+  isNovelAllowed,
+  mapCardToItem,
+  normalizeImageUrl,
+  normalizeTypographyAndEntities,
+  parseAjaxChapterOptions,
+  parseNovelCards,
+  parseNovelDetail,
+  sanitizeChapterHtml,
+  stripAggregatorWatermarks,
+};
+export default Target;
