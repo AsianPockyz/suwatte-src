@@ -828,7 +828,7 @@ var SourcePackage = (() => {
       } });
       exports.SOURCE_ID = "org.novelfull";
       exports.SOURCE_NAME = "NovelFull";
-      exports.SOURCE_VERSION = 1.5;
+      exports.SOURCE_VERSION = 1.6;
       exports.BASE_URL = "https://novelfull.com";
       exports.VARIANT_ID = "org.novelfull";
       exports.THUMBNAIL_FILENAME = "novelfull.png";
@@ -3370,11 +3370,11 @@ var SourcePackage = (() => {
           }
           return chapter;
         });
-        chapters.sort((a, b) => a.number - b.number);
+        chapters.sort((a, b) => b.number - a.number);
         chapters.forEach((ch, idx) => {
           ch.index = idx;
         });
-        if (chapters.length > 1 && chapters[0].number > chapters[chapters.length - 1].number) {
+        if (chapters.length > 1 && chapters[0].number < chapters[chapters.length - 1].number) {
           chapters.reverse();
           chapters.forEach((ch, idx) => {
             ch.index = idx;
@@ -3952,11 +3952,11 @@ var SourcePackage = (() => {
           if (chapters.length === 0) {
             chapters = mapChapterEntriesToChapters(detail.onPageChapters, slug);
           }
-          chapters.sort((a, b) => a.number - b.number);
+          chapters.sort((a, b) => b.number - a.number);
           chapters.forEach((ch, idx) => {
             ch.index = idx;
           });
-          if (chapters.length > 1 && chapters[0].number > chapters[chapters.length - 1].number) {
+          if (chapters.length > 1 && chapters[0].number < chapters[chapters.length - 1].number) {
             chapters.reverse();
             chapters.forEach((ch, idx) => {
               ch.index = idx;
@@ -4277,11 +4277,11 @@ var SourcePackage = (() => {
         // =========================================================================
         async getChapters(contentId) {
           const chapters = await this.scraper.fetchChapters(contentId);
-          chapters.sort((a, b) => a.number - b.number);
+          chapters.sort((a, b) => b.number - a.number);
           chapters.forEach((ch, idx) => {
             ch.index = idx;
           });
-          if (chapters.length > 1 && chapters[0].number > chapters[chapters.length - 1].number) {
+          if (chapters.length > 1 && chapters[0].number < chapters[chapters.length - 1].number) {
             chapters.reverse();
             chapters.forEach((ch, idx) => {
               ch.index = idx;
@@ -4334,7 +4334,7 @@ var SourcePackage = (() => {
       var Target = _Target;
       exports.default = Target;
       exports.Target = Target;
-      Target.info.version = 1.5;
+      Target.info.version = 1.6;
     }
   });
 
@@ -4439,7 +4439,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_org();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "org.novelfull", "name": "NovelFull", "version": 1.5, "website": "https://novelfull.com", "rating": 0, "thumbnail": "novelfull.png", "languages": ["en"] };
+      exports.SourceMetadata = { "id": "org.novelfull", "name": "NovelFull", "version": 1.6, "website": "https://novelfull.com", "rating": 0, "thumbnail": "novelfull.png", "languages": ["en"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;
