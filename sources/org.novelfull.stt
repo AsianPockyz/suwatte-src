@@ -828,7 +828,7 @@ var SourcePackage = (() => {
       } });
       exports.SOURCE_ID = "org.novelfull";
       exports.SOURCE_NAME = "NovelFull";
-      exports.SOURCE_VERSION = 1.4;
+      exports.SOURCE_VERSION = 1.5;
       exports.BASE_URL = "https://novelfull.com";
       exports.VARIANT_ID = "org.novelfull";
       exports.THUMBNAIL_FILENAME = "novelfull.png";
@@ -3207,26 +3207,27 @@ var SourcePackage = (() => {
         }
         return false;
       }
-      function parseChapterNumber(title, rawUrl, fallbackIdx) {
-        const cMatch = title.match(/(?:chapter|ch\.?|^c)\s*(\d+(?:\.\d+)?)/i);
+      function parseChapterNumber(title, rawUrl, fallbackIdx = 0) {
+        const urlMatch = rawUrl.match(/(?:chapter|ch)[-_](\d+(?:[\.-]\d+)?)/i);
+        if (urlMatch == null ? void 0 : urlMatch[1]) {
+          const val = parseFloat(urlMatch[1].replace("-", "."));
+          if (!Number.isNaN(val))
+            return val;
+        }
+        const cleanTitle = title.replace(/,/g, "").trim();
+        const cMatch = cleanTitle.match(/(?:chapter|ch\.?|^c\.?)\s*(\d+(?:\.\d+)?)/i);
         if (cMatch == null ? void 0 : cMatch[1]) {
           const val = parseFloat(cMatch[1]);
           if (!Number.isNaN(val))
             return val;
         }
-        const urlMatch = rawUrl.match(/chapter[_-](\d+(?:[_-]\d+)?)/i);
-        if (urlMatch == null ? void 0 : urlMatch[1]) {
-          const val = parseFloat(urlMatch[1].replace(/[_-]/g, "."));
-          if (!Number.isNaN(val))
-            return val;
-        }
-        const leadMatch = title.match(/^(\d+(?:\.\d+)?)\s*[:\-\.]/);
+        const leadMatch = cleanTitle.match(/^(\d+(?:\.\d+)?)\s*[:\-\.]/);
         if (leadMatch == null ? void 0 : leadMatch[1]) {
           const val = parseFloat(leadMatch[1]);
           if (!Number.isNaN(val))
             return val;
         }
-        const anyNum = title.match(/\b(\d+(?:\.\d+)?)\b/);
+        const anyNum = cleanTitle.match(/\b(\d+(?:\.\d+)?)\b/);
         if (anyNum == null ? void 0 : anyNum[1]) {
           const val = parseFloat(anyNum[1]);
           if (!Number.isNaN(val))
@@ -3373,6 +3374,12 @@ var SourcePackage = (() => {
         chapters.forEach((ch, idx) => {
           ch.index = idx;
         });
+        if (chapters.length > 1 && chapters[0].number > chapters[chapters.length - 1].number) {
+          chapters.reverse();
+          chapters.forEach((ch, idx) => {
+            ch.index = idx;
+          });
+        }
         return chapters;
       }
       function extractNumericNovelId($, html) {
@@ -3949,6 +3956,12 @@ var SourcePackage = (() => {
           chapters.forEach((ch, idx) => {
             ch.index = idx;
           });
+          if (chapters.length > 1 && chapters[0].number > chapters[chapters.length - 1].number) {
+            chapters.reverse();
+            chapters.forEach((ch, idx) => {
+              ch.index = idx;
+            });
+          }
           return chapters;
         }
         /**
@@ -3979,7 +3992,7 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.Target = exports.stripAggregatorWatermarks = exports.sanitizeChapterHtml = exports.parseNovelDetail = exports.parseNovelCards = exports.parseChapterNumber = exports.parseAjaxChapterOptions = exports.normalizeTypographyAndEntities = exports.normalizeImageUrl = exports.mapCardToItem = exports.isNovelAllowed = exports.formatTranslatorNotes = exports.filterAndMapNovelCards = exports.extractCoverFromElement = exports.extractChapterNumber = exports.compileBlacklistContext = exports.cleanTitle = exports.cleanAndDeduplicateTitle = exports.canResolveNovelFullUrl = void 0;
+      exports.Target = exports.stripAggregatorWatermarks = exports.sanitizeChapterHtml = exports.parseNovelDetail = exports.parseNovelCards = exports.parseChapterNumber = exports.parseAjaxChapterOptions = exports.normalizeTypographyAndEntities = exports.normalizeImageUrl = exports.mapChapterEntriesToChapters = exports.mapCardToItem = exports.isNovelAllowed = exports.formatTranslatorNotes = exports.filterAndMapNovelCards = exports.extractCoverFromElement = exports.extractChapterNumber = exports.compileBlacklistContext = exports.cleanTitle = exports.cleanAndDeduplicateTitle = exports.canResolveNovelFullUrl = void 0;
       var toolchain_1 = require_dist();
       var api_js_1 = require_api();
       Object.defineProperty(exports, "canResolveNovelFullUrl", { enumerable: true, get: function() {
@@ -4018,6 +4031,9 @@ var SourcePackage = (() => {
       } });
       Object.defineProperty(exports, "mapCardToItem", { enumerable: true, get: function() {
         return scraper_js_1.mapCardToItem;
+      } });
+      Object.defineProperty(exports, "mapChapterEntriesToChapters", { enumerable: true, get: function() {
+        return scraper_js_1.mapChapterEntriesToChapters;
       } });
       Object.defineProperty(exports, "normalizeTypographyAndEntities", { enumerable: true, get: function() {
         return scraper_js_1.normalizeTypographyAndEntities;
@@ -4105,6 +4121,7 @@ var SourcePackage = (() => {
           __publicField(this, "cleanAndDeduplicateTitle", api_js_1.cleanTitle);
           __publicField(this, "parseChapterNumber", scraper_js_1.parseChapterNumber);
           __publicField(this, "extractChapterNumber", scraper_js_1.parseChapterNumber);
+          __publicField(this, "mapChapterEntriesToChapters", scraper_js_1.mapChapterEntriesToChapters);
           __publicField(this, "cachedHomeSections", null);
           this.scraper = scraper instanceof scraper_js_1.NovelFullScraperClient ? scraper : new scraper_js_1.NovelFullScraperClient();
         }
@@ -4264,6 +4281,12 @@ var SourcePackage = (() => {
           chapters.forEach((ch, idx) => {
             ch.index = idx;
           });
+          if (chapters.length > 1 && chapters[0].number > chapters[chapters.length - 1].number) {
+            chapters.reverse();
+            chapters.forEach((ch, idx) => {
+              ch.index = idx;
+            });
+          }
           if (chapters.length > 0) {
             console.log(`FIRST: ${chapters[0].title} (num: ${chapters[0].number}, idx: ${chapters[0].index})`);
             console.log(`LAST: ${chapters[chapters.length - 1].title} (num: ${chapters[chapters.length - 1].number}, idx: ${chapters[chapters.length - 1].index})`);
@@ -4307,10 +4330,11 @@ var SourcePackage = (() => {
       __publicField(_Target, "cleanAndDeduplicateTitle", api_js_1.cleanTitle);
       __publicField(_Target, "parseChapterNumber", scraper_js_1.parseChapterNumber);
       __publicField(_Target, "extractChapterNumber", scraper_js_1.parseChapterNumber);
+      __publicField(_Target, "mapChapterEntriesToChapters", scraper_js_1.mapChapterEntriesToChapters);
       var Target = _Target;
       exports.default = Target;
       exports.Target = Target;
-      Target.info.version = 1.4;
+      Target.info.version = 1.5;
     }
   });
 
@@ -4415,7 +4439,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_org();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "org.novelfull", "name": "NovelFull", "version": 1.4, "website": "https://novelfull.com", "rating": 0, "thumbnail": "novelfull.png", "languages": ["en"] };
+      exports.SourceMetadata = { "id": "org.novelfull", "name": "NovelFull", "version": 1.5, "website": "https://novelfull.com", "rating": 0, "thumbnail": "novelfull.png", "languages": ["en"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;
