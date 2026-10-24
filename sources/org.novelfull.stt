@@ -828,7 +828,7 @@ var SourcePackage = (() => {
       } });
       exports.SOURCE_ID = "org.novelfull";
       exports.SOURCE_NAME = "NovelFull";
-      exports.SOURCE_VERSION = 1.3;
+      exports.SOURCE_VERSION = 1.4;
       exports.BASE_URL = "https://novelfull.com";
       exports.VARIANT_ID = "org.novelfull";
       exports.THUMBNAIL_FILENAME = "novelfull.png";
@@ -1017,6 +1017,7 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
+      exports.cleanAndDeduplicateTitle = void 0;
       exports.isPlaceholderImageUrl = isPlaceholderImageUrl;
       exports.normalizeImageUrl = normalizeImageUrl;
       exports.isReservedNovelFullPath = isReservedNovelFullPath;
@@ -1032,7 +1033,7 @@ var SourcePackage = (() => {
       exports.buildFeedUrl = buildFeedUrl;
       exports.buildSearchUrl = buildSearchUrl;
       exports.detectContentRating = detectContentRating;
-      exports.cleanAndDeduplicateTitle = cleanAndDeduplicateTitle;
+      exports.cleanTitle = cleanTitle;
       var constants_js_1 = require_constants();
       var GENRE_SLUG_MAP = new Map(constants_js_1.NOVELFULL_GENRES.flatMap((g) => [
         [g.id.toLowerCase(), g.slug],
@@ -1303,11 +1304,10 @@ var SourcePackage = (() => {
         }
         return hasSuggestive ? constants_js_1.ContentRating.SUGGESTIVE : constants_js_1.ContentRating.EVERYONE;
       }
-      function cleanAndDeduplicateTitle(raw) {
+      function cleanTitle(raw) {
         let text = (raw != null ? raw : "").trim();
         if (!text)
           return "";
-        text = text.replace(/\s*[-–—|]\s*Read\s+Novel\s+Online\s+Free.*$/i, "").replace(/\s*[-–—|]\s*NovelFull.*$/i, "").trim();
         if (text.length % 2 === 0) {
           const half = text.length / 2;
           const firstHalf = text.slice(0, half);
@@ -1325,9 +1325,9 @@ var SourcePackage = (() => {
             text = firstWords;
           }
         }
-        text = text.replace(/^Read\s+/i, "").replace(/\s*[-–—|]\s*Read\s+Novel\s+Online\s+Free.*$/i, "").replace(/\s+online\s+free.*$/i, "").replace(/\s*[-–—|]\s*NovelFull.*$/i, "").trim();
-        return text;
+        return text.replace(/^Read\s+/i, "").replace(/\s*[-–—|]?\s*Read\s+Novel\s+Online\s+Free.*$/i, "").replace(/\s+online\s+free.*$/i, "").replace(/\s*[-–—|]\s*NovelFull.*$/i, "").trim();
       }
+      exports.cleanAndDeduplicateTitle = cleanTitle;
     }
   });
 
@@ -2862,7 +2862,7 @@ var SourcePackage = (() => {
         };
       })();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.cleanAndDeduplicateTitle = exports.NovelFullScraperClient = void 0;
+      exports.cleanTitle = exports.cleanAndDeduplicateTitle = exports.NovelFullScraperClient = exports.extractChapterNumber = void 0;
       exports.extractImageSrcFromImg = extractImageSrcFromImg;
       exports.extractCoverFromElement = extractCoverFromElement;
       exports.extractNovelCardFromElement = extractNovelCardFromElement;
@@ -2870,8 +2870,8 @@ var SourcePackage = (() => {
       exports.mapCardToItem = mapCardToItem;
       exports.filterAndMapNovelCards = filterAndMapNovelCards;
       exports.isLastListingPage = isLastListingPage;
-      exports.extractChapterNumber = extractChapterNumber;
       exports.parseChapterNumber = parseChapterNumber;
+      exports.parseVolumeNumber = parseVolumeNumber;
       exports.parseAjaxChapterOptions = parseAjaxChapterOptions;
       exports.parseOnPageChapters = parseOnPageChapters;
       exports.mapChapterEntriesToChapters = mapChapterEntriesToChapters;
@@ -2887,6 +2887,9 @@ var SourcePackage = (() => {
       var api_js_1 = require_api();
       Object.defineProperty(exports, "cleanAndDeduplicateTitle", { enumerable: true, get: function() {
         return api_js_1.cleanAndDeduplicateTitle;
+      } });
+      Object.defineProperty(exports, "cleanTitle", { enumerable: true, get: function() {
+        return api_js_1.cleanTitle;
       } });
       var constants_js_1 = require_constants();
       var preferences_js_1 = require_preferences();
@@ -3204,46 +3207,45 @@ var SourcePackage = (() => {
         }
         return false;
       }
-      function extractChapterNumber(title, url, fallbackIndex) {
+      function parseChapterNumber(title, rawUrl, fallbackIdx) {
         const cMatch = title.match(/(?:chapter|ch\.?|^c)\s*(\d+(?:\.\d+)?)/i);
-        if (cMatch && cMatch[1]) {
+        if (cMatch == null ? void 0 : cMatch[1]) {
           const val = parseFloat(cMatch[1]);
-          if (!isNaN(val))
+          if (!Number.isNaN(val))
+            return val;
+        }
+        const urlMatch = rawUrl.match(/chapter[_-](\d+(?:[_-]\d+)?)/i);
+        if (urlMatch == null ? void 0 : urlMatch[1]) {
+          const val = parseFloat(urlMatch[1].replace(/[_-]/g, "."));
+          if (!Number.isNaN(val))
             return val;
         }
         const leadMatch = title.match(/^(\d+(?:\.\d+)?)\s*[:\-\.]/);
-        if (leadMatch && leadMatch[1]) {
+        if (leadMatch == null ? void 0 : leadMatch[1]) {
           const val = parseFloat(leadMatch[1]);
-          if (!isNaN(val))
-            return val;
-        }
-        const urlMatch = url.match(/(?:chapter|ch)[-_](\d+(?:[-_]\d+)?)/i);
-        if (urlMatch && urlMatch[1]) {
-          const val = parseFloat(urlMatch[1].replace(/[-_]/g, "."));
-          if (!isNaN(val))
+          if (!Number.isNaN(val))
             return val;
         }
         const anyNum = title.match(/\b(\d+(?:\.\d+)?)\b/);
-        if (anyNum && anyNum[1]) {
+        if (anyNum == null ? void 0 : anyNum[1]) {
           const val = parseFloat(anyNum[1]);
-          if (!isNaN(val))
+          if (!Number.isNaN(val))
             return val;
         }
-        return fallbackIndex;
+        return fallbackIdx;
       }
-      function parseChapterNumber(title, chapterSlug, fallbackNumber) {
+      function parseVolumeNumber(title, rawUrl) {
         var _a;
-        let volume;
-        const volMatch = (_a = constants_js_1.VOLUME_NUMBER_REGEX.exec(title)) != null ? _a : constants_js_1.VOLUME_NUMBER_REGEX.exec(chapterSlug);
+        const volMatch = (_a = constants_js_1.VOLUME_NUMBER_REGEX.exec(title)) != null ? _a : constants_js_1.VOLUME_NUMBER_REGEX.exec(rawUrl);
         if (volMatch == null ? void 0 : volMatch[1]) {
           const parsedVol = parseInt(volMatch[1], 10);
           if (Number.isFinite(parsedVol) && parsedVol > 0) {
-            volume = parsedVol;
+            return parsedVol;
           }
         }
-        const number = extractChapterNumber(title, chapterSlug, fallbackNumber);
-        return { number, volume };
+        return void 0;
       }
+      exports.extractChapterNumber = parseChapterNumber;
       function parseAjaxChapterOptions(html, novelSlug) {
         var _a, _b, _c, _d;
         if (!html || typeof html !== "string") {
@@ -3265,7 +3267,8 @@ var SourcePackage = (() => {
             continue;
           seenIds.add(chapterId);
           const title = rawText || `Chapter ${idx + 1}`;
-          const { number, volume } = parseChapterNumber(title, chapterId, idx + 1);
+          const number = parseChapterNumber(title, rawVal || chapterId, idx + 1);
+          const volume = parseVolumeNumber(title, rawVal || chapterId);
           const webUrl = (0, api_js_1.buildChapterUrl)(cleanNovelSlug, rawVal || chapterId);
           entries.push({
             id: chapterId,
@@ -3292,7 +3295,8 @@ var SourcePackage = (() => {
               return;
             seenIds.add(chapterId);
             const title = rawText || `Chapter ${i + 1}`;
-            const { number, volume } = parseChapterNumber(title, chapterId, i + 1);
+            const number = parseChapterNumber(title, rawVal || chapterId, i + 1);
+            const volume = parseVolumeNumber(title, rawVal || chapterId);
             const webUrl = (0, api_js_1.buildChapterUrl)(cleanNovelSlug, rawVal || chapterId);
             entries.push({
               id: chapterId,
@@ -3324,7 +3328,8 @@ var SourcePackage = (() => {
           seenIds.add(chapterId);
           const rawText = (0, preferences_js_1.decodeHtmlEntities)($a.find(".chapter-text, .chr-text").text() || $a.text() || $a.attr("title") || `Chapter ${idx + 1}`);
           const title = rawText || `Chapter ${idx + 1}`;
-          const { number, volume } = parseChapterNumber(title, chapterId, idx + 1);
+          const number = parseChapterNumber(title, href, idx + 1);
+          const volume = parseVolumeNumber(title, href);
           const webUrl = (0, api_js_1.buildChapterUrl)(cleanNovelSlug, href);
           entries.push({
             id: chapterId,
@@ -3344,7 +3349,7 @@ var SourcePackage = (() => {
         const cleanNovelSlug = (0, api_js_1.extractNovelId)(novelSlug);
         const chapters = entries.map((entry, idx) => {
           var _a;
-          const chapterNumber = typeof entry.number === "number" && Number.isFinite(entry.number) && entry.number >= 0 ? entry.number : extractChapterNumber(entry.title || "", entry.chapterId || "", idx + 1);
+          const chapterNumber = typeof entry.number === "number" && Number.isFinite(entry.number) && entry.number >= 0 ? entry.number : (0, exports.extractChapterNumber)(entry.title || "", entry.chapterId || "", idx + 1);
           const chapter = {
             id: entry.id,
             index: idx,
@@ -3364,15 +3369,9 @@ var SourcePackage = (() => {
           }
           return chapter;
         });
-        chapters.sort((a, b) => {
-          var _a, _b;
-          if (a.number !== b.number) {
-            return a.number - b.number;
-          }
-          return ((_a = a.index) != null ? _a : 0) - ((_b = b.index) != null ? _b : 0);
-        });
-        chapters.forEach((chapter, idx) => {
-          chapter.index = idx;
+        chapters.sort((a, b) => a.number - b.number);
+        chapters.forEach((ch, idx) => {
+          ch.index = idx;
         });
         return chapters;
       }
@@ -3391,13 +3390,13 @@ var SourcePackage = (() => {
         return void 0;
       }
       function parseNovelDetail(html, contentIdOrUrl) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e;
         const $ = cheerio.load(html);
         const id = (0, api_js_1.extractNovelId)(contentIdOrUrl);
-        const ogTitle = $("meta[property='og:title']").attr("content") || "";
-        const domTitle = $("h3.title a").first().text().trim() || $("div.desc h3.title").first().text().trim() || $("h3.title").first().text().trim() || $(".col-novel-main h3").first().text().trim();
+        const ogTitle = ((_a = $("meta[property='og:title']").attr("content")) == null ? void 0 : _a.trim()) || "";
+        const domTitle = $("h3.title").first().text().trim();
         const rawTitle = ogTitle || domTitle || id.replace(/-/g, " ");
-        const title = (0, api_js_1.cleanAndDeduplicateTitle)((0, preferences_js_1.decodeHtmlEntities)(rawTitle)) || id.replace(/-/g, " ") || "Untitled Novel";
+        const title = (0, api_js_1.cleanTitle)((0, preferences_js_1.decodeHtmlEntities)(rawTitle)) || id.replace(/-/g, " ") || "Untitled Novel";
         const $coverContainer = $(".books .book, .info-holder .book, .book, .info-holder, .col-info-desc").first();
         const coverImage = $coverContainer.length > 0 ? extractCoverFromElement($coverContainer, $) : (0, api_js_1.normalizeImageUrl)($("meta[property='og:image']").attr("content"));
         const authorSet = /* @__PURE__ */ new Set();
@@ -3492,7 +3491,7 @@ var SourcePackage = (() => {
         if ($desc.length > 0) {
           const $descClone = $desc.clone();
           $descClone.find("script, style, iframe, .ads").remove();
-          const rawDescHtml = (_b = (_a = $descClone.html()) != null ? _a : $descClone.text()) != null ? _b : "";
+          const rawDescHtml = (_c = (_b = $descClone.html()) != null ? _b : $descClone.text()) != null ? _c : "";
           const withLineBreaks = rawDescHtml.replace(/<br\s*\/?>/gi, "\n").replace(/<\/p>/gi, "\n\n").replace(/<[^>]+>/g, " ");
           summary = (0, preferences_js_1.decodeHtmlEntities)(withLineBreaks);
         }
@@ -3500,7 +3499,7 @@ var SourcePackage = (() => {
           summary = (0, preferences_js_1.decodeHtmlEntities)($("meta[name='description']").attr("content")) || constants_js_1.DEFAULT_SYNOPSIS_FALLBACK;
         }
         let ratingValue;
-        const rawScore = $("[itemprop='ratingValue']").first().text().trim() || ((_c = $("#rateVal").attr("value")) == null ? void 0 : _c.trim()) || ((_d = $("#rating").attr("data-score")) == null ? void 0 : _d.trim());
+        const rawScore = $("[itemprop='ratingValue']").first().text().trim() || ((_d = $("#rateVal").attr("value")) == null ? void 0 : _d.trim()) || ((_e = $("#rating").attr("data-score")) == null ? void 0 : _e.trim());
         if (rawScore) {
           const parsedScore = parseFloat(rawScore);
           if (Number.isFinite(parsedScore) && parsedScore > 0) {
@@ -3916,7 +3915,7 @@ var SourcePackage = (() => {
             this.fetchNovelDetail(contentId)
           ]);
           const content = mapDetailToContent(detail, prefs);
-          content.title = (0, api_js_1.cleanAndDeduplicateTitle)(content.title);
+          content.title = (0, api_js_1.cleanTitle)(content.title);
           return content;
         }
         /**
@@ -3946,15 +3945,9 @@ var SourcePackage = (() => {
           if (chapters.length === 0) {
             chapters = mapChapterEntriesToChapters(detail.onPageChapters, slug);
           }
-          chapters.sort((a, b) => {
-            var _a, _b;
-            if (a.number !== b.number) {
-              return a.number - b.number;
-            }
-            return ((_a = a.index) != null ? _a : 0) - ((_b = b.index) != null ? _b : 0);
-          });
-          chapters.forEach((chapter, idx) => {
-            chapter.index = idx;
+          chapters.sort((a, b) => a.number - b.number);
+          chapters.forEach((ch, idx) => {
+            ch.index = idx;
           });
           return chapters;
         }
@@ -3986,7 +3979,7 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.Target = exports.stripAggregatorWatermarks = exports.sanitizeChapterHtml = exports.parseNovelDetail = exports.parseNovelCards = exports.parseAjaxChapterOptions = exports.normalizeTypographyAndEntities = exports.normalizeImageUrl = exports.mapCardToItem = exports.isNovelAllowed = exports.formatTranslatorNotes = exports.filterAndMapNovelCards = exports.extractCoverFromElement = exports.extractChapterNumber = exports.compileBlacklistContext = exports.cleanAndDeduplicateTitle = exports.canResolveNovelFullUrl = void 0;
+      exports.Target = exports.stripAggregatorWatermarks = exports.sanitizeChapterHtml = exports.parseNovelDetail = exports.parseNovelCards = exports.parseChapterNumber = exports.parseAjaxChapterOptions = exports.normalizeTypographyAndEntities = exports.normalizeImageUrl = exports.mapCardToItem = exports.isNovelAllowed = exports.formatTranslatorNotes = exports.filterAndMapNovelCards = exports.extractCoverFromElement = exports.extractChapterNumber = exports.compileBlacklistContext = exports.cleanTitle = exports.cleanAndDeduplicateTitle = exports.canResolveNovelFullUrl = void 0;
       var toolchain_1 = require_dist();
       var api_js_1 = require_api();
       Object.defineProperty(exports, "canResolveNovelFullUrl", { enumerable: true, get: function() {
@@ -3994,6 +3987,9 @@ var SourcePackage = (() => {
       } });
       Object.defineProperty(exports, "cleanAndDeduplicateTitle", { enumerable: true, get: function() {
         return api_js_1.cleanAndDeduplicateTitle;
+      } });
+      Object.defineProperty(exports, "cleanTitle", { enumerable: true, get: function() {
+        return api_js_1.cleanTitle;
       } });
       Object.defineProperty(exports, "normalizeImageUrl", { enumerable: true, get: function() {
         return api_js_1.normalizeImageUrl;
@@ -4028,6 +4024,9 @@ var SourcePackage = (() => {
       } });
       Object.defineProperty(exports, "parseAjaxChapterOptions", { enumerable: true, get: function() {
         return scraper_js_1.parseAjaxChapterOptions;
+      } });
+      Object.defineProperty(exports, "parseChapterNumber", { enumerable: true, get: function() {
+        return scraper_js_1.parseChapterNumber;
       } });
       Object.defineProperty(exports, "parseNovelCards", { enumerable: true, get: function() {
         return scraper_js_1.parseNovelCards;
@@ -4102,8 +4101,10 @@ var SourcePackage = (() => {
           __publicField(this, "filterAndMapNovelCards", scraper_js_1.filterAndMapNovelCards);
           __publicField(this, "compileBlacklistContext", preferences_js_1.compileBlacklistContext);
           __publicField(this, "isNovelAllowed", preferences_js_1.isNovelAllowed);
-          __publicField(this, "cleanAndDeduplicateTitle", api_js_1.cleanAndDeduplicateTitle);
-          __publicField(this, "extractChapterNumber", scraper_js_1.extractChapterNumber);
+          __publicField(this, "cleanTitle", api_js_1.cleanTitle);
+          __publicField(this, "cleanAndDeduplicateTitle", api_js_1.cleanTitle);
+          __publicField(this, "parseChapterNumber", scraper_js_1.parseChapterNumber);
+          __publicField(this, "extractChapterNumber", scraper_js_1.parseChapterNumber);
           __publicField(this, "cachedHomeSections", null);
           this.scraper = scraper instanceof scraper_js_1.NovelFullScraperClient ? scraper : new scraper_js_1.NovelFullScraperClient();
         }
@@ -4251,7 +4252,7 @@ var SourcePackage = (() => {
         }
         async getContent(contentId) {
           const content = await this.scraper.fetchContent(contentId);
-          content.title = (0, api_js_1.cleanAndDeduplicateTitle)(content.title);
+          content.title = (0, api_js_1.cleanTitle)(content.title);
           return content;
         }
         // =========================================================================
@@ -4259,16 +4260,14 @@ var SourcePackage = (() => {
         // =========================================================================
         async getChapters(contentId) {
           const chapters = await this.scraper.fetchChapters(contentId);
-          chapters.sort((a, b) => {
-            var _a, _b;
-            if (a.number !== b.number) {
-              return a.number - b.number;
-            }
-            return ((_a = a.index) != null ? _a : 0) - ((_b = b.index) != null ? _b : 0);
+          chapters.sort((a, b) => a.number - b.number);
+          chapters.forEach((ch, idx) => {
+            ch.index = idx;
           });
-          chapters.forEach((chapter, idx) => {
-            chapter.index = idx;
-          });
+          if (chapters.length > 0) {
+            console.log(`FIRST: ${chapters[0].title} (num: ${chapters[0].number}, idx: ${chapters[0].index})`);
+            console.log(`LAST: ${chapters[chapters.length - 1].title} (num: ${chapters[chapters.length - 1].number}, idx: ${chapters[chapters.length - 1].index})`);
+          }
           return chapters;
         }
         async getChapterText(contentId, chapterId) {
@@ -4304,12 +4303,14 @@ var SourcePackage = (() => {
       __publicField(_Target, "filterAndMapNovelCards", scraper_js_1.filterAndMapNovelCards);
       __publicField(_Target, "compileBlacklistContext", preferences_js_1.compileBlacklistContext);
       __publicField(_Target, "isNovelAllowed", preferences_js_1.isNovelAllowed);
-      __publicField(_Target, "cleanAndDeduplicateTitle", api_js_1.cleanAndDeduplicateTitle);
-      __publicField(_Target, "extractChapterNumber", scraper_js_1.extractChapterNumber);
+      __publicField(_Target, "cleanTitle", api_js_1.cleanTitle);
+      __publicField(_Target, "cleanAndDeduplicateTitle", api_js_1.cleanTitle);
+      __publicField(_Target, "parseChapterNumber", scraper_js_1.parseChapterNumber);
+      __publicField(_Target, "extractChapterNumber", scraper_js_1.parseChapterNumber);
       var Target = _Target;
       exports.default = Target;
       exports.Target = Target;
-      Target.info.version = 1.3;
+      Target.info.version = 1.4;
     }
   });
 
@@ -4414,7 +4415,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_org();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "org.novelfull", "name": "NovelFull", "version": 1.3, "website": "https://novelfull.com", "rating": 0, "thumbnail": "novelfull.png", "languages": ["en"] };
+      exports.SourceMetadata = { "id": "org.novelfull", "name": "NovelFull", "version": 1.4, "website": "https://novelfull.com", "rating": 0, "thumbnail": "novelfull.png", "languages": ["en"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;
