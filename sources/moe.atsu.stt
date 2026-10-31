@@ -824,7 +824,7 @@ var SourcePackage = (() => {
       exports.ATSU_SORT_OPTIONS = exports.ATSU_STATUSES = exports.ATSU_FORMATS = exports.ATSU_THEMES = exports.ATSU_GENRES = exports.IMAGE_FORMAT_OPTIONS = exports.NSFW_RATINGS_SET = exports.ALL_CONTENT_RATINGS = exports.DEFAULT_ALLOWED_CONTENT_RATINGS = exports.CONTENT_RATING_OPTIONS = exports.DEFAULT_ENABLED_FORMATS = exports.FORMAT_PREFERENCE_OPTIONS = exports.PREF_KEYS = exports.PAGE_IMAGE_HEADERS = exports.WEBP_ACCEPT_HEADER = exports.IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.CONTENT_URL_REGEX = exports.NOVEL_URL_REGEX = exports.MANGA_URL_REGEX = exports.RATE_LIMIT_PER_SECOND = exports.DEFAULT_PAGE_SIZE = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_FALLBACK_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.CDN_STATIC_BASE = exports.SEARCH_ENDPOINT = exports.API_BASE = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = void 0;
       exports.SOURCE_ID = "moe.atsu";
       exports.SOURCE_NAME = "Atsumaru";
-      exports.SOURCE_VERSION = 2.5;
+      exports.SOURCE_VERSION = 2.6;
       exports.BASE_URL = "https://atsu.moe";
       exports.API_BASE = "https://atsu.moe/api";
       exports.SEARCH_ENDPOINT = `${exports.BASE_URL}/collections/manga/documents/search`;
@@ -1572,17 +1572,17 @@ var SourcePackage = (() => {
         top_rated: "topRated"
       };
       var MODE_TIMEFRAME_MAP = {
-        popular: "day",
-        popular_daily: "day",
-        popular_weekly: "week",
-        popular_monthly: "month",
+        popular: "daily",
+        popular_daily: "daily",
+        popular_weekly: "weekly",
+        popular_monthly: "monthly",
         popular_all: "all",
         most_bookmarked: "all",
-        bookmarked_daily: "day",
-        bookmarked_weekly: "week",
-        bookmarked_monthly: "month",
+        bookmarked_daily: "daily",
+        bookmarked_weekly: "weekly",
+        bookmarked_monthly: "monthly",
         bookmarked_all: "all",
-        weekly_most_bookmarked: "week"
+        weekly_most_bookmarked: "weekly"
       };
       function normalizeTimeframe(raw) {
         if (!raw || typeof raw !== "string")
@@ -1593,17 +1593,17 @@ var SourcePackage = (() => {
           case "today":
           case "1d":
           case "24h":
-            return "day";
+            return "daily";
           case "week":
           case "weekly":
           case "this_week":
           case "7d":
-            return "week";
+            return "weekly";
           case "month":
           case "monthly":
           case "this_month":
           case "30d":
-            return "month";
+            return "monthly";
           case "all":
           case "all_time":
           case "alltime":
@@ -1617,21 +1617,32 @@ var SourcePackage = (() => {
         const explicit = normalizeTimeframe(params.timeframe);
         if (explicit)
           return explicit;
-        if (params.sortBy && MODE_TIMEFRAME_MAP[params.sortBy]) {
-          return MODE_TIMEFRAME_MAP[params.sortBy];
-        }
         if (params.mode && MODE_TIMEFRAME_MAP[params.mode]) {
           return MODE_TIMEFRAME_MAP[params.mode];
         }
+        if (params.sortBy && MODE_TIMEFRAME_MAP[params.sortBy]) {
+          return MODE_TIMEFRAME_MAP[params.sortBy];
+        }
         return void 0;
       }
+      var EXPLICIT_SEARCH_SORT_KEYS = /* @__PURE__ */ new Set([
+        "mbRating",
+        "dateAdded",
+        "released",
+        "title_asc",
+        "title_desc"
+      ]);
       function resolveHomeEndpoint(params) {
         var _a, _b, _c, _d, _e;
         const hasFilters = !!((_a = params.query) == null ? void 0 : _a.trim()) || !!((_b = params.genres) == null ? void 0 : _b.include.length) || !!((_c = params.genres) == null ? void 0 : _c.exclude.length) || !!((_d = params.tags) == null ? void 0 : _d.include.length) || !!((_e = params.tags) == null ? void 0 : _e.exclude.length) || !!params.status && params.status !== "all";
         if (hasFilters)
           return void 0;
-        if (params.sortBy === "updatedAt")
+        if (params.sortBy && EXPLICIT_SEARCH_SORT_KEYS.has(params.sortBy)) {
+          return void 0;
+        }
+        if (params.sortBy === "updatedAt") {
           return "recentlyUpdated";
+        }
         if (params.sortBy) {
           if (params.sortBy === "popular" || params.sortBy === "popularity" || params.sortBy.startsWith("popular_")) {
             return "popular";
@@ -1639,9 +1650,11 @@ var SourcePackage = (() => {
           if (params.sortBy === "bookmarks" || params.sortBy === "most_bookmarked" || params.sortBy === "mostBookmarked" || params.sortBy.startsWith("bookmarked_") || params.sortBy === "weekly_most_bookmarked") {
             return "mostBookmarked";
           }
-          return void 0;
         }
-        return params.mode ? HOME_ENDPOINT_BY_MODE[params.mode] : void 0;
+        if (params.mode && HOME_ENDPOINT_BY_MODE[params.mode]) {
+          return HOME_ENDPOINT_BY_MODE[params.mode];
+        }
+        return void 0;
       }
       var MANGA_CACHE_TTL_MS = 1e4;
       var MANGA_CACHE_MAX_ENTRIES = 10;
@@ -2762,19 +2775,18 @@ var SourcePackage = (() => {
          * format/status filters, sorting, and pagination.
          */
         async fetchExplore(params = {}, preloadedPrefs) {
-          var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+          var _a, _b, _c, _d, _e, _f;
           const prefs = preloadedPrefs != null ? preloadedPrefs : await (0, preferences_js_1.getUserPreferences)();
           const page = Math.max(1, (_a = params.page) != null ? _a : 1);
           const perPage = (_b = params.perPage) != null ? _b : constants_js_1.DEFAULT_PAGE_SIZE;
           const isSearchNsfwOverride = params.includeNsfw === true;
           const formatSpecs = resolveActiveFormatSpecs(prefs, resolveFormatOverride(params));
           const resolvedTimeframe = resolveTimeframeForParams(params);
-          const resolvedSortBy = params.sortBy === "popular" || params.sortBy === "popularity" || ((_c = params.sortBy) == null ? void 0 : _c.startsWith("popular_")) || ((_d = params.mode) == null ? void 0 : _d.startsWith("popular")) ? "popular" : params.sortBy === "bookmarks" || params.sortBy === "most_bookmarked" || params.sortBy === "mostBookmarked" || ((_e = params.sortBy) == null ? void 0 : _e.startsWith("bookmarked_")) || ((_f = params.mode) == null ? void 0 : _f.startsWith("bookmarked_")) || params.mode === "most_bookmarked" || params.mode === "weekly_most_bookmarked" ? "bookmarks" : params.sortBy;
           const homeEndpoint = resolveHomeEndpoint(params);
           if (homeEndpoint) {
-            return this.fetchHomeEndpoint(homeEndpoint, page, perPage, prefs, isSearchNsfwOverride, formatSpecs.apiTypesParam, formatSpecs.apiMediumsParam, resolvedTimeframe, resolvedSortBy);
+            return this.fetchHomeEndpoint(homeEndpoint, page, perPage, prefs, isSearchNsfwOverride, formatSpecs.apiTypesParam, formatSpecs.apiMediumsParam, resolvedTimeframe);
           }
-          const queryText = ((_g = params.query) == null ? void 0 : _g.trim()) || "*";
+          const queryText = ((_c = params.query) == null ? void 0 : _c.trim()) || "*";
           const filterBy = this.buildTypesenseFilterBy(params, prefs, formatSpecs);
           const sortBy = this.buildTypesenseSortBy(params);
           const overrideFormatSet = formatSpecs.overrideFormatSet;
@@ -2783,7 +2795,6 @@ var SourcePackage = (() => {
             page,
             per_page: perPage,
             filter_by: filterBy,
-            ...resolvedTimeframe ? { timeframe: resolvedTimeframe } : {},
             include_fields: "id,title,englishTitle,image,poster,smallImage,mediumImage,largeImage,type,medium,status,isAdult,mbContentRating,mbRating,avgRating,views,popularity,genreIds,tagIds"
           };
           if (queryText !== "*") {
@@ -2801,7 +2812,7 @@ var SourcePackage = (() => {
             const imageFormat = prefs.imageFormat;
             const items = [];
             for (let i = 0, len = hits.length; i < len; i++) {
-              const doc = (_h = hits[i]) == null ? void 0 : _h.document;
+              const doc = (_d = hits[i]) == null ? void 0 : _d.document;
               if (!doc || !doc.id)
                 continue;
               if (!isMangaAllowedWithContext(doc, ctx, isSearchNsfwOverride)) {
@@ -2816,7 +2827,7 @@ var SourcePackage = (() => {
               items.push(mapSummaryToItem(doc, imageFormat));
             }
             const total = typeof (response == null ? void 0 : response.found) === "number" ? response.found : items.length;
-            const effectivePerPage = (_j = (_i = response == null ? void 0 : response.request_params) == null ? void 0 : _i.per_page) != null ? _j : perPage;
+            const effectivePerPage = (_f = (_e = response == null ? void 0 : response.request_params) == null ? void 0 : _e.per_page) != null ? _f : perPage;
             const isLastPage = hits.length === 0 || page * effectivePerPage >= total;
             return {
               items,
@@ -2829,27 +2840,26 @@ var SourcePackage = (() => {
             }
             if (queryText === "*") {
               const fallbackEndpoint = params.mode && FALLBACK_HOME_ENDPOINT_BY_MODE[params.mode] || "popular";
-              return this.fetchHomeEndpoint(fallbackEndpoint, page, perPage, prefs, isSearchNsfwOverride, formatSpecs.apiTypesParam, formatSpecs.apiMediumsParam, resolvedTimeframe, resolvedSortBy);
+              return this.fetchHomeEndpoint(fallbackEndpoint, page, perPage, prefs, isSearchNsfwOverride, formatSpecs.apiTypesParam, formatSpecs.apiMediumsParam, resolvedTimeframe);
             }
             throw error;
           }
         }
-        async fetchHomeEndpoint(endpoint, page = 1, limit = constants_js_1.DEFAULT_PAGE_SIZE, prefsOrAllowNsfw, isNsfwOverride = false, types, mediums, timeframe, sortBy) {
+        async fetchHomeEndpoint(endpoint, page = 1, limit = constants_js_1.DEFAULT_PAGE_SIZE, prefsOrAllowNsfw, isNsfwOverride = false, types, mediums, timeframe) {
           var _a, _b, _c;
           const prefs = typeof prefsOrAllowNsfw === "object" && prefsOrAllowNsfw !== null ? prefsOrAllowNsfw : await (0, preferences_js_1.getUserPreferences)();
           const ctx = compileFilterContext(prefs, isNsfwOverride);
           const allowAdult = isNsfwOverride || (typeof prefsOrAllowNsfw === "boolean" ? prefsOrAllowNsfw : ctx.allowsAdult);
           const formatSpecs = resolveActiveFormatSpecs(prefs, types);
           const offset = Math.max(0, (page - 1) * limit);
-          const normalizedTf = (_a = normalizeTimeframe(timeframe)) != null ? _a : endpoint === "popular" ? "day" : endpoint === "mostBookmarked" ? "all" : void 0;
-          const resolvedSortBy = sortBy != null ? sortBy : endpoint === "popular" ? "popular" : endpoint === "mostBookmarked" ? "bookmarks" : void 0;
+          const supportsTimeframe = endpoint === "popular" || endpoint === "mostBookmarked";
+          const normalizedTf = supportsTimeframe ? (_a = normalizeTimeframe(timeframe)) != null ? _a : endpoint === "popular" ? "daily" : "all" : void 0;
           const params = {
             offset,
             limit,
             types: types != null ? types : formatSpecs.apiTypesParam,
             mediums: mediums != null ? mediums : formatSpecs.apiMediumsParam,
-            ...resolvedSortBy ? { sortBy: resolvedSortBy } : {},
-            ...normalizedTf ? { timeframe: normalizedTf, period: normalizedTf } : {},
+            ...normalizedTf ? { timeframe: normalizedTf } : {},
             ...allowAdult ? { adult: 1 } : {}
           };
           const excludedIds = [
@@ -3359,23 +3369,39 @@ var SourcePackage = (() => {
         return { include, exclude };
       }
       var TIMEFRAME_SORT_MAP = {
-        popular_daily: { sortBy: "popular", timeframe: "day", mode: "popular_daily" },
-        popular_weekly: { sortBy: "popular", timeframe: "week", mode: "popular_weekly" },
-        popular_monthly: { sortBy: "popular", timeframe: "month", mode: "popular_monthly" },
-        popular_all: { sortBy: "popular", timeframe: "all", mode: "popular_all" },
+        popular_daily: {
+          sortBy: "popular",
+          timeframe: "daily",
+          mode: "popular_daily"
+        },
+        popular_weekly: {
+          sortBy: "popular",
+          timeframe: "weekly",
+          mode: "popular_weekly"
+        },
+        popular_monthly: {
+          sortBy: "popular",
+          timeframe: "monthly",
+          mode: "popular_monthly"
+        },
+        popular_all: {
+          sortBy: "popular",
+          timeframe: "all",
+          mode: "popular_all"
+        },
         bookmarked_daily: {
           sortBy: "bookmarks",
-          timeframe: "day",
+          timeframe: "daily",
           mode: "bookmarked_daily"
         },
         bookmarked_weekly: {
           sortBy: "bookmarks",
-          timeframe: "week",
+          timeframe: "weekly",
           mode: "bookmarked_weekly"
         },
         bookmarked_monthly: {
           sortBy: "bookmarks",
-          timeframe: "month",
+          timeframe: "monthly",
           mode: "bookmarked_monthly"
         },
         bookmarked_all: {
@@ -3620,8 +3646,7 @@ var SourcePackage = (() => {
       var SECTION_EXPLORE_PARAMS = {
         [HOME_SECTION_KEYS.SPOTLIGHT]: {
           mode: "popular_daily",
-          sortBy: "popular",
-          timeframe: "day",
+          timeframe: "daily",
           page: 1,
           perPage: 15
         },
@@ -3629,63 +3654,53 @@ var SourcePackage = (() => {
         [HOME_SECTION_KEYS.POPULAR]: { mode: "latest", page: 1, perPage: 24 },
         [HOME_SECTION_KEYS.WEEKLY_MOST_BOOKMARKED]: {
           mode: "bookmarked_weekly",
-          sortBy: "bookmarks",
-          timeframe: "week",
+          timeframe: "weekly",
           page: 1,
           perPage: 24
         },
         [DIRECTORY_FEED_KEYS.BOOKMARKED_WEEKLY]: {
           mode: "bookmarked_weekly",
-          sortBy: "bookmarks",
-          timeframe: "week",
+          timeframe: "weekly",
           page: 1,
           perPage: 24
-        }
+        },
+        [DIRECTORY_FEED_KEYS.TOP_RATED]: { mode: "top_rated", page: 1, perPage: 24 }
       };
       var FEED_EXPLORE_CONFIG = {
         discover: {
           mode: "popular_daily",
-          defaultSortBy: "popular",
-          defaultTimeframe: "day"
+          defaultTimeframe: "daily"
         },
         [DIRECTORY_FEED_KEYS.POPULAR_DAILY]: {
           mode: "popular_daily",
-          defaultSortBy: "popular",
-          defaultTimeframe: "day"
+          defaultTimeframe: "daily"
         },
         [DIRECTORY_FEED_KEYS.POPULAR_WEEKLY]: {
           mode: "popular_weekly",
-          defaultSortBy: "popular",
-          defaultTimeframe: "week"
+          defaultTimeframe: "weekly"
         },
         [DIRECTORY_FEED_KEYS.POPULAR_MONTHLY]: {
           mode: "popular_monthly",
-          defaultSortBy: "popular",
-          defaultTimeframe: "month"
+          defaultTimeframe: "monthly"
         },
         [DIRECTORY_FEED_KEYS.POPULAR_ALL]: {
           mode: "popular_all",
-          defaultSortBy: "popular",
           defaultTimeframe: "all"
         },
         [DIRECTORY_FEED_KEYS.BOOKMARKED_DAILY]: {
           mode: "bookmarked_daily",
-          defaultSortBy: "bookmarks",
-          defaultTimeframe: "day"
+          defaultTimeframe: "daily"
         },
         [DIRECTORY_FEED_KEYS.BOOKMARKED_WEEKLY]: {
           mode: "bookmarked_weekly",
-          defaultSortBy: "bookmarks",
-          defaultTimeframe: "week"
+          defaultTimeframe: "weekly"
         },
         [DIRECTORY_FEED_KEYS.BOOKMARKED_MONTHLY]: {
           mode: "bookmarked_monthly",
-          defaultSortBy: "bookmarks",
-          defaultTimeframe: "month"
+          defaultTimeframe: "monthly"
         },
         [DIRECTORY_FEED_KEYS.BOOKMARKED_ALL]: {
           mode: "bookmarked_all",
-          defaultSortBy: "bookmarks",
           defaultTimeframe: "all"
         },
         [DIRECTORY_FEED_KEYS.TOP_RATED]: {
@@ -3699,8 +3714,7 @@ var SourcePackage = (() => {
         },
         [DIRECTORY_FEED_KEYS.POPULAR]: {
           mode: "popular",
-          defaultSortBy: "popular",
-          defaultTimeframe: "day"
+          defaultTimeframe: "daily"
         },
         [DIRECTORY_FEED_KEYS.LATEST]: {
           mode: "latest"
@@ -3715,13 +3729,11 @@ var SourcePackage = (() => {
         },
         [DIRECTORY_FEED_KEYS.MOST_BOOKMARKED]: {
           mode: "most_bookmarked",
-          defaultSortBy: "bookmarks",
           defaultTimeframe: "all"
         },
         [HOME_SECTION_KEYS.WEEKLY_MOST_BOOKMARKED]: {
           mode: "bookmarked_weekly",
-          defaultSortBy: "bookmarks",
-          defaultTimeframe: "week"
+          defaultTimeframe: "weekly"
         }
       };
       var _Target = class _Target {
@@ -3757,19 +3769,44 @@ var SourcePackage = (() => {
             };
           }
           const prefs = await (0, preferences_js_1.getUserPreferences)();
-          const [spotlightRes, latestRes, hotUpdatesRes, weeklyBookmarkedRes] = await Promise.all([
+          const settled = await Promise.allSettled([
             this.api.fetchExplore(SECTION_EXPLORE_PARAMS[HOME_SECTION_KEYS.SPOTLIGHT], prefs),
             this.api.fetchExplore(SECTION_EXPLORE_PARAMS[HOME_SECTION_KEYS.POPULAR], prefs),
             this.api.fetchExplore(SECTION_EXPLORE_PARAMS[HOME_SECTION_KEYS.HOT_UPDATES], prefs),
             this.api.fetchExplore(SECTION_EXPLORE_PARAMS[HOME_SECTION_KEYS.WEEKLY_MOST_BOOKMARKED], prefs)
           ]);
-          const sections = [
+          const extractItems = (res) => {
+            var _a;
+            if (res.status === "fulfilled" && Array.isArray((_a = res.value) == null ? void 0 : _a.items)) {
+              return res.value.items;
+            }
+            return [];
+          };
+          const spotlightItems = extractItems(settled[0]);
+          const latestItems = extractItems(settled[1]);
+          const hotUpdatesItems = extractItems(settled[2]);
+          let weeklyBookmarkedItems = extractItems(settled[3]);
+          if (weeklyBookmarkedItems.length === 0) {
+            try {
+              const fallbackBookmarked = await this.api.fetchExplore({
+                mode: "bookmarked_all",
+                timeframe: "all",
+                page: 1,
+                perPage: 24
+              }, prefs);
+              if (Array.isArray(fallbackBookmarked == null ? void 0 : fallbackBookmarked.items)) {
+                weeklyBookmarkedItems = fallbackBookmarked.items;
+              }
+            } catch {
+            }
+          }
+          const candidateSections = [
             {
               id: HOME_SECTION_KEYS.SPOTLIGHT,
               title: "Spotlight & Trending",
               subtitle: "Most popular series on Atsumaru today",
               style: toolchain_1.PageSectionStyle.BANNER,
-              items: spotlightRes.items,
+              items: spotlightItems,
               destination: SPOTLIGHT_DESTINATION
             },
             {
@@ -3777,7 +3814,7 @@ var SourcePackage = (() => {
               title: "Hot Updates",
               subtitle: "High momentum chapters and popular releases",
               style: toolchain_1.PageSectionStyle.DEFAULT,
-              items: hotUpdatesRes.items,
+              items: hotUpdatesItems,
               destination: HOT_UPDATES_DESTINATION
             },
             {
@@ -3785,7 +3822,7 @@ var SourcePackage = (() => {
               title: "Latest Updates",
               subtitle: "Recently updated chapters across all scanlators",
               style: toolchain_1.PageSectionStyle.DEFAULT,
-              items: latestRes.items,
+              items: latestItems,
               destination: LATEST_UPDATES_DESTINATION
             },
             {
@@ -3793,10 +3830,18 @@ var SourcePackage = (() => {
               title: "Weekly Most Bookmarked",
               subtitle: "Most bookmarked series on Atsumaru this week",
               style: toolchain_1.PageSectionStyle.DEFAULT,
-              items: weeklyBookmarkedRes.items,
+              items: weeklyBookmarkedItems,
               destination: WEEKLY_MOST_BOOKMARKED_DESTINATION
             }
           ];
+          const sections = candidateSections.filter((sec) => Array.isArray(sec.items) && sec.items.length > 0);
+          if (sections.length === 0) {
+            for (const res of settled) {
+              if (res.status === "rejected" && res.reason instanceof CloudflareError) {
+                throw res.reason;
+              }
+            }
+          }
           return {
             sections,
             isLastPage: true
@@ -3897,7 +3942,7 @@ var SourcePackage = (() => {
       var Target = _Target;
       exports.default = Target;
       exports.Target = Target;
-      Target.info.version = 2.5;
+      Target.info.version = 2.6;
       var api_js_2 = require_api();
       Object.defineProperty(exports, "getItemEffectiveFormat", { enumerable: true, get: function() {
         return api_js_2.getItemEffectiveFormat;
@@ -3930,7 +3975,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_moe();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "moe.atsu", "name": "Atsumaru", "version": 2.5, "website": "https://atsu.moe", "rating": 1, "thumbnail": "https://atsu.moe/favicon.ico", "languages": ["en"] };
+      exports.SourceMetadata = { "id": "moe.atsu", "name": "Atsumaru", "version": 2.6, "website": "https://atsu.moe", "rating": 1, "thumbnail": "https://atsu.moe/favicon.ico", "languages": ["en"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;

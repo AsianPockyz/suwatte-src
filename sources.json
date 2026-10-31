@@ -1,12 +1,12 @@
 {
   "catalogVersion": 2,
-  "generatedAt": "2026-10-31T20:31:58.055Z",
+  "generatedAt": "2026-10-31T21:02:46.079Z",
   "listName": "Atsumaru Source",
   "sources": [
     {
       "id": "moe.atsu",
       "name": "Atsumaru",
-      "version": 2.5,
+      "version": 2.6,
       "website": "https://atsu.moe",
       "rating": 1,
       "thumbnail": "Atsu.png",
