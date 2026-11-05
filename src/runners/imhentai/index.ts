@@ -64,27 +64,22 @@ import type {
   Searchable,
 } from "./types.js";
 
-const SPOTLIGHT_DESTINATION = ItemListDestination(
-  { key: BROWSE_FEED_KEYS.TRENDING },
-  "Trending"
+const POPULAR_TODAY_DESTINATION = ItemListDestination(
+  { key: BROWSE_FEED_KEYS.POPULAR_DAILY },
+  "Popular Today"
 );
 
-const TRENDING_NOW_DESTINATION = ItemListDestination(
-  { key: BROWSE_FEED_KEYS.TRENDING },
-  "Trending Now"
+const POPULAR_THIS_WEEK_DESTINATION = ItemListDestination(
+  { key: BROWSE_FEED_KEYS.POPULAR_WEEKLY },
+  "Popular This Week"
 );
 
-const FRESH_RELEASES_DESTINATION = ItemListDestination(
+const LATEST_RELEASES_DESTINATION = ItemListDestination(
   { key: BROWSE_FEED_KEYS.LATEST },
-  "Fresh Releases"
+  "Latest Releases"
 );
 
-const TOP_RATED_DESTINATION = ItemListDestination(
-  { key: BROWSE_FEED_KEYS.TOP_RATED },
-  "Top Rated"
-);
-
-const STATIC_CUSTOM_FEEDS: SourceFeed[] = [
+export const STATIC_CUSTOM_FEEDS: SourceFeed[] = [
   {
     id: BROWSE_FEED_KEYS.DISCOVER,
     title: "Discover",
@@ -93,20 +88,56 @@ const STATIC_CUSTOM_FEEDS: SourceFeed[] = [
     },
   },
   {
-    id: BROWSE_FEED_KEYS.TRENDING,
-    title: "Trending",
+    id: BROWSE_FEED_KEYS.POPULAR_DAILY,
+    title: "Popular (Daily)",
     content: {
       list: {
-        key: BROWSE_FEED_KEYS.TRENDING,
+        key: BROWSE_FEED_KEYS.POPULAR_DAILY,
       },
     },
   },
   {
-    id: BROWSE_FEED_KEYS.POPULAR,
-    title: "Popular",
+    id: BROWSE_FEED_KEYS.POPULAR_WEEKLY,
+    title: "Popular (Weekly)",
     content: {
       list: {
-        key: BROWSE_FEED_KEYS.POPULAR,
+        key: BROWSE_FEED_KEYS.POPULAR_WEEKLY,
+      },
+    },
+  },
+  {
+    id: BROWSE_FEED_KEYS.POPULAR_MONTHLY,
+    title: "Popular (Monthly)",
+    content: {
+      list: {
+        key: BROWSE_FEED_KEYS.POPULAR_MONTHLY,
+      },
+    },
+  },
+  {
+    id: BROWSE_FEED_KEYS.TOP_RATED_DAILY,
+    title: "Top Rated (Daily)",
+    content: {
+      list: {
+        key: BROWSE_FEED_KEYS.TOP_RATED_DAILY,
+      },
+    },
+  },
+  {
+    id: BROWSE_FEED_KEYS.TOP_RATED_WEEKLY,
+    title: "Top Rated (Weekly)",
+    content: {
+      list: {
+        key: BROWSE_FEED_KEYS.TOP_RATED_WEEKLY,
+      },
+    },
+  },
+  {
+    id: BROWSE_FEED_KEYS.TOP_RATED_MONTHLY,
+    title: "Top Rated (Monthly)",
+    content: {
+      list: {
+        key: BROWSE_FEED_KEYS.TOP_RATED_MONTHLY,
       },
     },
   },
@@ -116,15 +147,6 @@ const STATIC_CUSTOM_FEEDS: SourceFeed[] = [
     content: {
       list: {
         key: BROWSE_FEED_KEYS.LATEST,
-      },
-    },
-  },
-  {
-    id: BROWSE_FEED_KEYS.TOP_RATED,
-    title: "Top Rated",
-    content: {
-      list: {
-        key: BROWSE_FEED_KEYS.TOP_RATED,
       },
     },
   },
@@ -185,7 +207,7 @@ export default class Target
   }
 
   // =========================================================================
-  // HomeProvider
+  // HomeProvider (Discover Dashboard with 3 Horizontal Carousels)
   // =========================================================================
 
   async getHomePage(): Promise<HomePage> {
@@ -213,55 +235,39 @@ export default class Target
       return this.cachedHomeSections.data;
     }
 
-    // Memoize preferences once for the entire home page request cycle
     const prefs = await getUserPreferences();
 
-    // Concurrent parallel execution of home shelves
-    const [trendingRes, freshRes, topRatedRes] = await Promise.all([
-      this.scraper.fetchFeedItems(BROWSE_FEED_KEYS.TRENDING, 1, prefs),
+    // Concurrent parallel execution of the 3 distinct carousels
+    const [popularTodayRes, popularWeeklyRes, latestRes] = await Promise.all([
+      this.scraper.fetchFeedItems(BROWSE_FEED_KEYS.POPULAR_DAILY, 1, prefs),
+      this.scraper.fetchFeedItems(BROWSE_FEED_KEYS.POPULAR_WEEKLY, 1, prefs),
       this.scraper.fetchFeedItems(BROWSE_FEED_KEYS.LATEST, 1, prefs),
-      this.scraper.fetchFeedItems(BROWSE_FEED_KEYS.TOP_RATED, 1, prefs),
     ]);
-
-    // Spotlight Banner: Carousel of prominent trending titles
-    const bannerItems =
-      trendingRes.items.length >= 5
-        ? trendingRes.items.slice(0, 10)
-        : trendingRes.items;
 
     const sections: ItemPageSection[] = [
       {
-        id: HOME_SECTION_KEYS.SPOTLIGHT,
-        title: "Featured",
-        subtitle: "Prominent trending releases on IMHentai",
-        style: PageSectionStyle.BANNER,
-        items: bannerItems,
-        destination: SPOTLIGHT_DESTINATION,
+        id: HOME_SECTION_KEYS.POPULAR_TODAY,
+        title: "Popular Today",
+        subtitle: "Trending releases from the past 24 hours resolved on IMHentai",
+        style: PageSectionStyle.DEFAULT,
+        items: popularTodayRes.items,
+        destination: POPULAR_TODAY_DESTINATION,
       },
       {
-        id: HOME_SECTION_KEYS.TRENDING_NOW,
-        title: "Trending Now",
-        subtitle:
-          "Fast-rising releases combining high ratings with recent uploads",
+        id: HOME_SECTION_KEYS.POPULAR_THIS_WEEK,
+        title: "Popular This Week",
+        subtitle: "Weekly trending highlights resolved on IMHentai",
         style: PageSectionStyle.DEFAULT,
-        items: trendingRes.items,
-        destination: TRENDING_NOW_DESTINATION,
+        items: popularWeeklyRes.items,
+        destination: POPULAR_THIS_WEEK_DESTINATION,
       },
       {
-        id: HOME_SECTION_KEYS.FRESH_RELEASES,
-        title: "Fresh Releases",
-        subtitle: "Newest additions matching your preferred language",
+        id: HOME_SECTION_KEYS.LATEST_RELEASES,
+        title: "Latest Releases",
+        subtitle: "Fresh chronological drops on IMHentai",
         style: PageSectionStyle.DEFAULT,
-        items: freshRes.items,
-        destination: FRESH_RELEASES_DESTINATION,
-      },
-      {
-        id: HOME_SECTION_KEYS.TOP_RATED,
-        title: "Top Rated",
-        subtitle: "Standout all-time favorites and high-scoring works",
-        style: PageSectionStyle.DEFAULT,
-        items: topRatedRes.items,
-        destination: TOP_RATED_DESTINATION,
+        items: latestRes.items,
+        destination: LATEST_RELEASES_DESTINATION,
       },
     ];
 
@@ -280,21 +286,27 @@ export default class Target
     const prefs = await getUserPreferences();
     let feedKey: string = sectionKey;
     if (
+      sectionKey === HOME_SECTION_KEYS.POPULAR_TODAY ||
       sectionKey === HOME_SECTION_KEYS.SPOTLIGHT ||
       sectionKey === HOME_SECTION_KEYS.TRENDING_NOW
     ) {
-      feedKey = BROWSE_FEED_KEYS.TRENDING;
-    } else if (sectionKey === HOME_SECTION_KEYS.FRESH_RELEASES) {
+      feedKey = BROWSE_FEED_KEYS.POPULAR_DAILY;
+    } else if (sectionKey === HOME_SECTION_KEYS.POPULAR_THIS_WEEK) {
+      feedKey = BROWSE_FEED_KEYS.POPULAR_WEEKLY;
+    } else if (
+      sectionKey === HOME_SECTION_KEYS.LATEST_RELEASES ||
+      sectionKey === HOME_SECTION_KEYS.FRESH_RELEASES
+    ) {
       feedKey = BROWSE_FEED_KEYS.LATEST;
     } else if (sectionKey === HOME_SECTION_KEYS.TOP_RATED) {
-      feedKey = BROWSE_FEED_KEYS.TOP_RATED;
+      feedKey = BROWSE_FEED_KEYS.TOP_RATED_WEEKLY;
     }
     const res = await this.scraper.fetchFeedItems(feedKey, 1, prefs);
     return res.items;
   }
 
   // =========================================================================
-  // DirectoryHandler
+  // DirectoryHandler (8 Custom Browse Category Feeds)
   // =========================================================================
 
   async getCustomFeeds(): Promise<SourceFeed[]> {

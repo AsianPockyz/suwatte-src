@@ -59,6 +59,23 @@ export interface ImHentaiUserPreferences {
   categories: ImHentaiCategoryId[];
   language: ImHentaiLanguageId;
   titlePreference: ImHentaiTitlePreference;
+  tropeExclusions: string[];
+  customBlacklist: string;
+}
+
+export interface EHentaiGalleryRef {
+  gid: number;
+  token: string;
+}
+
+export interface EHentaiGalleryMetadata {
+  gid: number;
+  token: string;
+  title: string;
+  title_jpn?: string;
+  category: string;
+  tags: string[];
+  thumb?: string;
 }
 
 export interface ImHentaiSourceConfiguration extends SourceConfiguration {

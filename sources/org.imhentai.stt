@@ -833,15 +833,15 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.G_TH_OBJECT_REGEX = exports.G_TH_STRING_REGEX = exports.G_TH_PARSE_JSON_REGEX = exports.THUMB_PAGENUM_EXT_REGEX = exports.PAGES_TEXT_REGEX = exports.INLINE_LOAD_PAGES_REGEX = exports.INLINE_LOAD_ID_REGEX = exports.INLINE_LOAD_DIR_REGEX = exports.INLINE_GALLERY_ID_REGEX = exports.FLAG_JA_REGEX = exports.FLAG_JP_REGEX = exports.BG_IMAGE_URL_REGEX = exports.BADGE_COUNT_REGEX = exports.BRACKET_TOKEN_REGEX = exports.COMMA_SEMICOLON_REGEX = exports.CATEGORY_PREFIX_REGEX = exports.WHITESPACE_REGEX = exports.PROTOCOL_RELATIVE_REGEX = exports.HTTP_PREFIX_REGEX = exports.LEADING_DOT_REGEX = exports.TRIM_SLASHES_REGEX = exports.EXT_REGEX = exports.NUMERIC_ONLY_REGEX = exports.SERVER_PREFIX_REGEX = exports.SERVER_FROM_URL_REGEX = exports.VIEW_PATH_REGEX = exports.GALLERY_PATH_REGEX = exports.GALLERY_URL_REGEX = exports.DEFAULT_IMAGE_EXT = exports.DEFAULT_SERVER_ID = exports.RATE_LIMIT_PER_SECOND = exports.STATIC_CONFIGURATION = exports.PAGE_IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.STANDARD_HEADERS = exports.DEFAULT_USER_AGENT = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_RESOLUTION_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.SOURCE_CONTENT_RATING = exports.SOURCE_LANGUAGES = exports.SOURCE_ENVIRONMENT = exports.THUMBNAIL_FILENAME = exports.VARIANT_ID = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = exports.ContentRating = void 0;
-      exports.EXTENSION_CODE_MAP = exports.IMHENTAI_FILTER_LANGUAGES = exports.SEARCH_CATEGORY_OPTIONS = exports.IMHENTAI_SORT_OPTIONS = exports.BROWSE_FEED_DEFINITIONS = exports.BROWSE_FEED_KEYS = exports.HOME_SECTION_KEYS = exports.DEFAULT_TITLE_PREFERENCE = exports.TITLE_PREFERENCE_OPTIONS = exports.LANGUAGE_QUERY_MAP = exports.DEFAULT_LANGUAGE = exports.LANGUAGE_OPTIONS = exports.SEARCH_LANGUAGE_KEYS = exports.SEARCH_CATEGORY_KEYS = exports.CATEGORY_QUERY_MAP = exports.ALL_CATEGORIES = exports.DEFAULT_CATEGORIES = exports.CATEGORY_OPTIONS = exports.PREF_KEYS = exports.G_TH_FALLBACK_ENTRY_REGEX = void 0;
+      exports.INLINE_LOAD_PAGES_REGEX = exports.INLINE_LOAD_ID_REGEX = exports.INLINE_LOAD_DIR_REGEX = exports.INLINE_GALLERY_ID_REGEX = exports.FLAG_JA_REGEX = exports.FLAG_JP_REGEX = exports.BG_IMAGE_URL_REGEX = exports.BADGE_COUNT_REGEX = exports.BRACKET_TOKEN_REGEX = exports.COMMA_SEMICOLON_REGEX = exports.CATEGORY_PREFIX_REGEX = exports.WHITESPACE_REGEX = exports.PROTOCOL_RELATIVE_REGEX = exports.HTTP_PREFIX_REGEX = exports.LEADING_DOT_REGEX = exports.TRIM_SLASHES_REGEX = exports.EXT_REGEX = exports.NUMERIC_ONLY_REGEX = exports.SERVER_PREFIX_REGEX = exports.SERVER_FROM_URL_REGEX = exports.VIEW_PATH_REGEX = exports.GALLERY_PATH_REGEX = exports.GALLERY_URL_REGEX = exports.EHENTAI_API_HEADERS = exports.EHENTAI_HEADERS = exports.EHENTAI_GALLERY_LINK_REGEX = exports.EHENTAI_API_URL = exports.EHENTAI_BASE_URL = exports.DEFAULT_IMAGE_EXT = exports.DEFAULT_SERVER_ID = exports.RATE_LIMIT_PER_SECOND = exports.STATIC_CONFIGURATION = exports.PAGE_IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.STANDARD_HEADERS = exports.DEFAULT_USER_AGENT = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_RESOLUTION_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.SOURCE_CONTENT_RATING = exports.SOURCE_LANGUAGES = exports.SOURCE_ENVIRONMENT = exports.THUMBNAIL_FILENAME = exports.VARIANT_ID = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = exports.ContentRating = void 0;
+      exports.EXTENSION_CODE_MAP = exports.IMHENTAI_FILTER_LANGUAGES = exports.SEARCH_CATEGORY_OPTIONS = exports.IMHENTAI_SORT_OPTIONS = exports.BROWSE_FEED_DEFINITIONS = exports.BROWSE_FEED_KEYS = exports.HOME_SECTION_KEYS = exports.DEFAULT_TITLE_PREFERENCE = exports.TITLE_PREFERENCE_OPTIONS = exports.DEFAULT_CUSTOM_BLACKLIST = exports.DEFAULT_TROPE_EXCLUSIONS = exports.TROPE_TAG_MAP = exports.TROPE_EXCLUSION_OPTIONS = exports.LANGUAGE_QUERY_MAP = exports.DEFAULT_LANGUAGE = exports.LANGUAGE_OPTIONS = exports.SEARCH_LANGUAGE_KEYS = exports.SEARCH_CATEGORY_KEYS = exports.CATEGORY_QUERY_MAP = exports.ALL_CATEGORIES = exports.DEFAULT_CATEGORIES = exports.CATEGORY_OPTIONS = exports.PREF_KEYS = exports.G_TH_FALLBACK_ENTRY_REGEX = exports.G_TH_OBJECT_REGEX = exports.G_TH_STRING_REGEX = exports.G_TH_PARSE_JSON_REGEX = exports.THUMB_PAGENUM_EXT_REGEX = exports.PAGES_TEXT_REGEX = void 0;
       var toolchain_1 = require_dist();
       require_types2();
       toolchain_1.ContentRating.ADULT = toolchain_1.ContentRating.MATURE;
       exports.ContentRating = toolchain_1.ContentRating;
       exports.SOURCE_ID = "org.imhentai";
       exports.SOURCE_NAME = "IMHentai";
-      exports.SOURCE_VERSION = 1.7;
+      exports.SOURCE_VERSION = 1.8;
       exports.BASE_URL = "https://imhentai.xxx";
       exports.VARIANT_ID = "org.imhentai";
       exports.THUMBNAIL_FILENAME = "imhentai.png";
@@ -883,6 +883,21 @@ var SourcePackage = (() => {
       exports.RATE_LIMIT_PER_SECOND = 3;
       exports.DEFAULT_SERVER_ID = "1";
       exports.DEFAULT_IMAGE_EXT = "jpg";
+      exports.EHENTAI_BASE_URL = "https://e-hentai.org";
+      exports.EHENTAI_API_URL = "https://api.e-hentai.org/api.php";
+      exports.EHENTAI_GALLERY_LINK_REGEX = /\/g\/(\d+)\/([a-f0-9]+)/gi;
+      exports.EHENTAI_HEADERS = Object.freeze({
+        Referer: "https://e-hentai.org/",
+        "User-Agent": exports.DEFAULT_USER_AGENT,
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9"
+      });
+      exports.EHENTAI_API_HEADERS = Object.freeze({
+        Referer: "https://e-hentai.org/",
+        "User-Agent": exports.DEFAULT_USER_AGENT,
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      });
       exports.GALLERY_URL_REGEX = /^https?:\/\/(?:www\.)?imhentai\.xxx\/gallery\/(\d+)/i;
       exports.GALLERY_PATH_REGEX = /\/gallery\/(\d+)/i;
       exports.VIEW_PATH_REGEX = /\/view\/(\d+)(?:\/(\d+))?/i;
@@ -915,20 +930,22 @@ var SourcePackage = (() => {
       exports.PREF_KEYS = {
         CATEGORIES: "enabled_categories",
         LANGUAGE: "content_languages",
+        TROPE_EXCLUSIONS: "heavy_trope_exclusions",
+        CUSTOM_BLACKLIST: "custom_tag_blacklist",
         TITLE_PREFERENCE: "title_language_preference",
         // Legacy aliases
         LEGACY_CATEGORIES: "imhentai_pref_categories",
         LEGACY_LANGUAGE: "imhentai_pref_language",
+        LEGACY_TROPE_EXCLUSIONS: "imhentai_pref_trope_exclusions",
+        LEGACY_CUSTOM_BLACKLIST: "imhentai_pref_custom_blacklist",
         LEGACY_TITLE_PREFERENCE: "imhentai_pref_title_preference"
       };
       exports.CATEGORY_OPTIONS = Object.freeze([
         { id: "doujinshi", title: "Doujinshi", queryParam: "d" },
-        { id: "manga", title: "Serialized Manga", queryParam: "m" },
-        { id: "western", title: "Western Adult Comics", queryParam: "w" },
-        { id: "imageset", title: "Image Sets", queryParam: "i" },
+        { id: "manga", title: "Manga", queryParam: "m" },
+        { id: "western", title: "Western", queryParam: "w" },
         { id: "artistcg", title: "Artist CG", queryParam: "a" },
-        { id: "gamecg", title: "Game CG", queryParam: "g" },
-        { id: "cosplay", title: "Cosplay Packs", queryParam: "c" }
+        { id: "cosplay", title: "Cosplay", queryParam: "c" }
       ]);
       exports.DEFAULT_CATEGORIES = Object.freeze([
         "doujinshi",
@@ -981,13 +998,6 @@ var SourcePackage = (() => {
       ]);
       exports.LANGUAGE_OPTIONS = Object.freeze([
         { id: "en", title: "English", queryParam: "en" },
-        { id: "jp", title: "Japanese", queryParam: "jp" },
-        { id: "es", title: "Spanish", queryParam: "es" },
-        { id: "fr", title: "French", queryParam: "fr" },
-        { id: "kr", title: "Korean", queryParam: "kr" },
-        { id: "de", title: "German", queryParam: "de" },
-        { id: "ru", title: "Russian", queryParam: "ru" },
-        { id: "zh", title: "Chinese", queryParam: "zh" },
         { id: "all", title: "All Languages" }
       ]);
       exports.DEFAULT_LANGUAGE = "en";
@@ -1011,12 +1021,58 @@ var SourcePackage = (() => {
         ru: "ru",
         russian: "ru"
       });
+      exports.TROPE_EXCLUSION_OPTIONS = Object.freeze([
+        {
+          id: "yaoi",
+          title: "Yaoi / Male Only",
+          tags: ["yaoi", "male only", "males only", "guy only"]
+        },
+        {
+          id: "netorare",
+          title: "Netorare (NTR)",
+          tags: ["netorare", "ntr", "cheating"]
+        },
+        {
+          id: "futanari",
+          title: "Futanari",
+          tags: ["futanari", "dickgirl"]
+        },
+        {
+          id: "guro",
+          title: "Guro / Gore",
+          tags: ["guro", "gore"]
+        },
+        {
+          id: "scat",
+          title: "Scat",
+          tags: ["scat", "coprophagia"]
+        },
+        {
+          id: "snuff",
+          title: "Snuff",
+          tags: ["snuff"]
+        }
+      ]);
+      exports.TROPE_TAG_MAP = Object.freeze({
+        yaoi: ["yaoi", "male only", "males only", "guy only"],
+        netorare: ["netorare", "ntr", "cheating"],
+        futanari: ["futanari", "dickgirl"],
+        guro: ["guro", "gore"],
+        scat: ["scat", "coprophagia"],
+        snuff: ["snuff"]
+      });
+      exports.DEFAULT_TROPE_EXCLUSIONS = Object.freeze([]);
+      exports.DEFAULT_CUSTOM_BLACKLIST = "";
       exports.TITLE_PREFERENCE_OPTIONS = Object.freeze([
         { id: "english", title: "English Title (Japanese in Subtitle)" },
         { id: "japanese", title: "Japanese Title (English in Subtitle)" }
       ]);
       exports.DEFAULT_TITLE_PREFERENCE = "english";
       exports.HOME_SECTION_KEYS = {
+        POPULAR_TODAY: "popular_today",
+        POPULAR_THIS_WEEK: "popular_this_week",
+        LATEST_RELEASES: "latest_releases",
+        // Legacy aliases
         SPOTLIGHT: "spotlight",
         TRENDING_NOW: "trending_now",
         FRESH_RELEASES: "fresh_releases",
@@ -1026,9 +1082,16 @@ var SourcePackage = (() => {
       };
       exports.BROWSE_FEED_KEYS = {
         DISCOVER: "discover",
+        POPULAR_DAILY: "popular_daily",
+        POPULAR_WEEKLY: "popular_weekly",
+        POPULAR_MONTHLY: "popular_monthly",
+        TOP_RATED_DAILY: "top_rated_daily",
+        TOP_RATED_WEEKLY: "top_rated_weekly",
+        TOP_RATED_MONTHLY: "top_rated_monthly",
+        LATEST: "latest",
+        // Legacy aliases for backward compatibility
         TRENDING: "trending",
         POPULAR: "popular",
-        LATEST: "latest",
         TOP_RATED: "top_rated",
         MANGA: "manga",
         DOUJINSHI: "doujinshi",
@@ -1041,24 +1104,32 @@ var SourcePackage = (() => {
           isHomePage: true
         },
         {
-          id: exports.BROWSE_FEED_KEYS.TRENDING,
-          title: "Trending",
-          urlTemplate: "/search/?lt=1&pp=1&page={page}"
+          id: exports.BROWSE_FEED_KEYS.POPULAR_DAILY,
+          title: "Popular (Daily)"
         },
         {
-          id: exports.BROWSE_FEED_KEYS.POPULAR,
-          title: "Popular",
-          urlTemplate: "/search/?lt=0&pp=1&page={page}"
+          id: exports.BROWSE_FEED_KEYS.POPULAR_WEEKLY,
+          title: "Popular (Weekly)"
+        },
+        {
+          id: exports.BROWSE_FEED_KEYS.POPULAR_MONTHLY,
+          title: "Popular (Monthly)"
+        },
+        {
+          id: exports.BROWSE_FEED_KEYS.TOP_RATED_DAILY,
+          title: "Top Rated (Daily)"
+        },
+        {
+          id: exports.BROWSE_FEED_KEYS.TOP_RATED_WEEKLY,
+          title: "Top Rated (Weekly)"
+        },
+        {
+          id: exports.BROWSE_FEED_KEYS.TOP_RATED_MONTHLY,
+          title: "Top Rated (Monthly)"
         },
         {
           id: exports.BROWSE_FEED_KEYS.LATEST,
-          title: "Latest Releases",
-          urlTemplate: "/?page={page}"
-        },
-        {
-          id: exports.BROWSE_FEED_KEYS.TOP_RATED,
-          title: "Top Rated",
-          urlTemplate: "/search/?lt=0&pp=1&sort=top_rated&page={page}"
+          title: "Latest Releases"
         }
       ]);
       exports.IMHENTAI_SORT_OPTIONS = Object.freeze([
@@ -1189,6 +1260,9 @@ var SourcePackage = (() => {
       exports.normalizeCategoriesList = normalizeCategoriesList;
       exports.normalizeLanguageToken = normalizeLanguageToken;
       exports.normalizeTitlePreference = normalizeTitlePreference;
+      exports.buildBlacklistSet = buildBlacklistSet;
+      exports.isItemBlacklisted = isItemBlacklisted;
+      exports.isCardMatchingBlacklist = isCardMatchingBlacklist;
       exports.getUserPreferences = getUserPreferences;
       exports.isCardMatchingLanguage = isCardMatchingLanguage;
       exports.buildFullLanguageQueryFlags = buildFullLanguageQueryFlags;
@@ -1207,6 +1281,10 @@ var SourcePackage = (() => {
         id: opt.id,
         title: opt.title
       }));
+      var UI_TROPE_OPTIONS = constants_js_1.TROPE_EXCLUSION_OPTIONS.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
       var UI_TITLE_PREFERENCE_OPTIONS = constants_js_1.TITLE_PREFERENCE_OPTIONS.map((opt) => ({
         id: opt.id,
         title: opt.title
@@ -1215,7 +1293,9 @@ var SourcePackage = (() => {
       var memoryPreferences = {
         categories: [...constants_js_1.DEFAULT_CATEGORIES],
         language: constants_js_1.DEFAULT_LANGUAGE,
-        titlePreference: constants_js_1.DEFAULT_TITLE_PREFERENCE
+        titlePreference: constants_js_1.DEFAULT_TITLE_PREFERENCE,
+        tropeExclusions: [...constants_js_1.DEFAULT_TROPE_EXCLUSIONS],
+        customBlacklist: constants_js_1.DEFAULT_CUSTOM_BLACKLIST
       };
       var isHydrated = false;
       var inflightHydration = null;
@@ -1382,19 +1462,95 @@ var SourcePackage = (() => {
         }
         return "english";
       }
+      function buildBlacklistSet(tropeExclusions, customBlacklistText) {
+        var _a, _b, _c, _d;
+        const set = /* @__PURE__ */ new Set();
+        if (Array.isArray(tropeExclusions)) {
+          for (let i = 0; i < tropeExclusions.length; i++) {
+            const tropeId = (_a = tropeExclusions[i]) == null ? void 0 : _a.trim().toLowerCase();
+            if (!tropeId)
+              continue;
+            const mappedTags = constants_js_1.TROPE_TAG_MAP[tropeId];
+            if (mappedTags) {
+              for (let j = 0; j < mappedTags.length; j++) {
+                const t = (_b = mappedTags[j]) == null ? void 0 : _b.toLowerCase();
+                if (t)
+                  set.add(t);
+              }
+            } else {
+              set.add(tropeId);
+            }
+          }
+        }
+        if (customBlacklistText && typeof customBlacklistText === "string") {
+          const parts = customBlacklistText.split(",");
+          for (let i = 0; i < parts.length; i++) {
+            const part = (_c = parts[i]) == null ? void 0 : _c.trim().toLowerCase();
+            if (part) {
+              set.add(part);
+              if (part.includes(":")) {
+                const valOnly = (_d = part.split(":")[1]) == null ? void 0 : _d.trim();
+                if (valOnly)
+                  set.add(valOnly);
+              }
+            }
+          }
+        }
+        return set;
+      }
+      function isItemBlacklisted(tags, blacklistSet) {
+        var _a, _b;
+        if (blacklistSet.size === 0 || !Array.isArray(tags) || tags.length === 0) {
+          return false;
+        }
+        for (let i = 0, len = tags.length; i < len; i++) {
+          const rawTag = tags[i];
+          if (!rawTag)
+            continue;
+          const clean = rawTag.toLowerCase().trim();
+          const valOnly = clean.includes(":") ? (_b = (_a = clean.split(":")[1]) == null ? void 0 : _a.trim()) != null ? _b : clean : clean;
+          if (blacklistSet.has(clean) || blacklistSet.has(valOnly)) {
+            return true;
+          }
+        }
+        return false;
+      }
+      function isCardMatchingBlacklist(card, blacklistSet) {
+        var _a;
+        if (blacklistSet.size === 0) {
+          return false;
+        }
+        if (isItemBlacklisted(card.tags, blacklistSet)) {
+          return true;
+        }
+        const titleLower = ((_a = card.title) != null ? _a : "").toLowerCase();
+        for (const token of blacklistSet) {
+          if (token.length >= 3 && titleLower.includes(`[${token}]`)) {
+            return true;
+          }
+          if (token.length >= 3 && titleLower.includes(`(${token})`)) {
+            return true;
+          }
+        }
+        return false;
+      }
       async function hydratePreferencesFromStore() {
         if (!hasObjectStore()) {
           isHydrated = true;
           return memoryPreferences;
         }
         try {
-          const [storedCategories, legacyCategories, storedLanguage, legacyLanguage, storedTitlePref, legacyTitlePref] = await Promise.all([
+          const [storedCategories, legacyCategories, storedLanguage, legacyLanguage, storedTitlePref, legacyTitlePref, storedTropes, legacyTropes, storedBlacklist, legacyBlacklist] = await Promise.all([
             ObjectStore.get(constants_js_1.PREF_KEYS.CATEGORIES).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.LEGACY_CATEGORIES).catch(() => null),
             ObjectStore.string(constants_js_1.PREF_KEYS.LANGUAGE).catch(() => null),
             ObjectStore.string(constants_js_1.PREF_KEYS.LEGACY_LANGUAGE).catch(() => null),
             ObjectStore.string(constants_js_1.PREF_KEYS.TITLE_PREFERENCE).catch(() => null),
-            ObjectStore.string(constants_js_1.PREF_KEYS.LEGACY_TITLE_PREFERENCE).catch(() => null)
+            ObjectStore.string(constants_js_1.PREF_KEYS.LEGACY_TITLE_PREFERENCE).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.TROPE_EXCLUSIONS).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.LEGACY_TROPE_EXCLUSIONS).catch(() => null),
+            ObjectStore.string(constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST).catch(() => null),
+            ObjectStore.string(constants_js_1.PREF_KEYS.LEGACY_CUSTOM_BLACKLIST).catch(() => null)
           ]);
           let categories = memoryPreferences.categories;
           const rawCat = storedCategories != null ? storedCategories : legacyCategories;
@@ -1408,10 +1564,16 @@ var SourcePackage = (() => {
           const language = rawLang !== null && rawLang !== void 0 ? normalizeLanguageToken(rawLang) : memoryPreferences.language;
           const rawTitle = storedTitlePref != null ? storedTitlePref : legacyTitlePref;
           const titlePreference = rawTitle !== null && rawTitle !== void 0 ? normalizeTitlePreference(rawTitle) : memoryPreferences.titlePreference;
+          const rawTropes = storedTropes != null ? storedTropes : legacyTropes;
+          const tropeExclusions = rawTropes !== null && rawTropes !== void 0 ? parseStringList(rawTropes) : memoryPreferences.tropeExclusions;
+          const rawBlacklist = storedBlacklist != null ? storedBlacklist : legacyBlacklist;
+          const customBlacklist = typeof rawBlacklist === "string" ? rawBlacklist.trim() : memoryPreferences.customBlacklist;
           memoryPreferences = {
             categories,
             language,
-            titlePreference
+            titlePreference,
+            tropeExclusions,
+            customBlacklist
           };
         } catch {
         }
@@ -1460,10 +1622,6 @@ var SourcePackage = (() => {
               if (tagLower === "english" || tagLower === "chinese" || tagLower === "spanish" || tagLower === "french" || tagLower === "german" || tagLower === "russian") {
                 return false;
               }
-            } else if (targetLang === "zh") {
-              if (tagLower === "english" || tagLower === "japanese" || tagLower === "spanish" || tagLower === "french" || tagLower === "german" || tagLower === "russian") {
-                return false;
-              }
             }
           }
         }
@@ -1474,10 +1632,6 @@ var SourcePackage = (() => {
           }
         } else if (targetLang === "jp") {
           if (title.includes("[english]") || title.includes("(english)") || title.includes("[eng]") || title.includes("[chinese]") || title.includes("(chinese)")) {
-            return false;
-          }
-        } else if (targetLang === "zh") {
-          if (title.includes("[english]") || title.includes("(english)") || title.includes("[eng]") || title.includes("[japanese]") || title.includes("(japanese)") || title.includes("[jp]") || title.includes("[raw]")) {
             return false;
           }
         }
@@ -1493,7 +1647,7 @@ var SourcePackage = (() => {
         return LANG_KEYS.map((k) => `&${k}=${k === selectedKey ? 1 : 0}`).join("");
       }
       function buildFullCategoryQueryFlags(activeFilter, prefsCategories) {
-        const CAT_KEYS = ["d", "m", "w", "i", "a", "g"];
+        const CAT_KEYS = ["d", "m", "w", "i", "a", "g", "c"];
         const KEY_MAP = {
           doujinshi: "d",
           d: "d",
@@ -1510,7 +1664,9 @@ var SourcePackage = (() => {
           a: "a",
           gamecg: "g",
           "game cg": "g",
-          g: "g"
+          g: "g",
+          cosplay: "c",
+          c: "c"
         };
         const activeKeys = /* @__PURE__ */ new Set();
         if (typeof activeFilter === "string" && activeFilter.trim().length > 0) {
@@ -1573,12 +1729,26 @@ var SourcePackage = (() => {
         };
       }
       async function buildSettingsForm() {
+        var _a, _b;
         const prefs = await getUserPreferences();
         return {
           sections: [
             {
-              header: "Allowed Categories",
-              footer: "Select which content categories to include in browse feeds and search queries (&d=1, &m=1, &w=1, &i=1, &c=1).",
+              header: "Language Filter",
+              footer: "Choose whether to restrict galleries to English translations (&en=1) or show All Languages.",
+              views: [
+                (0, toolchain_1.UIPicker)({
+                  id: constants_js_1.PREF_KEYS.LANGUAGE,
+                  title: "Preferred Language",
+                  options: UI_LANGUAGE_OPTIONS,
+                  currentValue: prefs.language,
+                  defaultValue: constants_js_1.DEFAULT_LANGUAGE
+                })
+              ]
+            },
+            {
+              header: "Content Categories",
+              footer: "Select which content categories to include in browse feeds and search queries: Doujinshi (&d=1), Manga (&m=1), Western (&w=1), Artist CG (&a=1/&i=1), Cosplay (&c=1).",
               views: [
                 (0, toolchain_1.UISelect)({
                   id: constants_js_1.PREF_KEYS.CATEGORIES,
@@ -1597,21 +1767,41 @@ var SourcePackage = (() => {
               ]
             },
             {
-              header: "Languages",
-              footer: "Filter galleries by preferred translation language (&en=1, &jp=1, &zh=1) or display All Languages.",
+              header: "Heavy Trope Exclusions",
+              footer: "Select heavy tropes to automatically exclude from all discovery feeds and browse listings.",
               views: [
-                (0, toolchain_1.UIPicker)({
-                  id: constants_js_1.PREF_KEYS.LANGUAGE,
-                  title: "Preferred Language",
-                  options: UI_LANGUAGE_OPTIONS,
-                  currentValue: prefs.language,
-                  defaultValue: constants_js_1.DEFAULT_LANGUAGE
+                (0, toolchain_1.UISelect)({
+                  id: constants_js_1.PREF_KEYS.TROPE_EXCLUSIONS,
+                  title: "Excluded Tropes",
+                  options: UI_TROPE_OPTIONS,
+                  exclude: false,
+                  currentValue: {
+                    include: (_a = prefs.tropeExclusions) != null ? _a : [],
+                    exclude: []
+                  },
+                  defaultValue: {
+                    include: [],
+                    exclude: []
+                  }
+                })
+              ]
+            },
+            {
+              header: "Custom Tag Blacklist",
+              footer: "Comma-separated list of exact tags or keywords to filter out silently (e.g. ugly bastard, mind break, lolicon).",
+              views: [
+                (0, toolchain_1.UITextField)({
+                  id: constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST,
+                  title: "Blacklisted Tags",
+                  placeholder: "e.g. lolicon, ugly bastard, mind break",
+                  currentValue: (_b = prefs.customBlacklist) != null ? _b : "",
+                  defaultValue: constants_js_1.DEFAULT_CUSTOM_BLACKLIST
                 })
               ]
             },
             {
               header: "Title Formatting",
-              footer: "Choose whether to display the English title as the primary title (with Japanese in the subtitle) or prioritize the original Japanese title.",
+              footer: "Choose whether to display the English title as primary (with Japanese in the subtitle) or prioritize the original Japanese title.",
               views: [
                 (0, toolchain_1.UIPicker)({
                   id: constants_js_1.PREF_KEYS.TITLE_PREFERENCE,
@@ -1626,11 +1816,11 @@ var SourcePackage = (() => {
         };
       }
       async function updateUserPreferences(data) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _i;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o;
         if (!isRecord(data)) {
           return;
         }
-        let { categories, language, titlePreference } = memoryPreferences;
+        let { categories, language, titlePreference, tropeExclusions, customBlacklist } = memoryPreferences;
         const storeAvailable = hasObjectStore();
         const writeTasks = [];
         const rawCategories = (_c = (_b = (_a = data[constants_js_1.PREF_KEYS.CATEGORIES]) != null ? _a : data[constants_js_1.PREF_KEYS.LEGACY_CATEGORIES]) != null ? _b : data["enabled_categories"]) != null ? _c : data["categories"];
@@ -1661,10 +1851,30 @@ var SourcePackage = (() => {
             }));
           }
         }
+        const rawTropes = (_l = (_k = (_j = data[constants_js_1.PREF_KEYS.TROPE_EXCLUSIONS]) != null ? _j : data[constants_js_1.PREF_KEYS.LEGACY_TROPE_EXCLUSIONS]) != null ? _k : data["heavy_trope_exclusions"]) != null ? _l : data["trope_exclusions"];
+        if (rawTropes !== void 0 && rawTropes !== null) {
+          tropeExclusions = parseStringList(rawTropes);
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.TROPE_EXCLUSIONS, tropeExclusions).catch(() => {
+            }), ObjectStore.set(constants_js_1.PREF_KEYS.LEGACY_TROPE_EXCLUSIONS, tropeExclusions).catch(() => {
+            }));
+          }
+        }
+        const rawBlacklist = (_o = (_n = (_m = data[constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST]) != null ? _m : data[constants_js_1.PREF_KEYS.LEGACY_CUSTOM_BLACKLIST]) != null ? _n : data["custom_tag_blacklist"]) != null ? _o : data["blacklist"];
+        if (typeof rawBlacklist === "string") {
+          customBlacklist = rawBlacklist.trim();
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST, customBlacklist).catch(() => {
+            }), ObjectStore.set(constants_js_1.PREF_KEYS.LEGACY_CUSTOM_BLACKLIST, customBlacklist).catch(() => {
+            }));
+          }
+        }
         memoryPreferences = {
           categories,
           language,
-          titlePreference
+          titlePreference,
+          tropeExclusions,
+          customBlacklist
         };
         isHydrated = true;
         if (writeTasks.length > 0) {
@@ -2691,19 +2901,28 @@ var SourcePackage = (() => {
         }
         const catFlags = (0, preferences_js_1.buildFullCategoryQueryFlags)(null, prefs.categories);
         const langFlags = (0, preferences_js_1.buildFullLanguageQueryFlags)(prefs.language);
+        const isEnglish = (0, preferences_js_1.normalizeLanguageToken)(prefs.language) === "en";
         switch (cleanKey) {
           case constants_js_1.BROWSE_FEED_KEYS.POPULAR:
+          case constants_js_1.BROWSE_FEED_KEYS.POPULAR_WEEKLY:
+          case constants_js_1.HOME_SECTION_KEYS.POPULAR_THIS_WEEK:
             return `${constants_js_1.BASE_URL}/search/?apply=Search&pp=1&lt=0&page=${safePage}${catFlags}${langFlags}`;
+          case constants_js_1.BROWSE_FEED_KEYS.POPULAR_DAILY:
+          case constants_js_1.HOME_SECTION_KEYS.POPULAR_TODAY:
           case constants_js_1.BROWSE_FEED_KEYS.TRENDING:
           case constants_js_1.HOME_SECTION_KEYS.TRENDING_NOW:
           case constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT:
             return `${constants_js_1.BASE_URL}/search/?apply=Search&pp=1&lt=1&page=${safePage}${catFlags}${langFlags}`;
           case constants_js_1.BROWSE_FEED_KEYS.TOP_RATED:
+          case constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_WEEKLY:
+          case constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_DAILY:
+          case constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_MONTHLY:
           case constants_js_1.HOME_SECTION_KEYS.TOP_RATED:
             return `${constants_js_1.BASE_URL}/search/?apply=Search&pp=1&lt=0&sort=top_rated&page=${safePage}${catFlags}${langFlags}`;
           case constants_js_1.BROWSE_FEED_KEYS.LATEST:
+          case constants_js_1.HOME_SECTION_KEYS.LATEST_RELEASES:
           case constants_js_1.HOME_SECTION_KEYS.FRESH_RELEASES:
-            return `${constants_js_1.BASE_URL}/?page=${safePage}`;
+            return `${constants_js_1.BASE_URL}/?page=${safePage}${isEnglish ? "&en=1" : ""}`;
           case constants_js_1.BROWSE_FEED_KEYS.DISCOVER:
           default: {
             if (isPopular) {
@@ -2715,7 +2934,7 @@ var SourcePackage = (() => {
             if (sortBy === "trending") {
               return `${constants_js_1.BASE_URL}/search/?apply=Search&pp=1&lt=1&page=${safePage}${catFlags}${langFlags}`;
             }
-            return `${constants_js_1.BASE_URL}/?page=${safePage}`;
+            return `${constants_js_1.BASE_URL}/?page=${safePage}${isEnglish ? "&en=1" : ""}`;
           }
         }
       }
@@ -2789,6 +3008,314 @@ var SourcePackage = (() => {
     }
   });
 
+  // __temp__/runners/imhentai/discovery.js
+  var require_discovery = __commonJS({
+    "__temp__/runners/imhentai/discovery.js"(exports) {
+      "use strict";
+      init_Buffer();
+      init_process();
+      var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        var desc = Object.getOwnPropertyDescriptor(m, k);
+        if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+          desc = { enumerable: true, get: function() {
+            return m[k];
+          } };
+        }
+        Object.defineProperty(o, k2, desc);
+      }) : (function(o, m, k, k2) {
+        if (k2 === void 0) k2 = k;
+        o[k2] = m[k];
+      }));
+      var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
+        Object.defineProperty(o, "default", { enumerable: true, value: v });
+      }) : function(o, v) {
+        o["default"] = v;
+      });
+      var __importStar = exports && exports.__importStar || /* @__PURE__ */ (function() {
+        var ownKeys = function(o) {
+          ownKeys = Object.getOwnPropertyNames || function(o2) {
+            var ar = [];
+            for (var k in o2) if (Object.prototype.hasOwnProperty.call(o2, k)) ar[ar.length] = k;
+            return ar;
+          };
+          return ownKeys(o);
+        };
+        return function(mod) {
+          if (mod && mod.__esModule) return mod;
+          var result = {};
+          if (mod != null) {
+            for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+          }
+          __setModuleDefault(result, mod);
+          return result;
+        };
+      })();
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.getEHentaiEndpoint = getEHentaiEndpoint;
+      exports.extractGalleryRefs = extractGalleryRefs;
+      exports.fetchEHentaiMetadata = fetchEHentaiMetadata;
+      exports.evaluateGalleryMetadata = evaluateGalleryMetadata;
+      exports.sanitizeSearchTitle = sanitizeSearchTitle;
+      exports.resolveTitleOnIMHentai = resolveTitleOnIMHentai;
+      exports.fetchEHentaiFeedItems = fetchEHentaiFeedItems;
+      var cheerio = __importStar(require_cheerio());
+      var constants_js_1 = require_constants();
+      var preferences_js_1 = require_preferences();
+      var scraper_js_1 = require_scraper();
+      var TITLE_RESOLUTION_CACHE = /* @__PURE__ */ new Map();
+      var RESOLUTION_CACHE_MAX_ENTRIES = 250;
+      function cacheResolvedItem(key, item) {
+        if (TITLE_RESOLUTION_CACHE.size >= RESOLUTION_CACHE_MAX_ENTRIES) {
+          const oldest = TITLE_RESOLUTION_CACHE.keys().next().value;
+          if (oldest !== void 0) {
+            TITLE_RESOLUTION_CACHE.delete(oldest);
+          }
+        }
+        TITLE_RESOLUTION_CACHE.set(key, item);
+      }
+      function getEHentaiEndpoint(feedKey, page, isEnglishPreferred = true) {
+        const safePage = Math.max(1, page || 1);
+        const pIndex = safePage - 1;
+        const langSearch = isEnglishPreferred ? "language:english$" : "";
+        const encodedSearch = encodeURIComponent(langSearch);
+        switch (feedKey) {
+          case constants_js_1.BROWSE_FEED_KEYS.POPULAR_DAILY:
+            return `${constants_js_1.EHENTAI_BASE_URL}/toplist.php?tl=11&p=${pIndex}`;
+          case constants_js_1.BROWSE_FEED_KEYS.POPULAR_WEEKLY:
+            if (safePage === 1) {
+              return `${constants_js_1.EHENTAI_BASE_URL}/popular`;
+            }
+            return `${constants_js_1.EHENTAI_BASE_URL}/?f_search=${encodedSearch}&f_sr=on&f_srdd=3&page=${pIndex}`;
+          case constants_js_1.BROWSE_FEED_KEYS.POPULAR_MONTHLY:
+            return `${constants_js_1.EHENTAI_BASE_URL}/toplist.php?tl=12&p=${pIndex}`;
+          case constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_DAILY:
+            return `${constants_js_1.EHENTAI_BASE_URL}/?f_search=${encodedSearch}&f_sr=on&f_srdd=5&page=${pIndex}`;
+          case constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_WEEKLY:
+            return `${constants_js_1.EHENTAI_BASE_URL}/?f_search=${encodedSearch}&f_sr=on&f_srdd=4&page=${pIndex}`;
+          case constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_MONTHLY:
+            return `${constants_js_1.EHENTAI_BASE_URL}/?f_search=${encodedSearch}&f_sr=on&f_srdd=4&page=${pIndex}`;
+          default:
+            return `${constants_js_1.EHENTAI_BASE_URL}/toplist.php?tl=11&p=${pIndex}`;
+        }
+      }
+      function extractGalleryRefs(html) {
+        if (!html)
+          return [];
+        const refs = [];
+        const seenGids = /* @__PURE__ */ new Set();
+        const regex = new RegExp(constants_js_1.EHENTAI_GALLERY_LINK_REGEX.source, "gi");
+        let match;
+        while ((match = regex.exec(html)) !== null) {
+          const rawGid = match[1];
+          const token = match[2];
+          if (!rawGid || !token)
+            continue;
+          const gid = parseInt(rawGid, 10);
+          if (Number.isNaN(gid) || seenGids.has(gid))
+            continue;
+          seenGids.add(gid);
+          refs.push({ gid, token });
+          if (refs.length >= 25) {
+            break;
+          }
+        }
+        return refs;
+      }
+      async function fetchEHentaiMetadata(client, refs) {
+        if (!refs || refs.length === 0) {
+          return [];
+        }
+        const gidlist = refs.map((r) => [r.gid, r.token]);
+        const requestBody = {
+          method: "gdata",
+          gidlist,
+          namespace: 1
+        };
+        try {
+          const response = await client.post(constants_js_1.EHENTAI_API_URL, {
+            body: requestBody,
+            headers: constants_js_1.EHENTAI_API_HEADERS
+          });
+          const data = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
+          if (data && Array.isArray(data.gmetadata)) {
+            return data.gmetadata;
+          }
+          return [];
+        } catch {
+          return [];
+        }
+      }
+      function normalizeEHentaiCategory(cat) {
+        const clean = (cat != null ? cat : "").trim().toLowerCase();
+        if (clean === "doujinshi")
+          return "doujinshi";
+        if (clean === "manga")
+          return "manga";
+        if (clean === "artist cg" || clean === "image set")
+          return "artistcg";
+        if (clean === "game cg")
+          return "gamecg";
+        if (clean === "western")
+          return "western";
+        if (clean === "cosplay")
+          return "cosplay";
+        return (0, preferences_js_1.normalizeCategoryToken)(clean);
+      }
+      function evaluateGalleryMetadata(meta, prefs, blacklistSet) {
+        if (!meta || !Array.isArray(meta.tags)) {
+          return false;
+        }
+        const normLang = (0, preferences_js_1.normalizeLanguageToken)(prefs.language);
+        const isEnglishPreferred = normLang === "en";
+        if (isEnglishPreferred) {
+          const hasEnglishTag = meta.tags.some((t) => t === "language:english" || t === "language:translated");
+          if (!hasEnglishTag) {
+            return false;
+          }
+        }
+        if ((0, preferences_js_1.isItemBlacklisted)(meta.tags, blacklistSet)) {
+          return false;
+        }
+        if (Array.isArray(prefs.categories) && prefs.categories.length > 0) {
+          const canonicalCat = normalizeEHentaiCategory(meta.category);
+          if (canonicalCat && !prefs.categories.includes(canonicalCat)) {
+            return false;
+          }
+        }
+        return true;
+      }
+      function sanitizeSearchTitle(title) {
+        if (!title)
+          return "";
+        let cleaned = title.replace(/\[(?:english|translated|digital|colorized|decensored|uncensored|raw|ongoing|incomplete|dl(?:site)?|fanza|comic\s*market\s*\d*|comic1[^\)]*|reitaisai[^\)]*)[^\]]*\]/gi, " ").replace(/\((?:c\d+|comic1[^\)]*|reitaisai[^\)]*|fanza|dlsite|m3[^\)]*)[^\)]*\)/gi, " ");
+        const outsideBrackets = cleaned.replace(/\[[^\]]*\]/g, " ").replace(/\([^\)]*\)/g, " ").replace(/\s+/g, " ").trim();
+        if (outsideBrackets.length >= 3) {
+          return outsideBrackets;
+        }
+        const fallback = cleaned.replace(/[\[\]\(\)]/g, " ").replace(/\s+/g, " ").trim();
+        return fallback || title.trim();
+      }
+      async function resolveTitleOnIMHentai(client, searchTitle, prefs, japaneseTitle) {
+        var _a, _b, _c;
+        const trimmed = searchTitle.trim();
+        if (!trimmed) {
+          return null;
+        }
+        const cacheKey = `${trimmed.toLowerCase()}|${prefs.language}`;
+        if (TITLE_RESOLUTION_CACHE.has(cacheKey)) {
+          return (_a = TITLE_RESOLUTION_CACHE.get(cacheKey)) != null ? _a : null;
+        }
+        const isEnglish = (0, preferences_js_1.normalizeLanguageToken)(prefs.language) === "en";
+        const langParam = isEnglish ? "&en=1" : "";
+        const searchUrl = `${constants_js_1.BASE_URL}/search/?key=${encodeURIComponent(trimmed)}&apply=Search${langParam}`;
+        try {
+          const response = await client.get(searchUrl, {
+            headers: constants_js_1.DEFAULT_HEADERS
+          });
+          const html = typeof response.data === "string" ? response.data : String((_b = response.data) != null ? _b : "");
+          if (!html || !html.includes("thumb")) {
+            cacheResolvedItem(cacheKey, null);
+            return null;
+          }
+          const $ = cheerio.load(html);
+          const $firstThumb = $(".thumb").first();
+          if ($firstThumb.length === 0) {
+            cacheResolvedItem(cacheKey, null);
+            return null;
+          }
+          const card = (0, scraper_js_1.extractGalleryCardFromElement)($firstThumb, $);
+          if (!card || !card.id) {
+            cacheResolvedItem(cacheKey, null);
+            return null;
+          }
+          const display = (0, preferences_js_1.formatGalleryTitleDisplay)(card.title, card.japaneseTitle || japaneseTitle, prefs);
+          const item = {
+            id: card.id,
+            title: display.title,
+            subtitle: (_c = display.subtitle) != null ? _c : card.subtitle,
+            coverImage: card.thumbnailUrl,
+            webUrl: `${constants_js_1.BASE_URL}/gallery/${card.id}/`,
+            rating: constants_js_1.ContentRating.ADULT
+          };
+          cacheResolvedItem(cacheKey, item);
+          return item;
+        } catch {
+          cacheResolvedItem(cacheKey, null);
+          return null;
+        }
+      }
+      async function fetchAndResolveEHentaiPage(client, feedKey, pageIndex, prefs, blacklistSet) {
+        var _a;
+        const normLang = (0, preferences_js_1.normalizeLanguageToken)(prefs.language);
+        const isEnglishPreferred = normLang === "en";
+        const endpoint = getEHentaiEndpoint(feedKey, pageIndex, isEnglishPreferred);
+        let html = "";
+        try {
+          const response = await client.get(endpoint, {
+            headers: constants_js_1.EHENTAI_HEADERS
+          });
+          html = typeof response.data === "string" ? response.data : String((_a = response.data) != null ? _a : "");
+        } catch {
+          return [];
+        }
+        const refs = extractGalleryRefs(html);
+        if (refs.length === 0) {
+          return [];
+        }
+        const metadataList = await fetchEHentaiMetadata(client, refs);
+        if (metadataList.length === 0) {
+          return [];
+        }
+        const cleanSurviving = metadataList.filter((m) => evaluateGalleryMetadata(m, prefs, blacklistSet));
+        if (cleanSurviving.length === 0) {
+          return [];
+        }
+        const resolvePromises = cleanSurviving.map(async (meta) => {
+          const searchTitle = sanitizeSearchTitle(meta.title);
+          if (!searchTitle)
+            return null;
+          return resolveTitleOnIMHentai(client, searchTitle, prefs, meta.title_jpn);
+        });
+        const resolved = await Promise.all(resolvePromises);
+        const items = [];
+        const seenIds = /* @__PURE__ */ new Set();
+        for (let i = 0; i < resolved.length; i++) {
+          const it = resolved[i];
+          if (it && it.id && !seenIds.has(it.id)) {
+            seenIds.add(it.id);
+            items.push(it);
+          }
+        }
+        return items;
+      }
+      async function fetchEHentaiFeedItems(client, feedKey, page, prefs) {
+        const resolvedPrefs = prefs != null ? prefs : await (0, preferences_js_1.getUserPreferences)();
+        const blacklistSet = (0, preferences_js_1.buildBlacklistSet)(resolvedPrefs.tropeExclusions, resolvedPrefs.customBlacklist);
+        const safePage = Math.max(1, page || 1);
+        const items = await fetchAndResolveEHentaiPage(client, feedKey, safePage, resolvedPrefs, blacklistSet);
+        if (items.length < 10) {
+          try {
+            const backfillItems = await fetchAndResolveEHentaiPage(client, feedKey, safePage + 1, resolvedPrefs, blacklistSet);
+            const seenIds = new Set(items.map((it) => it.id));
+            for (let i = 0; i < backfillItems.length; i++) {
+              const it = backfillItems[i];
+              if (it && !seenIds.has(it.id)) {
+                seenIds.add(it.id);
+                items.push(it);
+              }
+            }
+          } catch {
+          }
+        }
+        return {
+          items,
+          isLastPage: items.length === 0
+        };
+      }
+    }
+  });
+
   // __temp__/runners/imhentai/scraper.js
   var require_scraper = __commonJS({
     "__temp__/runners/imhentai/scraper.js"(exports) {
@@ -2855,6 +3382,7 @@ var SourcePackage = (() => {
       var cheerio = __importStar(require_cheerio());
       var api_js_1 = require_api();
       var constants_js_1 = require_constants();
+      var discovery_js_1 = require_discovery();
       var preferences_js_1 = require_preferences();
       var GALLERY_CACHE_TTL_MS = 3e4;
       var GALLERY_CACHE_MAX_ENTRIES = 25;
@@ -3202,24 +3730,35 @@ var SourcePackage = (() => {
         return cards;
       }
       function filterAndMapGalleryCards(cards, prefs, options) {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d, _e, _f;
         const items = [];
         const activeLang = (_b = (_a = options == null ? void 0 : options.overrideLanguage) != null ? _a : prefs.language) != null ? _b : constants_js_1.DEFAULT_LANGUAGE;
         const normLang = (0, preferences_js_1.normalizeLanguageToken)(activeLang);
         const isEnglishPreferred = normLang === "en";
+        const blacklistSet = (0, preferences_js_1.buildBlacklistSet)(prefs.tropeExclusions, prefs.customBlacklist);
+        if (options == null ? void 0 : options.extraExcludedTags) {
+          for (let i = 0; i < options.extraExcludedTags.length; i++) {
+            const t = (_c = options.extraExcludedTags[i]) == null ? void 0 : _c.toLowerCase().trim();
+            if (t)
+              blacklistSet.add(t);
+          }
+        }
         for (let i = 0, len = cards.length; i < len; i++) {
           const card = cards[i];
           if (!card)
             continue;
+          if ((0, preferences_js_1.isCardMatchingBlacklist)(card, blacklistSet)) {
+            continue;
+          }
           if (isEnglishPreferred) {
             if (card.isJapaneseRaw) {
               continue;
             }
-            const titleLower = ((_c = card.title) != null ? _c : "").toLowerCase();
+            const titleLower = ((_d = card.title) != null ? _d : "").toLowerCase();
             if (titleLower.includes("[japanese]") || titleLower.includes("(japanese)") || titleLower.includes("[jp]")) {
               continue;
             }
-            const langLower = ((_d = card.language) != null ? _d : "").toLowerCase();
+            const langLower = ((_e = card.language) != null ? _e : "").toLowerCase();
             if (langLower === "japanese" || langLower === "jp" || langLower === "ja") {
               continue;
             }
@@ -3231,7 +3770,7 @@ var SourcePackage = (() => {
           items.push({
             id: card.id,
             title: display.title,
-            subtitle: (_e = display.subtitle) != null ? _e : card.subtitle,
+            subtitle: (_f = display.subtitle) != null ? _f : card.subtitle,
             coverImage: card.thumbnailUrl,
             webUrl: card.webUrl,
             rating: constants_js_1.ContentRating.ADULT
@@ -3260,7 +3799,10 @@ var SourcePackage = (() => {
         const serverPrefixMatch = constants_js_1.SERVER_PREFIX_REGEX.exec(coverUrl || rawFirstThumbUrl || html);
         const domGalleryId = ((_a = $("#gallery_id").val()) != null ? _a : "").trim();
         const inlineGalleryIdMatch = constants_js_1.INLINE_GALLERY_ID_REGEX.exec(html);
-        const galleryId = domGalleryId || (inlineGalleryIdMatch == null ? void 0 : inlineGalleryIdMatch[1]) || (urlPartsMatch == null ? void 0 : urlPartsMatch[3]) || extractGalleryId(fallbackId) || "1";
+        const galleryId = domGalleryId || inlineGalleryIdId(inlineGalleryIdMatch == null ? void 0 : inlineGalleryIdMatch[1]) || (urlPartsMatch == null ? void 0 : urlPartsMatch[3]) || extractGalleryId(fallbackId) || "1";
+        function inlineGalleryIdId(val) {
+          return val;
+        }
         const domLoadDir = ((_b = $("#load_dir").val()) != null ? _b : "").trim();
         const inlineLoadDirMatch = constants_js_1.INLINE_LOAD_DIR_REGEX.exec(html);
         const loadDir = domLoadDir || ((_c = inlineLoadDirMatch == null ? void 0 : inlineLoadDirMatch[1]) == null ? void 0 : _c.trim()) || (urlPartsMatch == null ? void 0 : urlPartsMatch[2]) || "001";
@@ -3697,6 +4239,10 @@ var SourcePackage = (() => {
           __publicField(this, "galleryCache", /* @__PURE__ */ new Map());
           const builder = new toolchain_1.NetworkClientBuilder().setRateLimit(constants_js_1.RATE_LIMIT_PER_SECOND, 1).addRequestInterceptor(async (request) => {
             var _a;
+            const targetUrl = request.url || "";
+            if (targetUrl.includes("e-hentai.org")) {
+              return request;
+            }
             request.headers = {
               ...constants_js_1.DEFAULT_HEADERS,
               ...(_a = request.headers) != null ? _a : {}
@@ -3718,8 +4264,9 @@ var SourcePackage = (() => {
         async fetchHtml(url) {
           var _a;
           const targetUrl = url.startsWith("http") ? url : `${constants_js_1.BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+          const headers = targetUrl.includes("e-hentai.org") ? { "User-Agent": constants_js_1.DEFAULT_USER_AGENT } : constants_js_1.DEFAULT_HEADERS;
           const response = await this.client.get(targetUrl, {
-            headers: constants_js_1.DEFAULT_HEADERS
+            headers
           });
           if (isCloudflareChallenge(response)) {
             throw new CloudflareError(constants_js_1.CLOUDFLARE_RESOLUTION_URL);
@@ -3734,6 +4281,31 @@ var SourcePackage = (() => {
         }
         async fetchFeedItems(feedKey, page, prefs, sortBy, sortAscending) {
           const resolvedPrefs = prefs != null ? prefs : await (0, preferences_js_1.getUserPreferences)();
+          const ehentaiKeyMap = {
+            [constants_js_1.BROWSE_FEED_KEYS.POPULAR_DAILY]: constants_js_1.BROWSE_FEED_KEYS.POPULAR_DAILY,
+            [constants_js_1.BROWSE_FEED_KEYS.POPULAR_WEEKLY]: constants_js_1.BROWSE_FEED_KEYS.POPULAR_WEEKLY,
+            [constants_js_1.BROWSE_FEED_KEYS.POPULAR_MONTHLY]: constants_js_1.BROWSE_FEED_KEYS.POPULAR_MONTHLY,
+            [constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_DAILY]: constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_DAILY,
+            [constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_WEEKLY]: constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_WEEKLY,
+            [constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_MONTHLY]: constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_MONTHLY,
+            [constants_js_1.HOME_SECTION_KEYS.POPULAR_TODAY]: constants_js_1.BROWSE_FEED_KEYS.POPULAR_DAILY,
+            [constants_js_1.HOME_SECTION_KEYS.POPULAR_THIS_WEEK]: constants_js_1.BROWSE_FEED_KEYS.POPULAR_WEEKLY,
+            // Legacy aliases
+            [constants_js_1.BROWSE_FEED_KEYS.TRENDING]: constants_js_1.BROWSE_FEED_KEYS.POPULAR_DAILY,
+            [constants_js_1.BROWSE_FEED_KEYS.POPULAR]: constants_js_1.BROWSE_FEED_KEYS.POPULAR_WEEKLY,
+            [constants_js_1.BROWSE_FEED_KEYS.TOP_RATED]: constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_WEEKLY,
+            [constants_js_1.HOME_SECTION_KEYS.TRENDING_NOW]: constants_js_1.BROWSE_FEED_KEYS.POPULAR_DAILY,
+            [constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT]: constants_js_1.BROWSE_FEED_KEYS.POPULAR_DAILY
+          };
+          const mappedKey = ehentaiKeyMap[feedKey];
+          if (mappedKey) {
+            const res = await (0, discovery_js_1.fetchEHentaiFeedItems)(this.client, mappedKey, page, resolvedPrefs);
+            if (sortBy === "title") {
+              const dir = sortAscending === false ? -1 : 1;
+              res.items.sort((a, b) => a.title.localeCompare(b.title) * dir);
+            }
+            return res;
+          }
           const url = this.buildFeedUrl(feedKey, page, resolvedPrefs, sortBy);
           const html = await this.fetchHtml(url);
           const cards = parseGalleryCards(html);
@@ -3766,7 +4338,7 @@ var SourcePackage = (() => {
           const resolvedPrefs = prefs != null ? prefs : await (0, preferences_js_1.getUserPreferences)();
           if (!((_a = params.query) == null ? void 0 : _a.trim()) && (!((_b = params.tags) == null ? void 0 : _b.include) || params.tags.include.length === 0)) {
             const isPopular = params.sortBy === "popular" || params.sortBy === "popularity" || params.sortBy === "pp" || params.sortBy === "most_viewed";
-            return this.fetchFeedItems(isPopular ? constants_js_1.BROWSE_FEED_KEYS.POPULAR : constants_js_1.BROWSE_FEED_KEYS.LATEST, (_c = params.page) != null ? _c : 1, resolvedPrefs, params.sortBy, params.sortAscending);
+            return this.fetchFeedItems(isPopular ? constants_js_1.BROWSE_FEED_KEYS.POPULAR_WEEKLY : constants_js_1.BROWSE_FEED_KEYS.LATEST, (_c = params.page) != null ? _c : 1, resolvedPrefs, params.sortBy, params.sortAscending);
           }
           const url = this.buildSearchUrl(params, resolvedPrefs);
           const html = await this.fetchHtml(url);
@@ -3862,17 +4434,16 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.Target = exports.parseRelatedGalleryCards = exports.parseGalleryDetail = exports.parseGalleryCards = exports.parseChapterPagesFromHtml = exports.mapCardsToItems = exports.filterAndMapGalleryCards = exports.extractPageResolutionMeta = exports.buildChapterPagesFromMeta = void 0;
+      exports.Target = exports.parseRelatedGalleryCards = exports.parseGalleryDetail = exports.parseGalleryCards = exports.parseChapterPagesFromHtml = exports.mapCardsToItems = exports.filterAndMapGalleryCards = exports.extractPageResolutionMeta = exports.buildChapterPagesFromMeta = exports.STATIC_CUSTOM_FEEDS = void 0;
       var toolchain_1 = require_dist();
       var constants_js_1 = require_constants();
       var filters_js_1 = require_filters();
       var preferences_js_1 = require_preferences();
       var scraper_js_1 = require_scraper();
-      var SPOTLIGHT_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.TRENDING }, "Trending");
-      var TRENDING_NOW_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.TRENDING }, "Trending Now");
-      var FRESH_RELEASES_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.LATEST }, "Fresh Releases");
-      var TOP_RATED_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.TOP_RATED }, "Top Rated");
-      var STATIC_CUSTOM_FEEDS = [
+      var POPULAR_TODAY_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.POPULAR_DAILY }, "Popular Today");
+      var POPULAR_THIS_WEEK_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.POPULAR_WEEKLY }, "Popular This Week");
+      var LATEST_RELEASES_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: constants_js_1.BROWSE_FEED_KEYS.LATEST }, "Latest Releases");
+      exports.STATIC_CUSTOM_FEEDS = [
         {
           id: constants_js_1.BROWSE_FEED_KEYS.DISCOVER,
           title: "Discover",
@@ -3881,20 +4452,56 @@ var SourcePackage = (() => {
           }
         },
         {
-          id: constants_js_1.BROWSE_FEED_KEYS.TRENDING,
-          title: "Trending",
+          id: constants_js_1.BROWSE_FEED_KEYS.POPULAR_DAILY,
+          title: "Popular (Daily)",
           content: {
             list: {
-              key: constants_js_1.BROWSE_FEED_KEYS.TRENDING
+              key: constants_js_1.BROWSE_FEED_KEYS.POPULAR_DAILY
             }
           }
         },
         {
-          id: constants_js_1.BROWSE_FEED_KEYS.POPULAR,
-          title: "Popular",
+          id: constants_js_1.BROWSE_FEED_KEYS.POPULAR_WEEKLY,
+          title: "Popular (Weekly)",
           content: {
             list: {
-              key: constants_js_1.BROWSE_FEED_KEYS.POPULAR
+              key: constants_js_1.BROWSE_FEED_KEYS.POPULAR_WEEKLY
+            }
+          }
+        },
+        {
+          id: constants_js_1.BROWSE_FEED_KEYS.POPULAR_MONTHLY,
+          title: "Popular (Monthly)",
+          content: {
+            list: {
+              key: constants_js_1.BROWSE_FEED_KEYS.POPULAR_MONTHLY
+            }
+          }
+        },
+        {
+          id: constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_DAILY,
+          title: "Top Rated (Daily)",
+          content: {
+            list: {
+              key: constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_DAILY
+            }
+          }
+        },
+        {
+          id: constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_WEEKLY,
+          title: "Top Rated (Weekly)",
+          content: {
+            list: {
+              key: constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_WEEKLY
+            }
+          }
+        },
+        {
+          id: constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_MONTHLY,
+          title: "Top Rated (Monthly)",
+          content: {
+            list: {
+              key: constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_MONTHLY
             }
           }
         },
@@ -3904,15 +4511,6 @@ var SourcePackage = (() => {
           content: {
             list: {
               key: constants_js_1.BROWSE_FEED_KEYS.LATEST
-            }
-          }
-        },
-        {
-          id: constants_js_1.BROWSE_FEED_KEYS.TOP_RATED,
-          title: "Top Rated",
-          content: {
-            list: {
-              key: constants_js_1.BROWSE_FEED_KEYS.TOP_RATED
             }
           }
         }
@@ -3936,12 +4534,12 @@ var SourcePackage = (() => {
           return this.scraper.configureImageRequest(request);
         }
         // =========================================================================
-        // HomeProvider
+        // HomeProvider (Discover Dashboard with 3 Horizontal Carousels)
         // =========================================================================
         async getHomePage() {
           const homeSections = await this.getItemPage("home", 1);
           return {
-            feeds: STATIC_CUSTOM_FEEDS,
+            feeds: exports.STATIC_CUSTOM_FEEDS,
             sections: homeSections.sections,
             isLastPage: homeSections.isLastPage
           };
@@ -3958,44 +4556,35 @@ var SourcePackage = (() => {
             return this.cachedHomeSections.data;
           }
           const prefs = await (0, preferences_js_1.getUserPreferences)();
-          const [trendingRes, freshRes, topRatedRes] = await Promise.all([
-            this.scraper.fetchFeedItems(constants_js_1.BROWSE_FEED_KEYS.TRENDING, 1, prefs),
-            this.scraper.fetchFeedItems(constants_js_1.BROWSE_FEED_KEYS.LATEST, 1, prefs),
-            this.scraper.fetchFeedItems(constants_js_1.BROWSE_FEED_KEYS.TOP_RATED, 1, prefs)
+          const [popularTodayRes, popularWeeklyRes, latestRes] = await Promise.all([
+            this.scraper.fetchFeedItems(constants_js_1.BROWSE_FEED_KEYS.POPULAR_DAILY, 1, prefs),
+            this.scraper.fetchFeedItems(constants_js_1.BROWSE_FEED_KEYS.POPULAR_WEEKLY, 1, prefs),
+            this.scraper.fetchFeedItems(constants_js_1.BROWSE_FEED_KEYS.LATEST, 1, prefs)
           ]);
-          const bannerItems = trendingRes.items.length >= 5 ? trendingRes.items.slice(0, 10) : trendingRes.items;
           const sections = [
             {
-              id: constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT,
-              title: "Featured",
-              subtitle: "Prominent trending releases on IMHentai",
-              style: toolchain_1.PageSectionStyle.BANNER,
-              items: bannerItems,
-              destination: SPOTLIGHT_DESTINATION
+              id: constants_js_1.HOME_SECTION_KEYS.POPULAR_TODAY,
+              title: "Popular Today",
+              subtitle: "Trending releases from the past 24 hours resolved on IMHentai",
+              style: toolchain_1.PageSectionStyle.DEFAULT,
+              items: popularTodayRes.items,
+              destination: POPULAR_TODAY_DESTINATION
             },
             {
-              id: constants_js_1.HOME_SECTION_KEYS.TRENDING_NOW,
-              title: "Trending Now",
-              subtitle: "Fast-rising releases combining high ratings with recent uploads",
+              id: constants_js_1.HOME_SECTION_KEYS.POPULAR_THIS_WEEK,
+              title: "Popular This Week",
+              subtitle: "Weekly trending highlights resolved on IMHentai",
               style: toolchain_1.PageSectionStyle.DEFAULT,
-              items: trendingRes.items,
-              destination: TRENDING_NOW_DESTINATION
+              items: popularWeeklyRes.items,
+              destination: POPULAR_THIS_WEEK_DESTINATION
             },
             {
-              id: constants_js_1.HOME_SECTION_KEYS.FRESH_RELEASES,
-              title: "Fresh Releases",
-              subtitle: "Newest additions matching your preferred language",
+              id: constants_js_1.HOME_SECTION_KEYS.LATEST_RELEASES,
+              title: "Latest Releases",
+              subtitle: "Fresh chronological drops on IMHentai",
               style: toolchain_1.PageSectionStyle.DEFAULT,
-              items: freshRes.items,
-              destination: FRESH_RELEASES_DESTINATION
-            },
-            {
-              id: constants_js_1.HOME_SECTION_KEYS.TOP_RATED,
-              title: "Top Rated",
-              subtitle: "Standout all-time favorites and high-scoring works",
-              style: toolchain_1.PageSectionStyle.DEFAULT,
-              items: topRatedRes.items,
-              destination: TOP_RATED_DESTINATION
+              items: latestRes.items,
+              destination: LATEST_RELEASES_DESTINATION
             }
           ];
           const response = {
@@ -4008,21 +4597,23 @@ var SourcePackage = (() => {
         async getPageSectionItems(sectionKey, _pageKey) {
           const prefs = await (0, preferences_js_1.getUserPreferences)();
           let feedKey = sectionKey;
-          if (sectionKey === constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT || sectionKey === constants_js_1.HOME_SECTION_KEYS.TRENDING_NOW) {
-            feedKey = constants_js_1.BROWSE_FEED_KEYS.TRENDING;
-          } else if (sectionKey === constants_js_1.HOME_SECTION_KEYS.FRESH_RELEASES) {
+          if (sectionKey === constants_js_1.HOME_SECTION_KEYS.POPULAR_TODAY || sectionKey === constants_js_1.HOME_SECTION_KEYS.SPOTLIGHT || sectionKey === constants_js_1.HOME_SECTION_KEYS.TRENDING_NOW) {
+            feedKey = constants_js_1.BROWSE_FEED_KEYS.POPULAR_DAILY;
+          } else if (sectionKey === constants_js_1.HOME_SECTION_KEYS.POPULAR_THIS_WEEK) {
+            feedKey = constants_js_1.BROWSE_FEED_KEYS.POPULAR_WEEKLY;
+          } else if (sectionKey === constants_js_1.HOME_SECTION_KEYS.LATEST_RELEASES || sectionKey === constants_js_1.HOME_SECTION_KEYS.FRESH_RELEASES) {
             feedKey = constants_js_1.BROWSE_FEED_KEYS.LATEST;
           } else if (sectionKey === constants_js_1.HOME_SECTION_KEYS.TOP_RATED) {
-            feedKey = constants_js_1.BROWSE_FEED_KEYS.TOP_RATED;
+            feedKey = constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_WEEKLY;
           }
           const res = await this.scraper.fetchFeedItems(feedKey, 1, prefs);
           return res.items;
         }
         // =========================================================================
-        // DirectoryHandler
+        // DirectoryHandler (8 Custom Browse Category Feeds)
         // =========================================================================
         async getCustomFeeds() {
-          return STATIC_CUSTOM_FEEDS;
+          return exports.STATIC_CUSTOM_FEEDS;
         }
         async getItemList(request, page) {
           var _a, _b, _c;
@@ -4207,7 +4798,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_org();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "org.imhentai", "name": "IMHentai", "version": 1.7, "website": "https://imhentai.xxx", "rating": 2, "thumbnail": "imhentai.png", "languages": ["en", "ja", "zh", "es", "fr", "de", "ru"] };
+      exports.SourceMetadata = { "id": "org.imhentai", "name": "IMHentai", "version": 1.8, "website": "https://imhentai.xxx", "rating": 2, "thumbnail": "imhentai.png", "languages": ["en", "ja", "zh", "es", "fr", "de", "ru"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;

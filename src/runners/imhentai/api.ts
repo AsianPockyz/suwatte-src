@@ -19,6 +19,7 @@ import {
   buildFullLanguageQueryFlags,
   buildPreferenceQueryFlags,
   normalizeCategoryToken,
+  normalizeLanguageToken,
 } from "./preferences.js";
 import type {
   ImHentaiExploreParams,
@@ -126,7 +127,7 @@ export function buildFeedUrl(
     sortBy === "most_viewed";
   const subPath = isPopular ? "popular/" : "";
 
-  // 1. Native Category Feeds (Section 2)
+  // 1. Native Category Feeds
   if (
     cleanKey === "doujinshi" ||
     cleanKey === "manga" ||
@@ -147,20 +148,33 @@ export function buildFeedUrl(
   // 2. Custom Browse Feeds with full flags and apply=Search
   const catFlags = buildFullCategoryQueryFlags(null, prefs.categories);
   const langFlags = buildFullLanguageQueryFlags(prefs.language);
+  const isEnglish = normalizeLanguageToken(prefs.language) === "en";
 
   switch (cleanKey) {
     case BROWSE_FEED_KEYS.POPULAR:
+    case BROWSE_FEED_KEYS.POPULAR_WEEKLY:
+    case HOME_SECTION_KEYS.POPULAR_THIS_WEEK:
       return `${BASE_URL}/search/?apply=Search&pp=1&lt=0&page=${safePage}${catFlags}${langFlags}`;
+
+    case BROWSE_FEED_KEYS.POPULAR_DAILY:
+    case HOME_SECTION_KEYS.POPULAR_TODAY:
     case BROWSE_FEED_KEYS.TRENDING:
     case HOME_SECTION_KEYS.TRENDING_NOW:
     case HOME_SECTION_KEYS.SPOTLIGHT:
       return `${BASE_URL}/search/?apply=Search&pp=1&lt=1&page=${safePage}${catFlags}${langFlags}`;
+
     case BROWSE_FEED_KEYS.TOP_RATED:
+    case BROWSE_FEED_KEYS.TOP_RATED_WEEKLY:
+    case BROWSE_FEED_KEYS.TOP_RATED_DAILY:
+    case BROWSE_FEED_KEYS.TOP_RATED_MONTHLY:
     case HOME_SECTION_KEYS.TOP_RATED:
       return `${BASE_URL}/search/?apply=Search&pp=1&lt=0&sort=top_rated&page=${safePage}${catFlags}${langFlags}`;
+
     case BROWSE_FEED_KEYS.LATEST:
+    case HOME_SECTION_KEYS.LATEST_RELEASES:
     case HOME_SECTION_KEYS.FRESH_RELEASES:
-      return `${BASE_URL}/?page=${safePage}`;
+      return `${BASE_URL}/?page=${safePage}${isEnglish ? "&en=1" : ""}`;
+
     case BROWSE_FEED_KEYS.DISCOVER:
     default: {
       if (isPopular) {
@@ -172,7 +186,7 @@ export function buildFeedUrl(
       if (sortBy === "trending") {
         return `${BASE_URL}/search/?apply=Search&pp=1&lt=1&page=${safePage}${catFlags}${langFlags}`;
       }
-      return `${BASE_URL}/?page=${safePage}`;
+      return `${BASE_URL}/?page=${safePage}${isEnglish ? "&en=1" : ""}`;
     }
   }
 }
@@ -210,9 +224,6 @@ export function buildSearchUrl(
     params.sortBy === "pp" ||
     params.sortBy === "most_viewed";
 
-  // Parameter Safety in Search:
-  // If search query is empty or contains only whitespace, route to the standard popular or latest feed
-  // rather than sending a broken ?key=&apply=Search query that might trigger server-side 500 errors.
   if (queryParts.length === 0) {
     return buildFeedUrl(
       isPopular ? BROWSE_FEED_KEYS.POPULAR : BROWSE_FEED_KEYS.LATEST,
@@ -279,7 +290,6 @@ export function buildReaderUrl(id: string, page = 1): string {
  * Supports:
  * - (baseUrl, pageNumber, ext): `${baseUrl}${pageNumber}.${cleanExt}`
  * - (serverId, loadDir, pageNumber, ext): `https://m${server}.imhentai.xxx/${dir}/${pageNumber}.${cleanExt}`
- * - (serverId, loadDir, galleryId, pageNumber, ext): omits numerical galleryId as per IMHentai CDN specification
  */
 export function buildImageUrl(
   baseOrServer: string,
@@ -288,7 +298,6 @@ export function buildImageUrl(
   maybePage?: number,
   maybeExt?: string
 ): string {
-  // If first argument is already a base URL (e.g. "https://m2.imhentai.xxx/007/5uqtji3sho/")
   if (
     baseOrServer.startsWith("https://") ||
     baseOrServer.startsWith("http://")
@@ -310,7 +319,6 @@ export function buildImageUrl(
     return `${cleanBase}${pageNum}.${cleanExt}`;
   }
 
-  // Fallback: construct from serverId and loadDir (without inserting numeric galleryId)
   const cleanServerId =
     baseOrServer.replace(/^m/i, "").trim() || DEFAULT_SERVER_ID;
   const cleanLoadDir =
@@ -320,11 +328,9 @@ export function buildImageUrl(
   let rawExt = DEFAULT_IMAGE_EXT;
 
   if (maybeExt !== undefined) {
-    // 5 arguments: (serverId, loadDir, galleryId, pageNumber, ext)
     pageNum = maybePage ?? 1;
     rawExt = maybeExt;
   } else if (typeof pageOrExt === "number") {
-    // 4 arguments: (serverId, loadDir, pageNumber, ext)
     pageNum = pageOrExt;
     rawExt = (maybePage as unknown as string) || DEFAULT_IMAGE_EXT;
   }

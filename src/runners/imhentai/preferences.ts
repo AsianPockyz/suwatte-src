@@ -3,16 +3,21 @@ import {
   type UIForm,
   UIPicker,
   UISelect,
+  UITextField,
 } from "@suwatte/toolchain";
 import {
   ALL_CATEGORIES,
   CATEGORY_OPTIONS,
   DEFAULT_CATEGORIES,
+  DEFAULT_CUSTOM_BLACKLIST,
   DEFAULT_LANGUAGE,
   DEFAULT_TITLE_PREFERENCE,
+  DEFAULT_TROPE_EXCLUSIONS,
   LANGUAGE_OPTIONS,
   PREF_KEYS,
   TITLE_PREFERENCE_OPTIONS,
+  TROPE_EXCLUSION_OPTIONS,
+  TROPE_TAG_MAP,
   WHITESPACE_REGEX,
 } from "./constants.js";
 import type {
@@ -35,6 +40,11 @@ const UI_LANGUAGE_OPTIONS = LANGUAGE_OPTIONS.map((opt) => ({
   title: opt.title,
 }));
 
+const UI_TROPE_OPTIONS = TROPE_EXCLUSION_OPTIONS.map((opt) => ({
+  id: opt.id,
+  title: opt.title,
+}));
+
 const UI_TITLE_PREFERENCE_OPTIONS = TITLE_PREFERENCE_OPTIONS.map((opt) => ({
   id: opt.id,
   title: opt.title,
@@ -46,6 +56,8 @@ let memoryPreferences: ImHentaiUserPreferences = {
   categories: [...DEFAULT_CATEGORIES],
   language: DEFAULT_LANGUAGE,
   titlePreference: DEFAULT_TITLE_PREFERENCE,
+  tropeExclusions: [...DEFAULT_TROPE_EXCLUSIONS],
+  customBlacklist: DEFAULT_CUSTOM_BLACKLIST,
 };
 
 let isHydrated = false;
@@ -241,6 +253,104 @@ export function normalizeTitlePreference(
   return "english";
 }
 
+// ============================================================================
+// Tag Blacklist Evaluation Engine (O(1))
+// ============================================================================
+
+/**
+ * Constructs a normalized Set<string> from active heavy trope exclusions
+ * and custom comma-separated blacklist entries.
+ */
+export function buildBlacklistSet(
+  tropeExclusions?: readonly string[] | null,
+  customBlacklistText?: string | null
+): Set<string> {
+  const set = new Set<string>();
+
+  if (Array.isArray(tropeExclusions)) {
+    for (let i = 0; i < tropeExclusions.length; i++) {
+      const tropeId = tropeExclusions[i]?.trim().toLowerCase();
+      if (!tropeId) continue;
+      const mappedTags = TROPE_TAG_MAP[tropeId];
+      if (mappedTags) {
+        for (let j = 0; j < mappedTags.length; j++) {
+          const t = mappedTags[j]?.toLowerCase();
+          if (t) set.add(t);
+        }
+      } else {
+        set.add(tropeId);
+      }
+    }
+  }
+
+  if (customBlacklistText && typeof customBlacklistText === "string") {
+    const parts = customBlacklistText.split(",");
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i]?.trim().toLowerCase();
+      if (part) {
+        set.add(part);
+        if (part.includes(":")) {
+          const valOnly = part.split(":")[1]?.trim();
+          if (valOnly) set.add(valOnly);
+        }
+      }
+    }
+  }
+
+  return set;
+}
+
+/**
+ * Evaluates whether an item's raw tags violate the active blacklist set in O(1).
+ */
+export function isItemBlacklisted(
+  tags: readonly string[],
+  blacklistSet: ReadonlySet<string>
+): boolean {
+  if (blacklistSet.size === 0 || !Array.isArray(tags) || tags.length === 0) {
+    return false;
+  }
+
+  for (let i = 0, len = tags.length; i < len; i++) {
+    const rawTag = tags[i];
+    if (!rawTag) continue;
+    const clean = rawTag.toLowerCase().trim();
+    const valOnly = clean.includes(":") ? clean.split(":")[1]?.trim() ?? clean : clean;
+    if (blacklistSet.has(clean) || blacklistSet.has(valOnly)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Evaluates whether a parsed IMHentai gallery card matches the blacklist.
+ */
+export function isCardMatchingBlacklist(
+  card: Pick<ImHentaiGalleryCard, "tags" | "title" | "subtitle">,
+  blacklistSet: ReadonlySet<string>
+): boolean {
+  if (blacklistSet.size === 0) {
+    return false;
+  }
+
+  if (isItemBlacklisted(card.tags, blacklistSet)) {
+    return true;
+  }
+
+  const titleLower = (card.title ?? "").toLowerCase();
+  for (const token of blacklistSet) {
+    if (token.length >= 3 && titleLower.includes(`[${token}]`)) {
+      return true;
+    }
+    if (token.length >= 3 && titleLower.includes(`(${token})`)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 async function hydratePreferencesFromStore(): Promise<ImHentaiUserPreferences> {
   if (!hasObjectStore()) {
     isHydrated = true;
@@ -255,6 +365,10 @@ async function hydratePreferencesFromStore(): Promise<ImHentaiUserPreferences> {
       legacyLanguage,
       storedTitlePref,
       legacyTitlePref,
+      storedTropes,
+      legacyTropes,
+      storedBlacklist,
+      legacyBlacklist,
     ] = await Promise.all([
       ObjectStore.get(PREF_KEYS.CATEGORIES).catch(() => null),
       ObjectStore.get(PREF_KEYS.LEGACY_CATEGORIES).catch(() => null),
@@ -262,6 +376,10 @@ async function hydratePreferencesFromStore(): Promise<ImHentaiUserPreferences> {
       ObjectStore.string(PREF_KEYS.LEGACY_LANGUAGE).catch(() => null),
       ObjectStore.string(PREF_KEYS.TITLE_PREFERENCE).catch(() => null),
       ObjectStore.string(PREF_KEYS.LEGACY_TITLE_PREFERENCE).catch(() => null),
+      ObjectStore.get(PREF_KEYS.TROPE_EXCLUSIONS).catch(() => null),
+      ObjectStore.get(PREF_KEYS.LEGACY_TROPE_EXCLUSIONS).catch(() => null),
+      ObjectStore.string(PREF_KEYS.CUSTOM_BLACKLIST).catch(() => null),
+      ObjectStore.string(PREF_KEYS.LEGACY_CUSTOM_BLACKLIST).catch(() => null),
     ]);
 
     let categories = memoryPreferences.categories;
@@ -285,10 +403,24 @@ async function hydratePreferencesFromStore(): Promise<ImHentaiUserPreferences> {
         ? normalizeTitlePreference(rawTitle)
         : memoryPreferences.titlePreference;
 
+    const rawTropes = storedTropes ?? legacyTropes;
+    const tropeExclusions =
+      rawTropes !== null && rawTropes !== undefined
+        ? parseStringList(rawTropes)
+        : memoryPreferences.tropeExclusions;
+
+    const rawBlacklist = storedBlacklist ?? legacyBlacklist;
+    const customBlacklist =
+      typeof rawBlacklist === "string"
+        ? rawBlacklist.trim()
+        : memoryPreferences.customBlacklist;
+
     memoryPreferences = {
       categories,
       language,
       titlePreference,
+      tropeExclusions,
+      customBlacklist,
     };
   } catch {
     // Retain in-memory preferences if ObjectStore read fails
@@ -370,17 +502,6 @@ export function isCardMatchingLanguage(
         ) {
           return false;
         }
-      } else if (targetLang === "zh") {
-        if (
-          tagLower === "english" ||
-          tagLower === "japanese" ||
-          tagLower === "spanish" ||
-          tagLower === "french" ||
-          tagLower === "german" ||
-          tagLower === "russian"
-        ) {
-          return false;
-        }
       }
     }
   }
@@ -415,18 +536,6 @@ export function isCardMatchingLanguage(
     ) {
       return false;
     }
-  } else if (targetLang === "zh") {
-    if (
-      title.includes("[english]") ||
-      title.includes("(english)") ||
-      title.includes("[eng]") ||
-      title.includes("[japanese]") ||
-      title.includes("(japanese)") ||
-      title.includes("[jp]") ||
-      title.includes("[raw]")
-    ) {
-      return false;
-    }
   }
 
   return true;
@@ -435,7 +544,6 @@ export function isCardMatchingLanguage(
 /**
  * Builds full 1/0 language query flags conforming to IMHentai native search parameter protocol:
  * - English only: &en=1&jp=0&es=0&fr=0&kr=0&de=0&ru=0
- * - Japanese only: &en=0&jp=1&es=0&fr=0&kr=0&de=0&ru=0
  * - All Languages: &en=1&jp=1&es=1&fr=1&kr=1&de=1&ru=1
  */
 export function buildFullLanguageQueryFlags(rawLanguage?: unknown): string {
@@ -458,16 +566,16 @@ export function buildFullLanguageQueryFlags(rawLanguage?: unknown): string {
  * - d: Doujinshi
  * - m: Manga
  * - w: Western
- * - i: Image Set
+ * - i: Image Set / Artist CG
  * - a: Artist CG
  * - g: Game CG
- * If a category is selected/enabled, set its parameter to 1; otherwise set it to 0.
+ * - c: Cosplay
  */
 export function buildFullCategoryQueryFlags(
   activeFilter?: unknown,
   prefsCategories?: readonly unknown[] | null
 ): string {
-  const CAT_KEYS = ["d", "m", "w", "i", "a", "g"] as const;
+  const CAT_KEYS = ["d", "m", "w", "i", "a", "g", "c"] as const;
   const KEY_MAP: Record<string, (typeof CAT_KEYS)[number]> = {
     doujinshi: "d",
     d: "d",
@@ -485,6 +593,8 @@ export function buildFullCategoryQueryFlags(
     gamecg: "g",
     "game cg": "g",
     g: "g",
+    cosplay: "c",
+    c: "c",
   };
 
   const activeKeys = new Set<string>();
@@ -584,9 +694,23 @@ export async function buildSettingsForm(): Promise<UIForm> {
   return {
     sections: [
       {
-        header: "Allowed Categories",
+        header: "Language Filter",
         footer:
-          "Select which content categories to include in browse feeds and search queries (&d=1, &m=1, &w=1, &i=1, &c=1).",
+          "Choose whether to restrict galleries to English translations (&en=1) or show All Languages.",
+        views: [
+          UIPicker({
+            id: PREF_KEYS.LANGUAGE,
+            title: "Preferred Language",
+            options: UI_LANGUAGE_OPTIONS,
+            currentValue: prefs.language,
+            defaultValue: DEFAULT_LANGUAGE,
+          }),
+        ],
+      },
+      {
+        header: "Content Categories",
+        footer:
+          "Select which content categories to include in browse feeds and search queries: Doujinshi (&d=1), Manga (&m=1), Western (&w=1), Artist CG (&a=1/&i=1), Cosplay (&c=1).",
         views: [
           UISelect({
             id: PREF_KEYS.CATEGORIES,
@@ -608,23 +732,44 @@ export async function buildSettingsForm(): Promise<UIForm> {
         ],
       },
       {
-        header: "Languages",
+        header: "Heavy Trope Exclusions",
         footer:
-          "Filter galleries by preferred translation language (&en=1, &jp=1, &zh=1) or display All Languages.",
+          "Select heavy tropes to automatically exclude from all discovery feeds and browse listings.",
         views: [
-          UIPicker({
-            id: PREF_KEYS.LANGUAGE,
-            title: "Preferred Language",
-            options: UI_LANGUAGE_OPTIONS,
-            currentValue: prefs.language,
-            defaultValue: DEFAULT_LANGUAGE,
+          UISelect({
+            id: PREF_KEYS.TROPE_EXCLUSIONS,
+            title: "Excluded Tropes",
+            options: UI_TROPE_OPTIONS,
+            exclude: false,
+            currentValue: {
+              include: prefs.tropeExclusions ?? [],
+              exclude: [],
+            },
+            defaultValue: {
+              include: [],
+              exclude: [],
+            },
+          }),
+        ],
+      },
+      {
+        header: "Custom Tag Blacklist",
+        footer:
+          "Comma-separated list of exact tags or keywords to filter out silently (e.g. ugly bastard, mind break, lolicon).",
+        views: [
+          UITextField({
+            id: PREF_KEYS.CUSTOM_BLACKLIST,
+            title: "Blacklisted Tags",
+            placeholder: "e.g. lolicon, ugly bastard, mind break",
+            currentValue: prefs.customBlacklist ?? "",
+            defaultValue: DEFAULT_CUSTOM_BLACKLIST,
           }),
         ],
       },
       {
         header: "Title Formatting",
         footer:
-          "Choose whether to display the English title as the primary title (with Japanese in the subtitle) or prioritize the original Japanese title.",
+          "Choose whether to display the English title as primary (with Japanese in the subtitle) or prioritize the original Japanese title.",
         views: [
           UIPicker({
             id: PREF_KEYS.TITLE_PREFERENCE,
@@ -646,7 +791,13 @@ export async function updateUserPreferences(
     return;
   }
 
-  let { categories, language, titlePreference } = memoryPreferences;
+  let {
+    categories,
+    language,
+    titlePreference,
+    tropeExclusions,
+    customBlacklist,
+  } = memoryPreferences;
 
   const storeAvailable = hasObjectStore();
   const writeTasks: Array<Promise<unknown>> = [];
@@ -702,10 +853,52 @@ export async function updateUserPreferences(
     }
   }
 
+  const rawTropes =
+    data[PREF_KEYS.TROPE_EXCLUSIONS] ??
+    data[PREF_KEYS.LEGACY_TROPE_EXCLUSIONS] ??
+    data["heavy_trope_exclusions"] ??
+    data["trope_exclusions"];
+  if (rawTropes !== undefined && rawTropes !== null) {
+    tropeExclusions = parseStringList(rawTropes);
+    if (storeAvailable) {
+      writeTasks.push(
+        ObjectStore.set(PREF_KEYS.TROPE_EXCLUSIONS, tropeExclusions).catch(
+          () => {}
+        ),
+        ObjectStore.set(
+          PREF_KEYS.LEGACY_TROPE_EXCLUSIONS,
+          tropeExclusions
+        ).catch(() => {})
+      );
+    }
+  }
+
+  const rawBlacklist =
+    data[PREF_KEYS.CUSTOM_BLACKLIST] ??
+    data[PREF_KEYS.LEGACY_CUSTOM_BLACKLIST] ??
+    data["custom_tag_blacklist"] ??
+    data["blacklist"];
+  if (typeof rawBlacklist === "string") {
+    customBlacklist = rawBlacklist.trim();
+    if (storeAvailable) {
+      writeTasks.push(
+        ObjectStore.set(PREF_KEYS.CUSTOM_BLACKLIST, customBlacklist).catch(
+          () => {}
+        ),
+        ObjectStore.set(
+          PREF_KEYS.LEGACY_CUSTOM_BLACKLIST,
+          customBlacklist
+        ).catch(() => {})
+      );
+    }
+  }
+
   memoryPreferences = {
     categories,
     language,
     titlePreference,
+    tropeExclusions,
+    customBlacklist,
   };
   isHydrated = true;
 

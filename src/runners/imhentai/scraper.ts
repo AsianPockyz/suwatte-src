@@ -1,7 +1,6 @@
 import {
   type Chapter,
   type ChapterPage,
-  type Content,
   ContentStatus,
   ContentType,
   type Credit,
@@ -36,6 +35,7 @@ import {
   DEFAULT_IMAGE_EXT,
   DEFAULT_LANGUAGE,
   DEFAULT_SERVER_ID,
+  DEFAULT_USER_AGENT,
   EXTENSION_CODE_MAP,
   EXT_REGEX,
   FALLBACK_COVER_URL,
@@ -63,10 +63,13 @@ import {
   VIEW_PATH_REGEX,
   WHITESPACE_REGEX,
 } from "./constants.js";
+import { fetchEHentaiFeedItems } from "./discovery.js";
 import {
+  buildBlacklistSet,
   decodeHtmlEntities,
   formatGalleryTitleDisplay,
   getUserPreferences,
+  isCardMatchingBlacklist,
   normalizeCategoryToken,
   normalizeLanguageToken,
 } from "./preferences.js";
@@ -194,8 +197,6 @@ export function sanitizeImageExtension(ext: unknown): string {
 
 /**
  * Parses the inline `g_th` extension map JSON from gallery/reader HTML if present.
- * Uses pre-compiled regular expressions and safe JSON parsing, smoothly falling back
- * to empty extension map on missing or malformed inputs without throwing.
  */
 export function parseExtensionMapFromHtml(
   html: string,
@@ -214,7 +215,6 @@ export function parseExtensionMapFromHtml(
   }
 
   if (!rawJson) {
-    // Pattern 1: g_th = $.parseJSON('{"1":"j,1280,1800",...}') or JSON.parse('...')
     const parseJsonMatch = G_TH_PARSE_JSON_REGEX.exec(html);
     if (parseJsonMatch?.[2]) {
       rawJson = parseJsonMatch[2].replace(/\\'/g, "'").replace(/\\"/g, '"');
@@ -222,7 +222,6 @@ export function parseExtensionMapFromHtml(
   }
 
   if (!rawJson) {
-    // Pattern 2: var g_th = '{"1":"j,..."}'
     const stringMatch = G_TH_STRING_REGEX.exec(html);
     if (stringMatch?.[2]) {
       rawJson = stringMatch[2];
@@ -230,7 +229,6 @@ export function parseExtensionMapFromHtml(
   }
 
   if (!rawJson) {
-    // Pattern 3: var g_th = {"1":"j,1280,1800", ...};
     const objMatch = G_TH_OBJECT_REGEX.exec(html);
     if (objMatch?.[1]) {
       rawJson = objMatch[1];
@@ -252,10 +250,9 @@ export function parseExtensionMapFromHtml(
       return map;
     }
   } catch {
-    // Fallback regex extraction if JSON has unquoted keys or single quotes
+    // Fallback regex matching
   }
 
-  // Fallback regex matching
   const entryRegex = new RegExp(G_TH_FALLBACK_ENTRY_REGEX.source, "g");
   let m: RegExpExecArray | null;
   while ((m = entryRegex.exec(rawJson)) !== null) {
@@ -278,7 +275,6 @@ function extractCleanTagText(
   $clone.find(".badge, .count, span.badge, span.count").remove();
   let raw = decodeHtmlEntities($clone.text());
 
-  // Strip trailing parenthesized badge counts
   raw = raw.replace(BADGE_COUNT_REGEX, "").trim();
 
   let namespace: string | undefined;
@@ -381,15 +377,10 @@ export function extractImageSrcFromElement(
 // 2.1 Thumbnail & Gallery Card Parsing (.thumb)
 // ============================================================================
 
-/**
- * Centralized, reusable parser extracting a single gallery card from a Cheerio `.thumb` element.
- * Scopes all DOM queries strictly within `$thumb` to minimize selector overhead.
- */
 export function extractGalleryCardFromElement(
   $thumb: cheerio.Cheerio,
   $: cheerio.CheerioAPI
 ): ImHentaiGalleryCard | null {
-  // 1. Extract ID from gallery links (/gallery/{id}/)
   const galleryHref =
     $thumb.find(".caption a").attr("href") ??
     $thumb.find(".inner_thumb a").attr("href") ??
@@ -401,7 +392,6 @@ export function extractGalleryCardFromElement(
     return null;
   }
 
-  // 2. Extract Title with HTML entity decoding
   const $captionLink = $thumb.find(".caption a").first();
   const rawTitle = decodeHtmlEntities(
     $captionLink.text() ||
@@ -417,14 +407,12 @@ export function extractGalleryCardFromElement(
     "";
   const japaneseTitle = rawSubtitle ? decodeHtmlEntities(rawSubtitle) : undefined;
 
-  // 3. Extract Thumbnail URL prioritizing data-src over placeholders
   const $lazyImg = $thumb.find("img.lazy").first();
   const $anyImg = $lazyImg.length > 0 ? $lazyImg : $thumb.find("img").first();
   const extractedThumb = extractImageSrcFromElement($anyImg);
   const thumbnailUrl = extractedThumb || FALLBACK_COVER_URL;
   const baseUrl = deriveBaseCdnUrl(thumbnailUrl);
 
-  // 4. Extract Category badges and Language tags
   let categoryBadge =
     $thumb
       .find(".thumb_cat, .cat, .category, a[href*='/category/']")
@@ -463,7 +451,6 @@ export function extractGalleryCardFromElement(
     }
   }
 
-  // Collect tags from data-tags, inline .tag links, and bracketed title tokens
   const tagSet = new Set<string>();
   const dataTags = $thumb.attr("data-tags");
   if (dataTags) {
@@ -531,7 +518,6 @@ export function extractGalleryCardFromElement(
   if (categoryBadge) subtitleParts.push(categoryBadge);
   if (languageBadge) subtitleParts.push(languageBadge);
 
-  // Client-Side Japanese Raw Marker Detection (.thumb level)
   const titleLower = rawTitle.toLowerCase();
   const isJpTitle =
     titleLower.includes("[japanese]") ||
@@ -580,10 +566,6 @@ export function extractGalleryCardFromElement(
   };
 }
 
-/**
- * Universal gallery card extractor supporting either an HTML string or an already-loaded Cheerio root.
- * Guarantees Cheerio is only loaded once per network response.
- */
 export function parseGalleryCards(
   htmlOrCheerio: string | cheerio.CheerioAPI,
   $container?: cheerio.Cheerio
@@ -616,8 +598,9 @@ export function parseGalleryCards(
 
 /**
  * Maps parsed gallery cards to Suwatte Item objects applying universal Layer 2 post-filtering:
- * 1. Client-side language safety guard dropping Japanese raw entries when English is preferred.
- * 2. Title preference formatting with HTML entity decoding.
+ * 1. True Tag Blacklist check (O(1))
+ * 2. Client-side language safety guard dropping Japanese raw entries when English is preferred.
+ * 3. Title preference formatting with HTML entity decoding.
  */
 export function filterAndMapGalleryCards(
   cards: readonly ImHentaiGalleryCard[],
@@ -635,13 +618,28 @@ export function filterAndMapGalleryCards(
   const normLang = normalizeLanguageToken(activeLang);
   const isEnglishPreferred = normLang === "en";
 
+  const blacklistSet = buildBlacklistSet(
+    prefs.tropeExclusions,
+    prefs.customBlacklist
+  );
+
+  if (options?.extraExcludedTags) {
+    for (let i = 0; i < options.extraExcludedTags.length; i++) {
+      const t = options.extraExcludedTags[i]?.toLowerCase().trim();
+      if (t) blacklistSet.add(t);
+    }
+  }
+
   for (let i = 0, len = cards.length; i < len; i++) {
     const card = cards[i];
     if (!card) continue;
 
+    // True Tag Blacklist check (O(1))
+    if (isCardMatchingBlacklist(card, blacklistSet)) {
+      continue;
+    }
+
     // Client-Side Language Safety Guard:
-    // If the user has "English" selected, check the title and language badge of parsed thumbnail cards (.thumb).
-    // Drop any entry explicitly identified as Japanese raw ([Japanese], .japanese, or jp flag) when English is preferred.
     if (isEnglishPreferred) {
       if (card.isJapaneseRaw) {
         continue;
@@ -689,9 +687,6 @@ export function filterAndMapGalleryCards(
   return items;
 }
 
-/**
- * Backward-compatible wrapper mapping parsed gallery cards to Suwatte Item objects.
- */
 export function mapCardsToItems(
   cards: readonly ImHentaiGalleryCard[],
   prefs: ImHentaiUserPreferences,
@@ -719,18 +714,15 @@ export function extractPageResolutionMeta(
 ): ImHentaiPageResolutionMeta {
   const $ = $loaded ?? cheerio.load(html);
 
-  // 1. Cover / thumbnail URL for fallback server_id, load_dir, and base extension
   const $coverImg = $("#cover img, .left_cover img, .thumb img").first();
   const rawCoverUrl = extractImageSrcFromElement($coverImg);
   const coverUrl = rawCoverUrl ? normalizeImageUrl(rawCoverUrl) : "";
 
-  // Check first preview thumbnail in thumbnail container
   const $firstThumbImg = $(
     "#thumbnail-container img, .gthumb img, .thumbs img, .g_thumb img"
   ).first();
   const rawFirstThumbUrl = extractImageSrcFromElement($firstThumbImg);
 
-  // Derive Base CDN directory URL as used by gallery-dl
   let baseUrl: string | undefined =
     deriveBaseCdnUrl(rawCoverUrl) || deriveBaseCdnUrl(rawFirstThumbUrl);
 
@@ -741,17 +733,19 @@ export function extractPageResolutionMeta(
     coverUrl || rawFirstThumbUrl || html
   );
 
-  // 2. Gallery ID: $('#gallery_id').val() or inline regex
   const domGalleryId = ($("#gallery_id").val() ?? "").trim();
   const inlineGalleryIdMatch = INLINE_GALLERY_ID_REGEX.exec(html);
   const galleryId =
     domGalleryId ||
-    inlineGalleryIdMatch?.[1] ||
+    inlineGalleryIdId(inlineGalleryIdMatch?.[1]) ||
     urlPartsMatch?.[3] ||
     extractGalleryId(fallbackId) ||
     "1";
 
-  // 3. Directory Hash: $('#load_dir').val() or inline regex
+  function inlineGalleryIdId(val?: string) {
+    return val;
+  }
+
   const domLoadDir = ($("#load_dir").val() ?? "").trim();
   const inlineLoadDirMatch = INLINE_LOAD_DIR_REGEX.exec(html);
   const loadDir =
@@ -760,7 +754,6 @@ export function extractPageResolutionMeta(
     urlPartsMatch?.[2] ||
     "001";
 
-  // 4. Image Server ID: $('#load_id').val() or parsed from thumbnail server prefix
   const domLoadId = (
     $("#load_id").val() ?? $("#load_server").val() ?? ""
   ).trim();
@@ -777,20 +770,16 @@ export function extractPageResolutionMeta(
   }
   const serverId = rawServerId || DEFAULT_SERVER_ID;
 
-  // Fallback baseUrl if not derived from cover/thumbnail
   if (!baseUrl) {
     const cleanServer = serverId.replace(/^m/i, "") || DEFAULT_SERVER_ID;
     const cleanDir = loadDir.replace(TRIM_SLASHES_REGEX, "");
     baseUrl = `https://m${cleanServer}.imhentai.xxx/${cleanDir}/`;
   }
-  // Sanitize baseUrl: strip query strings or hash fragments, guarantee trailing slash
   const cleanBaseUrl = baseUrl.split("?")[0]?.split("#")[0] ?? baseUrl;
   baseUrl = cleanBaseUrl.endsWith("/") ? cleanBaseUrl : `${cleanBaseUrl}/`;
 
-  // 5. Extension Map: Parse JSON string from g_th if present, or detect base image extension
   const extensionMap = parseExtensionMapFromHtml(html, $);
 
-  // Supplement extensionMap by scanning any thumbnail elements (e.g. 1t.jpg, 2t.png) in the DOM
   $("img[data-src*='t.'], img[src*='t.']").each((_i, imgEl) => {
     const src = $(imgEl).attr("data-src") || $(imgEl).attr("src") || "";
     const m = THUMB_PAGENUM_EXT_REGEX.exec(src);
@@ -805,7 +794,6 @@ export function extractPageResolutionMeta(
 
   const defaultExt = sanitizeImageExtension(detectExtensionFromUrl(coverUrl));
 
-  // 6. Total Pages: parseInt($('#load_pages').val()) or metadata list item "Pages:" or g_th keys
   const domPagesVal = ($("#load_pages").val() ?? "").trim();
   let totalPages = parseInt(domPagesVal, 10);
 
@@ -839,12 +827,6 @@ export function extractPageResolutionMeta(
   };
 }
 
-/**
- * Constructs the entire array of page image URLs in memory using gallery-dl's Base CDN URL pattern:
- * ${baseUrl}${page_number}.${ext}
- * with attached Referer: "https://imhentai.xxx/" header (no Origin header).
- * Smoothly falls back to default .jpg sequentially for all pages if g_th JSON extraction failed.
- */
 export function buildChapterPagesFromMeta(
   meta: ImHentaiPageResolutionMeta
 ): ImHentaiChapterPage[] {
@@ -853,7 +835,6 @@ export function buildChapterPagesFromMeta(
   const { extensionMap, defaultExt, baseUrl } = meta;
   const safeDefaultExt = sanitizeImageExtension(defaultExt || DEFAULT_IMAGE_EXT);
 
-  // Determine base CDN directory URL (ensuring trailing slash)
   let baseCdn = baseUrl?.split("?")[0]?.split("#")[0] ?? baseUrl;
   if (!baseCdn || !baseCdn.startsWith("http")) {
     const cleanServer =
@@ -895,19 +876,16 @@ export function parseGalleryDetail(
   html: string,
   fallbackId = "1"
 ): ImHentaiGalleryDetail {
-  // Load Cheerio ONCE for the entire gallery detail response
   const $ = cheerio.load(html);
   const pageMeta = extractPageResolutionMeta(html, fallbackId, $);
   const id = pageMeta.galleryId || extractGalleryId(fallbackId) || "1";
 
-  // Primary Title: .right_details h1
   const primaryTitle = decodeHtmlEntities(
     $(".right_details h1").first().text() ||
       $("h1").first().text() ||
       `Gallery #${id}`
   );
 
-  // Alternative Titles: .right_details .subtitle
   const subtitleRaw =
     $(".right_details .subtitle").first().text() ||
     $(".subtitle").first().text() ||
@@ -915,12 +893,10 @@ export function parseGalleryDetail(
   const subtitleText = subtitleRaw ? decodeHtmlEntities(subtitleRaw) : "";
   const additionalTitles = subtitleText.length > 0 ? [subtitleText] : [];
 
-  // Cover Image: #cover img (handle lazy load attributes)
   const $coverImg = $("#cover img, .left_cover img").first();
   const rawCover = extractImageSrcFromElement($coverImg);
   const coverImage = rawCover || FALLBACK_COVER_URL;
 
-  // Attributes & Tag Taxonomies
   const artists: string[] = [];
   const groups: string[] = [];
   const parodies: string[] = [];
@@ -938,7 +914,6 @@ export function parseGalleryDetail(
 
   let totalPages = pageMeta.totalPages;
 
-  // Parse metadata list items (ul.galleries_info li or .right_details li)
   $(".right_details li, ul.galleries_info li, .galleries_info li").each(
     (_idx, liEl) => {
       const $li = $(liEl);
@@ -1027,7 +1002,6 @@ export function parseGalleryDetail(
     }
   );
 
-  // Scan any standalone taxonomy links inside .right_details
   $(
     '.right_details a.tag, .right_details a[href*="/artist/"], .right_details a[href*="/group/"], .right_details a[href*="/parody/"], .right_details a[href*="/character/"], .right_details a[href*="/category/"], .right_details a[href*="/language/"], .right_details a[href*="/tag/"]'
   ).each((_idx, aEl) => {
@@ -1058,7 +1032,6 @@ export function parseGalleryDetail(
     }
   });
 
-  // Parse related gallery cards using the SAME loaded Cheerio instance (0 redundant cheerio.load calls)
   const relatedCards = parseRelatedGalleryCards($, $);
   const relatedItems: Item[] = relatedCards.map((card) => ({
     id: card.id,
@@ -1089,10 +1062,6 @@ export function parseGalleryDetail(
   };
 }
 
-/**
- * Parses related/similar gallery recommendation cards from an IMHentai gallery page.
- * Reuses an existing loaded Cheerio root if available.
- */
 export function parseRelatedGalleryCards(
   htmlOrCheerio: string | cheerio.CheerioAPI,
   $loaded?: cheerio.CheerioAPI
@@ -1116,9 +1085,6 @@ export function parseRelatedGalleryCards(
   return parseGalleryCards($, $container);
 }
 
-/**
- * Maps a parsed ImHentaiGalleryDetail into a Suwatte Content object.
- */
 export function mapDetailToContent(
   detail: ImHentaiGalleryDetail,
   prefs: ImHentaiUserPreferences
@@ -1304,9 +1270,6 @@ export function mapDetailToContent(
   return content;
 }
 
-/**
- * Builds the single Chapter representation for a complete IMHentai gallery release.
- */
 export function buildSingleGalleryChapter(
   detail: Pick<
     ImHentaiGalleryDetail,
@@ -1349,13 +1312,18 @@ export function buildSingleGalleryChapter(
 // ============================================================================
 
 export class ImHentaiScraperClient {
-  private readonly client: ReturnType<NetworkClientBuilder["build"]>;
+  public readonly client: ReturnType<NetworkClientBuilder["build"]>;
   private readonly galleryCache = new Map<string, CachedGalleryEntry>();
 
   constructor() {
     const builder = new NetworkClientBuilder()
       .setRateLimit(RATE_LIMIT_PER_SECOND, 1)
       .addRequestInterceptor(async (request: NetworkRequest) => {
+        // If requesting e-hentai endpoints, do not overwrite e-hentai Referer
+        const targetUrl = request.url || "";
+        if (targetUrl.includes("e-hentai.org")) {
+          return request;
+        }
         request.headers = {
           ...DEFAULT_HEADERS,
           ...(request.headers ?? {}),
@@ -1380,8 +1348,12 @@ export class ImHentaiScraperClient {
       ? url
       : `${BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
 
+    const headers = targetUrl.includes("e-hentai.org")
+      ? { "User-Agent": DEFAULT_USER_AGENT }
+      : DEFAULT_HEADERS;
+
     const response = await this.client.get(targetUrl, {
-      headers: DEFAULT_HEADERS,
+      headers,
     });
 
     if (isCloudflareChallenge(response)) {
@@ -1417,6 +1389,41 @@ export class ImHentaiScraperClient {
     sortAscending?: boolean
   ): Promise<PagedItemList> {
     const resolvedPrefs = prefs ?? (await getUserPreferences());
+
+    // Map timeframe discovery feed keys to E-Hentai Discovery Bridge
+    const ehentaiKeyMap: Record<string, string> = {
+      [BROWSE_FEED_KEYS.POPULAR_DAILY]: BROWSE_FEED_KEYS.POPULAR_DAILY,
+      [BROWSE_FEED_KEYS.POPULAR_WEEKLY]: BROWSE_FEED_KEYS.POPULAR_WEEKLY,
+      [BROWSE_FEED_KEYS.POPULAR_MONTHLY]: BROWSE_FEED_KEYS.POPULAR_MONTHLY,
+      [BROWSE_FEED_KEYS.TOP_RATED_DAILY]: BROWSE_FEED_KEYS.TOP_RATED_DAILY,
+      [BROWSE_FEED_KEYS.TOP_RATED_WEEKLY]: BROWSE_FEED_KEYS.TOP_RATED_WEEKLY,
+      [BROWSE_FEED_KEYS.TOP_RATED_MONTHLY]: BROWSE_FEED_KEYS.TOP_RATED_MONTHLY,
+      [HOME_SECTION_KEYS.POPULAR_TODAY]: BROWSE_FEED_KEYS.POPULAR_DAILY,
+      [HOME_SECTION_KEYS.POPULAR_THIS_WEEK]: BROWSE_FEED_KEYS.POPULAR_WEEKLY,
+      // Legacy aliases
+      [BROWSE_FEED_KEYS.TRENDING]: BROWSE_FEED_KEYS.POPULAR_DAILY,
+      [BROWSE_FEED_KEYS.POPULAR]: BROWSE_FEED_KEYS.POPULAR_WEEKLY,
+      [BROWSE_FEED_KEYS.TOP_RATED]: BROWSE_FEED_KEYS.TOP_RATED_WEEKLY,
+      [HOME_SECTION_KEYS.TRENDING_NOW]: BROWSE_FEED_KEYS.POPULAR_DAILY,
+      [HOME_SECTION_KEYS.SPOTLIGHT]: BROWSE_FEED_KEYS.POPULAR_DAILY,
+    };
+
+    const mappedKey = ehentaiKeyMap[feedKey];
+    if (mappedKey) {
+      const res = await fetchEHentaiFeedItems(
+        this.client,
+        mappedKey,
+        page,
+        resolvedPrefs
+      );
+      if (sortBy === "title") {
+        const dir = sortAscending === false ? -1 : 1;
+        res.items.sort((a, b) => a.title.localeCompare(b.title) * dir);
+      }
+      return res;
+    }
+
+    // Chronological latest releases and category listings on IMHentai
     const url = this.buildFeedUrl(feedKey, page, resolvedPrefs, sortBy);
     const html = await this.fetchHtml(url);
     const cards = parseGalleryCards(html);
@@ -1461,7 +1468,6 @@ export class ImHentaiScraperClient {
   ): Promise<PagedItemList> {
     const resolvedPrefs = prefs ?? (await getUserPreferences());
 
-    // Parameter Safety Guard: if query is empty or whitespace-only, fallback to standard feed
     if (
       !params.query?.trim() &&
       (!params.tags?.include || params.tags.include.length === 0)
@@ -1472,7 +1478,7 @@ export class ImHentaiScraperClient {
         params.sortBy === "pp" ||
         params.sortBy === "most_viewed";
       return this.fetchFeedItems(
-        isPopular ? BROWSE_FEED_KEYS.POPULAR : BROWSE_FEED_KEYS.LATEST,
+        isPopular ? BROWSE_FEED_KEYS.POPULAR_WEEKLY : BROWSE_FEED_KEYS.LATEST,
         params.page ?? 1,
         resolvedPrefs,
         params.sortBy,
