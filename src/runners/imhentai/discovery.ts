@@ -1,7 +1,5 @@
 import {
   type Item,
-  NetworkClientBuilder,
-  type NetworkRequest,
   type PagedItemList,
 } from "@suwatte/toolchain";
 import * as cheerio from "cheerio";
@@ -10,21 +8,23 @@ import {
   BROWSE_FEED_KEYS,
   ContentRating,
   DEFAULT_HEADERS,
-  DEFAULT_USER_AGENT,
   EHENTAI_API_HEADERS,
   EHENTAI_API_URL,
   EHENTAI_BASE_URL,
+  EHENTAI_BUFFER_DELAY_MS,
   EHENTAI_GALLERY_LINK_REGEX,
   EHENTAI_HEADERS,
+  TARGET_DISCOVERY_YIELD,
 } from "./constants.js";
 import {
   buildBlacklistSet,
-  decodeHtmlEntities,
+  buildFullLanguageQueryFlags,
   formatGalleryTitleDisplay,
   getUserPreferences,
+  isCardMatchingBlacklist,
+  isCardMatchingLanguage,
   isItemBlacklisted,
   normalizeCategoryToken,
-  normalizeLanguageToken,
 } from "./preferences.js";
 import { extractGalleryCardFromElement } from "./scraper.js";
 import type {
@@ -32,6 +32,8 @@ import type {
   EHentaiGalleryRef,
   ImHentaiUserPreferences,
 } from "./types.js";
+
+declare const setTimeout: (handler: (...args: any[]) => void, timeout?: number) => unknown;
 
 // Resolution cache to prevent redundant IMHentai search queries across shelves
 const TITLE_RESOLUTION_CACHE = new Map<string, Item | null>();
@@ -48,42 +50,35 @@ function cacheResolvedItem(key: string, item: Item | null): void {
 }
 
 /**
- * Maps a feed key and page number to its official E-Hentai endpoint.
+ * Maps a feed key and 0-based page offset to its official E-Hentai endpoint.
  */
-export function getEHentaiEndpoint(
-  feedKey: string,
-  page: number,
-  isEnglishPreferred = true
-): string {
-  const safePage = Math.max(1, page || 1);
-  const pIndex = safePage - 1;
-  const langSearch = isEnglishPreferred ? "language:english$" : "";
-  const encodedSearch = encodeURIComponent(langSearch);
+export function getEHentaiEndpoint(feedKey: string, offset = 0): string {
+  const safeOffset = Math.max(0, offset);
 
   switch (feedKey) {
     case BROWSE_FEED_KEYS.POPULAR_DAILY:
-      return `${EHENTAI_BASE_URL}/toplist.php?tl=11&p=${pIndex}`;
+      return `${EHENTAI_BASE_URL}/toplist.php?tl=11&p=${safeOffset}`;
 
     case BROWSE_FEED_KEYS.POPULAR_WEEKLY:
-      if (safePage === 1) {
+      if (safeOffset === 0) {
         return `${EHENTAI_BASE_URL}/popular`;
       }
-      return `${EHENTAI_BASE_URL}/?f_search=${encodedSearch}&f_sr=on&f_srdd=3&page=${pIndex}`;
+      return `${EHENTAI_BASE_URL}/?f_sr=on&f_srdd=3&page=${safeOffset}`;
 
     case BROWSE_FEED_KEYS.POPULAR_MONTHLY:
-      return `${EHENTAI_BASE_URL}/toplist.php?tl=12&p=${pIndex}`;
+      return `${EHENTAI_BASE_URL}/toplist.php?tl=12&p=${safeOffset}`;
 
     case BROWSE_FEED_KEYS.TOP_RATED_DAILY:
-      return `${EHENTAI_BASE_URL}/?f_search=${encodedSearch}&f_sr=on&f_srdd=5&page=${pIndex}`;
+      return `${EHENTAI_BASE_URL}/?f_sr=on&f_srdd=5&page=${safeOffset}`;
 
     case BROWSE_FEED_KEYS.TOP_RATED_WEEKLY:
-      return `${EHENTAI_BASE_URL}/?f_search=${encodedSearch}&f_sr=on&f_srdd=4&page=${pIndex}`;
+      return `${EHENTAI_BASE_URL}/?f_sr=on&f_srdd=4&page=${safeOffset}`;
 
     case BROWSE_FEED_KEYS.TOP_RATED_MONTHLY:
-      return `${EHENTAI_BASE_URL}/?f_search=${encodedSearch}&f_sr=on&f_srdd=4&page=${pIndex}`;
+      return `${EHENTAI_BASE_URL}/?f_sr=on&f_srdd=4&page=${safeOffset}`;
 
     default:
-      return `${EHENTAI_BASE_URL}/toplist.php?tl=11&p=${pIndex}`;
+      return `${EHENTAI_BASE_URL}/toplist.php?tl=11&p=${safeOffset}`;
   }
 }
 
@@ -172,10 +167,10 @@ function normalizeEHentaiCategory(cat: string): string | null {
 }
 
 /**
- * Evaluates whether an E-Hentai gallery metadata entry satisfies:
- * 1. Native English filtering (Language Gate)
- * 2. True Tag Blacklist ($O(1)$)
- * 3. Enabled content category filter
+ * Evaluates whether an E-Hentai gallery metadata entry passes:
+ * 1. True Tag Blacklist ($O(1)$) and Trope Exclusions
+ * 2. Enabled content category filter
+ * (Language filtering is anchored directly to IMHentai query resolution)
  */
 export function evaluateGalleryMetadata(
   meta: EHentaiGalleryMetadata,
@@ -186,26 +181,12 @@ export function evaluateGalleryMetadata(
     return false;
   }
 
-  const normLang = normalizeLanguageToken(prefs.language);
-  const isEnglishPreferred = normLang === "en";
-
-  // 1. Language Gate:
-  // If user prefers English (default), ensure item.tags.some(t => t === "language:english" || t === "language:translated")
-  if (isEnglishPreferred) {
-    const hasEnglishTag = meta.tags.some(
-      (t) => t === "language:english" || t === "language:translated"
-    );
-    if (!hasEnglishTag) {
-      return false;
-    }
-  }
-
-  // 2. True Tag Blacklist Check (O(1)):
+  // 1. True Tag Blacklist & Heavy Trope Exclusions Check (O(1)):
   if (isItemBlacklisted(meta.tags, blacklistSet)) {
     return false;
   }
 
-  // 3. Category Filter Gate:
+  // 2. Category Filter Gate:
   if (Array.isArray(prefs.categories) && prefs.categories.length > 0) {
     const canonicalCat = normalizeEHentaiCategory(meta.category);
     if (canonicalCat && !prefs.categories.includes(canonicalCat as any)) {
@@ -255,14 +236,15 @@ export function sanitizeSearchTitle(title: string): string {
 }
 
 /**
- * Resolves a clean title against IMHentai's native search endpoint:
- * https://imhentai.xxx/search/?key=${encodeURIComponent(searchTitle)}&apply=Search&en=1
+ * Resolves a clean title against IMHentai's native search engine with strict language flags:
+ * https://imhentai.xxx/search/?key=${encodeURIComponent(cleanTitle)}&apply=Search&en=1&jp=0...
  * Extracts the first matching .thumb card and maps to a Suwatte Item.
  */
 export async function resolveTitleOnIMHentai(
   client: NetworkClient,
   searchTitle: string,
   prefs: ImHentaiUserPreferences,
+  blacklistSet: ReadonlySet<string>,
   japaneseTitle?: string
 ): Promise<Item | null> {
   const trimmed = searchTitle.trim();
@@ -275,11 +257,11 @@ export async function resolveTitleOnIMHentai(
     return TITLE_RESOLUTION_CACHE.get(cacheKey) ?? null;
   }
 
-  const isEnglish = normalizeLanguageToken(prefs.language) === "en";
-  const langParam = isEnglish ? "&en=1" : "";
+  // Strict language filtering anchored directly to IMHentai query engine
+  const langFlags = buildFullLanguageQueryFlags(prefs.language);
   const searchUrl = `${BASE_URL}/search/?key=${encodeURIComponent(
     trimmed
-  )}&apply=Search${langParam}`;
+  )}&apply=Search${langFlags}`;
 
   try {
     const response = await client.get(searchUrl, {
@@ -297,35 +279,47 @@ export async function resolveTitleOnIMHentai(
     }
 
     const $ = cheerio.load(html);
-    const $firstThumb = $(".thumb").first();
-    if ($firstThumb.length === 0) {
+    const $thumbs = $(".thumb");
+    if ($thumbs.length === 0) {
       cacheResolvedItem(cacheKey, null);
       return null;
     }
 
-    const card = extractGalleryCardFromElement($firstThumb, $);
-    if (!card || !card.id) {
-      cacheResolvedItem(cacheKey, null);
-      return null;
+    let matchedItem: Item | null = null;
+
+    // Scan thumbnails for the best language-matching card
+    for (let i = 0; i < $thumbs.length; i++) {
+      const $thumb = $($thumbs[i]);
+      const card = extractGalleryCardFromElement($thumb, $);
+      if (!card || !card.id) continue;
+
+      // Verify language alignment and blacklist compliance on IMHentai card
+      if (!isCardMatchingLanguage(card, prefs.language)) {
+        continue;
+      }
+      if (isCardMatchingBlacklist(card, blacklistSet)) {
+        continue;
+      }
+
+      const display = formatGalleryTitleDisplay(
+        card.title,
+        card.japaneseTitle || japaneseTitle,
+        prefs
+      );
+
+      matchedItem = {
+        id: card.id,
+        title: display.title,
+        subtitle: display.subtitle ?? card.subtitle,
+        coverImage: card.thumbnailUrl,
+        webUrl: `${BASE_URL}/gallery/${card.id}/`,
+        rating: ContentRating.ADULT,
+      };
+      break;
     }
 
-    const display = formatGalleryTitleDisplay(
-      card.title,
-      card.japaneseTitle || japaneseTitle,
-      prefs
-    );
-
-    const item: Item = {
-      id: card.id,
-      title: display.title,
-      subtitle: display.subtitle ?? card.subtitle,
-      coverImage: card.thumbnailUrl,
-      webUrl: `${BASE_URL}/gallery/${card.id}/`,
-      rating: ContentRating.ADULT,
-    };
-
-    cacheResolvedItem(cacheKey, item);
-    return item;
+    cacheResolvedItem(cacheKey, matchedItem);
+    return matchedItem;
   } catch {
     cacheResolvedItem(cacheKey, null);
     return null;
@@ -333,80 +327,9 @@ export async function resolveTitleOnIMHentai(
 }
 
 /**
- * Fetches, filters, and resolves a single page from E-Hentai.
- */
-async function fetchAndResolveEHentaiPage(
-  client: NetworkClient,
-  feedKey: string,
-  pageIndex: number,
-  prefs: ImHentaiUserPreferences,
-  blacklistSet: ReadonlySet<string>
-): Promise<Item[]> {
-  const normLang = normalizeLanguageToken(prefs.language);
-  const isEnglishPreferred = normLang === "en";
-  const endpoint = getEHentaiEndpoint(feedKey, pageIndex, isEnglishPreferred);
-
-  let html = "";
-  try {
-    const response = await client.get(endpoint, {
-      headers: EHENTAI_HEADERS,
-    });
-    html =
-      typeof response.data === "string"
-        ? response.data
-        : String(response.data ?? "");
-  } catch {
-    return [];
-  }
-
-  const refs = extractGalleryRefs(html);
-  if (refs.length === 0) {
-    return [];
-  }
-
-  const metadataList = await fetchEHentaiMetadata(client, refs);
-  if (metadataList.length === 0) {
-    return [];
-  }
-
-  // Filter items in-memory via Language Gate and True Tag Blacklist (O(1))
-  const cleanSurviving = metadataList.filter((m) =>
-    evaluateGalleryMetadata(m, prefs, blacklistSet)
-  );
-
-  if (cleanSurviving.length === 0) {
-    return [];
-  }
-
-  // Concurrently resolve surviving clean titles back to IMHentai
-  const resolvePromises = cleanSurviving.map(async (meta) => {
-    const searchTitle = sanitizeSearchTitle(meta.title);
-    if (!searchTitle) return null;
-    return resolveTitleOnIMHentai(client, searchTitle, prefs, meta.title_jpn);
-  });
-
-  const resolved = await Promise.all(resolvePromises);
-  const items: Item[] = [];
-  const seenIds = new Set<string>();
-
-  for (let i = 0; i < resolved.length; i++) {
-    const it = resolved[i];
-    if (it && it.id && !seenIds.has(it.id)) {
-      seenIds.add(it.id);
-      items.push(it);
-    }
-  }
-
-  return items;
-}
-
-/**
- * Executes a full timeframe discovery query for a feed key, incorporating:
- * 1. E-Hentai leaderboard / search HTML fetching
- * 2. Batch api.php tag extraction
- * 3. O(1) in-memory tag blacklist & language evaluation
- * 4. IMHentai clean title resolution
- * 5. Safe single sequential backfill pass if resolved items < 10
+ * Throttled Sequential Buffer Loop:
+ * Pre-scans E-Hentai rankings sequentially across page_buffer_depth pages
+ * and resolves titles against IMHentai until TARGET_YIELD (15 items) is reached.
  */
 export async function fetchEHentaiFeedItems(
   client: NetworkClient,
@@ -420,36 +343,80 @@ export async function fetchEHentaiFeedItems(
     resolvedPrefs.customBlacklist
   );
 
-  const safePage = Math.max(1, page || 1);
-  const items = await fetchAndResolveEHentaiPage(
-    client,
-    feedKey,
-    safePage,
-    resolvedPrefs,
-    blacklistSet
-  );
+  // Buffer Depth from preferences clamped between 1 and 3
+  const rawDepth = parseInt(resolvedPrefs.bufferDepth || "2", 10);
+  const bufferDepth = Number.isNaN(rawDepth)
+    ? 2
+    : Math.min(3, Math.max(1, rawDepth));
 
-  // Safe single sequential backfill pass if blacklist filtering reduced items below 10
-  if (items.length < 10) {
+  const safePage = Math.max(1, page || 1);
+  const baseOffset = (safePage - 1) * bufferDepth;
+
+  const items: Item[] = [];
+  const seenIds = new Set<string>();
+
+  for (let b = 0; b < bufferDepth; b++) {
+    const currentOffset = baseOffset + b;
+    const endpoint = getEHentaiEndpoint(feedKey, currentOffset);
+
+    let html = "";
     try {
-      const backfillItems = await fetchAndResolveEHentaiPage(
-        client,
-        feedKey,
-        safePage + 1,
-        resolvedPrefs,
-        blacklistSet
+      const response = await client.get(endpoint, {
+        headers: EHENTAI_HEADERS,
+      });
+      html =
+        typeof response.data === "string"
+          ? response.data
+          : String(response.data ?? "");
+    } catch {
+      // Continue to next buffer page if one fails
+      continue;
+    }
+
+    const refs = extractGalleryRefs(html);
+    if (refs.length > 0) {
+      const metadataList = await fetchEHentaiMetadata(client, refs);
+
+      // Evaluate E-Hentai tags against trope exclusions and custom tag blacklist
+      const surviving = metadataList.filter((m) =>
+        evaluateGalleryMetadata(m, resolvedPrefs, blacklistSet)
       );
 
-      const seenIds = new Set(items.map((it) => it.id));
-      for (let i = 0; i < backfillItems.length; i++) {
-        const it = backfillItems[i];
-        if (it && !seenIds.has(it.id)) {
-          seenIds.add(it.id);
-          items.push(it);
+      if (surviving.length > 0) {
+        // Concurrently resolve surviving titles against IMHentai with strict language flags
+        const resolvePromises = surviving.map((meta) => {
+          const searchTitle = sanitizeSearchTitle(meta.title);
+          if (!searchTitle) return Promise.resolve(null);
+          return resolveTitleOnIMHentai(
+            client,
+            searchTitle,
+            resolvedPrefs,
+            blacklistSet,
+            meta.title_jpn
+          );
+        });
+
+        const resolved = await Promise.all(resolvePromises);
+        for (let j = 0; j < resolved.length; j++) {
+          const it = resolved[j];
+          if (it && it.id && !seenIds.has(it.id)) {
+            seenIds.add(it.id);
+            items.push(it);
+          }
         }
       }
-    } catch {
-      // Safe fallback: continue with current items
+    }
+
+    // Break early if target card yield is achieved
+    if (items.length >= TARGET_DISCOVERY_YIELD) {
+      break;
+    }
+
+    // Server-friendly inter-page pacing delay before next buffer pass
+    if (b < bufferDepth - 1) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, EHENTAI_BUFFER_DELAY_MS)
+      );
     }
   }
 

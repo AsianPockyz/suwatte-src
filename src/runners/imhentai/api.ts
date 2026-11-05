@@ -172,8 +172,12 @@ export function buildFeedUrl(
 
     case BROWSE_FEED_KEYS.LATEST:
     case HOME_SECTION_KEYS.LATEST_RELEASES:
-    case HOME_SECTION_KEYS.FRESH_RELEASES:
-      return `${BASE_URL}/?page=${safePage}${isEnglish ? "&en=1" : ""}`;
+    case HOME_SECTION_KEYS.FRESH_RELEASES: {
+      const normLang = normalizeLanguageToken(prefs.language);
+      const langParam =
+        normLang === "all" ? "" : `&${normLang === "en" ? "en" : normLang}=1`;
+      return `${BASE_URL}/?page=${safePage}${langParam}`;
+    }
 
     case BROWSE_FEED_KEYS.DISCOVER:
     default: {

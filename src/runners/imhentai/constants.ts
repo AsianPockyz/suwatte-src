@@ -19,7 +19,7 @@ export const ContentRating = SuwatteContentRating;
 
 export const SOURCE_ID = "org.imhentai";
 export const SOURCE_NAME = "IMHentai";
-export const SOURCE_VERSION = 1.8;
+export const SOURCE_VERSION = 1.9;
 export const BASE_URL = "https://imhentai.xxx";
 export const VARIANT_ID = "org.imhentai";
 export const THUMBNAIL_FILENAME = "imhentai.png";
@@ -80,6 +80,8 @@ export const DEFAULT_IMAGE_EXT = "jpg";
 export const EHENTAI_BASE_URL = "https://e-hentai.org";
 export const EHENTAI_API_URL = "https://api.e-hentai.org/api.php";
 export const EHENTAI_GALLERY_LINK_REGEX = /\/g\/(\d+)\/([a-f0-9]+)/gi;
+export const TARGET_DISCOVERY_YIELD = 15;
+export const EHENTAI_BUFFER_DELAY_MS = 250;
 
 export const EHENTAI_HEADERS: Readonly<Record<string, string>> = Object.freeze({
   Referer: "https://e-hentai.org/",
@@ -149,18 +151,33 @@ export const G_TH_FALLBACK_ENTRY_REGEX =
 // ============================================================================
 
 export const PREF_KEYS = {
-  CATEGORIES: "enabled_categories",
+  BUFFER_DEPTH: "page_buffer_depth",
   LANGUAGE: "content_languages",
-  TROPE_EXCLUSIONS: "heavy_trope_exclusions",
-  CUSTOM_BLACKLIST: "custom_tag_blacklist",
+  CATEGORIES: "enabled_categories",
+  TROPE_EXCLUSIONS: "blacklist_heavy_tropes",
+  CUSTOM_BLACKLIST: "custom_blacklist_tags",
   TITLE_PREFERENCE: "title_language_preference",
   // Legacy aliases
+  LEGACY_BUFFER_DEPTH: "imhentai_pref_buffer_depth",
   LEGACY_CATEGORIES: "imhentai_pref_categories",
   LEGACY_LANGUAGE: "imhentai_pref_language",
-  LEGACY_TROPE_EXCLUSIONS: "imhentai_pref_trope_exclusions",
-  LEGACY_CUSTOM_BLACKLIST: "imhentai_pref_custom_blacklist",
+  LEGACY_TROPE_EXCLUSIONS: "heavy_trope_exclusions",
+  LEGACY_TROPE_EXCLUSIONS_OLD: "imhentai_pref_trope_exclusions",
+  LEGACY_CUSTOM_BLACKLIST: "custom_tag_blacklist",
+  LEGACY_CUSTOM_BLACKLIST_OLD: "imhentai_pref_custom_blacklist",
   LEGACY_TITLE_PREFERENCE: "imhentai_pref_title_preference",
 } as const;
+
+export const BUFFER_DEPTH_OPTIONS: ReadonlyArray<{
+  id: string;
+  title: string;
+}> = Object.freeze([
+  { id: "1", title: "1 Page (Fastest / Fewer Titles)" },
+  { id: "2", title: "2 Pages (Recommended Balance — Default)" },
+  { id: "3", title: "3 Pages (Denser Results / Slight Delay)" },
+]);
+
+export const DEFAULT_BUFFER_DEPTH = "2";
 
 export const CATEGORY_OPTIONS: ReadonlyArray<{
   id: ImHentaiCategoryId;
@@ -235,6 +252,7 @@ export const LANGUAGE_OPTIONS: ReadonlyArray<{
   queryParam?: string;
 }> = Object.freeze([
   { id: "en", title: "English", queryParam: "en" },
+  { id: "jp", title: "Japanese", queryParam: "jp" },
   { id: "all", title: "All Languages" },
 ]);
 
@@ -316,8 +334,8 @@ export const TITLE_PREFERENCE_OPTIONS: ReadonlyArray<{
   id: ImHentaiTitlePreference;
   title: string;
 }> = Object.freeze([
-  { id: "english", title: "English Title (Japanese in Subtitle)" },
-  { id: "japanese", title: "Japanese Title (English in Subtitle)" },
+  { id: "english", title: "English Title (Japanese Subtitle)" },
+  { id: "japanese", title: "Japanese Title (English Subtitle)" },
 ]);
 
 export const DEFAULT_TITLE_PREFERENCE: ImHentaiTitlePreference = "english";

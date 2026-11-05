@@ -7,7 +7,9 @@ import {
 } from "@suwatte/toolchain";
 import {
   ALL_CATEGORIES,
+  BUFFER_DEPTH_OPTIONS,
   CATEGORY_OPTIONS,
+  DEFAULT_BUFFER_DEPTH,
   DEFAULT_CATEGORIES,
   DEFAULT_CUSTOM_BLACKLIST,
   DEFAULT_LANGUAGE,
@@ -30,6 +32,11 @@ import type {
 } from "./types.js";
 
 // Pre-allocated static UI option arrays to avoid re-allocating on every settings menu open
+const UI_BUFFER_DEPTH_OPTIONS = BUFFER_DEPTH_OPTIONS.map((opt) => ({
+  id: opt.id,
+  title: opt.title,
+}));
+
 const UI_CATEGORY_OPTIONS = CATEGORY_OPTIONS.map((opt) => ({
   id: opt.id,
   title: opt.title,
@@ -58,6 +65,7 @@ let memoryPreferences: ImHentaiUserPreferences = {
   titlePreference: DEFAULT_TITLE_PREFERENCE,
   tropeExclusions: [...DEFAULT_TROPE_EXCLUSIONS],
   customBlacklist: DEFAULT_CUSTOM_BLACKLIST,
+  bufferDepth: DEFAULT_BUFFER_DEPTH,
 };
 
 let isHydrated = false;
@@ -253,6 +261,25 @@ export function normalizeTitlePreference(
   return "english";
 }
 
+export function normalizeBufferDepth(raw: unknown): string {
+  if (typeof raw === "number") {
+    const num = Math.min(3, Math.max(1, Math.floor(raw)));
+    return String(num);
+  }
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (trimmed === "1" || trimmed === "2" || trimmed === "3") {
+      return trimmed;
+    }
+    const parsed = parseInt(trimmed, 10);
+    if (!Number.isNaN(parsed)) {
+      const clamped = Math.min(3, Math.max(1, parsed));
+      return String(clamped);
+    }
+  }
+  return DEFAULT_BUFFER_DEPTH;
+}
+
 // ============================================================================
 // Tag Blacklist Evaluation Engine (O(1))
 // ============================================================================
@@ -359,6 +386,8 @@ async function hydratePreferencesFromStore(): Promise<ImHentaiUserPreferences> {
 
   try {
     const [
+      storedDepth,
+      legacyDepth,
       storedCategories,
       legacyCategories,
       storedLanguage,
@@ -367,9 +396,13 @@ async function hydratePreferencesFromStore(): Promise<ImHentaiUserPreferences> {
       legacyTitlePref,
       storedTropes,
       legacyTropes,
+      legacyTropesOld,
       storedBlacklist,
       legacyBlacklist,
+      legacyBlacklistOld,
     ] = await Promise.all([
+      ObjectStore.string(PREF_KEYS.BUFFER_DEPTH).catch(() => null),
+      ObjectStore.string(PREF_KEYS.LEGACY_BUFFER_DEPTH).catch(() => null),
       ObjectStore.get(PREF_KEYS.CATEGORIES).catch(() => null),
       ObjectStore.get(PREF_KEYS.LEGACY_CATEGORIES).catch(() => null),
       ObjectStore.string(PREF_KEYS.LANGUAGE).catch(() => null),
@@ -378,9 +411,17 @@ async function hydratePreferencesFromStore(): Promise<ImHentaiUserPreferences> {
       ObjectStore.string(PREF_KEYS.LEGACY_TITLE_PREFERENCE).catch(() => null),
       ObjectStore.get(PREF_KEYS.TROPE_EXCLUSIONS).catch(() => null),
       ObjectStore.get(PREF_KEYS.LEGACY_TROPE_EXCLUSIONS).catch(() => null),
+      ObjectStore.get(PREF_KEYS.LEGACY_TROPE_EXCLUSIONS_OLD).catch(() => null),
       ObjectStore.string(PREF_KEYS.CUSTOM_BLACKLIST).catch(() => null),
       ObjectStore.string(PREF_KEYS.LEGACY_CUSTOM_BLACKLIST).catch(() => null),
+      ObjectStore.string(PREF_KEYS.LEGACY_CUSTOM_BLACKLIST_OLD).catch(() => null),
     ]);
+
+    const rawDepth = storedDepth ?? legacyDepth;
+    const bufferDepth =
+      rawDepth !== null && rawDepth !== undefined
+        ? normalizeBufferDepth(rawDepth)
+        : memoryPreferences.bufferDepth;
 
     let categories = memoryPreferences.categories;
     const rawCat = storedCategories ?? legacyCategories;
@@ -403,13 +444,13 @@ async function hydratePreferencesFromStore(): Promise<ImHentaiUserPreferences> {
         ? normalizeTitlePreference(rawTitle)
         : memoryPreferences.titlePreference;
 
-    const rawTropes = storedTropes ?? legacyTropes;
+    const rawTropes = storedTropes ?? legacyTropes ?? legacyTropesOld;
     const tropeExclusions =
       rawTropes !== null && rawTropes !== undefined
         ? parseStringList(rawTropes)
         : memoryPreferences.tropeExclusions;
 
-    const rawBlacklist = storedBlacklist ?? legacyBlacklist;
+    const rawBlacklist = storedBlacklist ?? legacyBlacklist ?? legacyBlacklistOld;
     const customBlacklist =
       typeof rawBlacklist === "string"
         ? rawBlacklist.trim()
@@ -421,6 +462,7 @@ async function hydratePreferencesFromStore(): Promise<ImHentaiUserPreferences> {
       titlePreference,
       tropeExclusions,
       customBlacklist,
+      bufferDepth,
     };
   } catch {
     // Retain in-memory preferences if ObjectStore read fails
@@ -544,6 +586,7 @@ export function isCardMatchingLanguage(
 /**
  * Builds full 1/0 language query flags conforming to IMHentai native search parameter protocol:
  * - English only: &en=1&jp=0&es=0&fr=0&kr=0&de=0&ru=0
+ * - Japanese only: &en=0&jp=1&es=0&fr=0&kr=0&de=0&ru=0
  * - All Languages: &en=1&jp=1&es=1&fr=1&kr=1&de=1&ru=1
  */
 export function buildFullLanguageQueryFlags(rawLanguage?: unknown): string {
@@ -694,13 +737,27 @@ export async function buildSettingsForm(): Promise<UIForm> {
   return {
     sections: [
       {
-        header: "Language Filter",
+        header: "Leaderboard Scan Buffer Depth",
         footer:
-          "Choose whether to restrict galleries to English translations (&en=1) or show All Languages.",
+          "How many pages of E-Hentai rankings to scan sequentially to fill out a full page after language and blacklist filtering.",
+        views: [
+          UIPicker({
+            id: PREF_KEYS.BUFFER_DEPTH,
+            title: "Leaderboard Scan Buffer Depth",
+            options: UI_BUFFER_DEPTH_OPTIONS,
+            currentValue: prefs.bufferDepth,
+            defaultValue: DEFAULT_BUFFER_DEPTH,
+          }),
+        ],
+      },
+      {
+        header: "Language Controls",
+        footer:
+          "Filter galleries by preferred translation language (&en=1, &jp=1) or display All Languages.",
         views: [
           UIPicker({
             id: PREF_KEYS.LANGUAGE,
-            title: "Preferred Language",
+            title: "Content Language",
             options: UI_LANGUAGE_OPTIONS,
             currentValue: prefs.language,
             defaultValue: DEFAULT_LANGUAGE,
@@ -708,7 +765,7 @@ export async function buildSettingsForm(): Promise<UIForm> {
         ],
       },
       {
-        header: "Content Categories",
+        header: "Content & Format Categories",
         footer:
           "Select which content categories to include in browse feeds and search queries: Doujinshi (&d=1), Manga (&m=1), Western (&w=1), Artist CG (&a=1/&i=1), Cosplay (&c=1).",
         views: [
@@ -755,25 +812,25 @@ export async function buildSettingsForm(): Promise<UIForm> {
       {
         header: "Custom Tag Blacklist",
         footer:
-          "Comma-separated list of exact tags or keywords to filter out silently (e.g. ugly bastard, mind break, lolicon).",
+          "Comma-separated list of exact tags or keywords to filter out silently (e.g., mind break, ugly bastard, inflation).",
         views: [
           UITextField({
             id: PREF_KEYS.CUSTOM_BLACKLIST,
             title: "Blacklisted Tags",
-            placeholder: "e.g. lolicon, ugly bastard, mind break",
+            placeholder: "e.g., mind break, ugly bastard, inflation",
             currentValue: prefs.customBlacklist ?? "",
             defaultValue: DEFAULT_CUSTOM_BLACKLIST,
           }),
         ],
       },
       {
-        header: "Title Formatting",
+        header: "Title Display",
         footer:
           "Choose whether to display the English title as primary (with Japanese in the subtitle) or prioritize the original Japanese title.",
         views: [
           UIPicker({
             id: PREF_KEYS.TITLE_PREFERENCE,
-            title: "Title Preference",
+            title: "Title Display",
             options: UI_TITLE_PREFERENCE_OPTIONS,
             currentValue: prefs.titlePreference,
             defaultValue: DEFAULT_TITLE_PREFERENCE,
@@ -797,10 +854,26 @@ export async function updateUserPreferences(
     titlePreference,
     tropeExclusions,
     customBlacklist,
+    bufferDepth,
   } = memoryPreferences;
 
   const storeAvailable = hasObjectStore();
   const writeTasks: Array<Promise<unknown>> = [];
+
+  const rawDepth =
+    data[PREF_KEYS.BUFFER_DEPTH] ??
+    data[PREF_KEYS.LEGACY_BUFFER_DEPTH] ??
+    data["page_buffer_depth"] ??
+    data["buffer_depth"];
+  if (rawDepth !== undefined && rawDepth !== null) {
+    bufferDepth = normalizeBufferDepth(rawDepth);
+    if (storeAvailable) {
+      writeTasks.push(
+        ObjectStore.set(PREF_KEYS.BUFFER_DEPTH, bufferDepth).catch(() => {}),
+        ObjectStore.set(PREF_KEYS.LEGACY_BUFFER_DEPTH, bufferDepth).catch(() => {})
+      );
+    }
+  }
 
   const rawCategories =
     data[PREF_KEYS.CATEGORIES] ??
@@ -856,6 +929,8 @@ export async function updateUserPreferences(
   const rawTropes =
     data[PREF_KEYS.TROPE_EXCLUSIONS] ??
     data[PREF_KEYS.LEGACY_TROPE_EXCLUSIONS] ??
+    data[PREF_KEYS.LEGACY_TROPE_EXCLUSIONS_OLD] ??
+    data["blacklist_heavy_tropes"] ??
     data["heavy_trope_exclusions"] ??
     data["trope_exclusions"];
   if (rawTropes !== undefined && rawTropes !== null) {
@@ -876,6 +951,8 @@ export async function updateUserPreferences(
   const rawBlacklist =
     data[PREF_KEYS.CUSTOM_BLACKLIST] ??
     data[PREF_KEYS.LEGACY_CUSTOM_BLACKLIST] ??
+    data[PREF_KEYS.LEGACY_CUSTOM_BLACKLIST_OLD] ??
+    data["custom_blacklist_tags"] ??
     data["custom_tag_blacklist"] ??
     data["blacklist"];
   if (typeof rawBlacklist === "string") {
@@ -899,6 +976,7 @@ export async function updateUserPreferences(
     titlePreference,
     tropeExclusions,
     customBlacklist,
+    bufferDepth,
   };
   isHydrated = true;
 

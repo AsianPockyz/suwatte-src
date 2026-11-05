@@ -833,15 +833,15 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.INLINE_LOAD_PAGES_REGEX = exports.INLINE_LOAD_ID_REGEX = exports.INLINE_LOAD_DIR_REGEX = exports.INLINE_GALLERY_ID_REGEX = exports.FLAG_JA_REGEX = exports.FLAG_JP_REGEX = exports.BG_IMAGE_URL_REGEX = exports.BADGE_COUNT_REGEX = exports.BRACKET_TOKEN_REGEX = exports.COMMA_SEMICOLON_REGEX = exports.CATEGORY_PREFIX_REGEX = exports.WHITESPACE_REGEX = exports.PROTOCOL_RELATIVE_REGEX = exports.HTTP_PREFIX_REGEX = exports.LEADING_DOT_REGEX = exports.TRIM_SLASHES_REGEX = exports.EXT_REGEX = exports.NUMERIC_ONLY_REGEX = exports.SERVER_PREFIX_REGEX = exports.SERVER_FROM_URL_REGEX = exports.VIEW_PATH_REGEX = exports.GALLERY_PATH_REGEX = exports.GALLERY_URL_REGEX = exports.EHENTAI_API_HEADERS = exports.EHENTAI_HEADERS = exports.EHENTAI_GALLERY_LINK_REGEX = exports.EHENTAI_API_URL = exports.EHENTAI_BASE_URL = exports.DEFAULT_IMAGE_EXT = exports.DEFAULT_SERVER_ID = exports.RATE_LIMIT_PER_SECOND = exports.STATIC_CONFIGURATION = exports.PAGE_IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.STANDARD_HEADERS = exports.DEFAULT_USER_AGENT = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_RESOLUTION_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.SOURCE_CONTENT_RATING = exports.SOURCE_LANGUAGES = exports.SOURCE_ENVIRONMENT = exports.THUMBNAIL_FILENAME = exports.VARIANT_ID = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = exports.ContentRating = void 0;
-      exports.EXTENSION_CODE_MAP = exports.IMHENTAI_FILTER_LANGUAGES = exports.SEARCH_CATEGORY_OPTIONS = exports.IMHENTAI_SORT_OPTIONS = exports.BROWSE_FEED_DEFINITIONS = exports.BROWSE_FEED_KEYS = exports.HOME_SECTION_KEYS = exports.DEFAULT_TITLE_PREFERENCE = exports.TITLE_PREFERENCE_OPTIONS = exports.DEFAULT_CUSTOM_BLACKLIST = exports.DEFAULT_TROPE_EXCLUSIONS = exports.TROPE_TAG_MAP = exports.TROPE_EXCLUSION_OPTIONS = exports.LANGUAGE_QUERY_MAP = exports.DEFAULT_LANGUAGE = exports.LANGUAGE_OPTIONS = exports.SEARCH_LANGUAGE_KEYS = exports.SEARCH_CATEGORY_KEYS = exports.CATEGORY_QUERY_MAP = exports.ALL_CATEGORIES = exports.DEFAULT_CATEGORIES = exports.CATEGORY_OPTIONS = exports.PREF_KEYS = exports.G_TH_FALLBACK_ENTRY_REGEX = exports.G_TH_OBJECT_REGEX = exports.G_TH_STRING_REGEX = exports.G_TH_PARSE_JSON_REGEX = exports.THUMB_PAGENUM_EXT_REGEX = exports.PAGES_TEXT_REGEX = void 0;
+      exports.INLINE_LOAD_DIR_REGEX = exports.INLINE_GALLERY_ID_REGEX = exports.FLAG_JA_REGEX = exports.FLAG_JP_REGEX = exports.BG_IMAGE_URL_REGEX = exports.BADGE_COUNT_REGEX = exports.BRACKET_TOKEN_REGEX = exports.COMMA_SEMICOLON_REGEX = exports.CATEGORY_PREFIX_REGEX = exports.WHITESPACE_REGEX = exports.PROTOCOL_RELATIVE_REGEX = exports.HTTP_PREFIX_REGEX = exports.LEADING_DOT_REGEX = exports.TRIM_SLASHES_REGEX = exports.EXT_REGEX = exports.NUMERIC_ONLY_REGEX = exports.SERVER_PREFIX_REGEX = exports.SERVER_FROM_URL_REGEX = exports.VIEW_PATH_REGEX = exports.GALLERY_PATH_REGEX = exports.GALLERY_URL_REGEX = exports.EHENTAI_API_HEADERS = exports.EHENTAI_HEADERS = exports.EHENTAI_BUFFER_DELAY_MS = exports.TARGET_DISCOVERY_YIELD = exports.EHENTAI_GALLERY_LINK_REGEX = exports.EHENTAI_API_URL = exports.EHENTAI_BASE_URL = exports.DEFAULT_IMAGE_EXT = exports.DEFAULT_SERVER_ID = exports.RATE_LIMIT_PER_SECOND = exports.STATIC_CONFIGURATION = exports.PAGE_IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.STANDARD_HEADERS = exports.DEFAULT_USER_AGENT = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_RESOLUTION_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.SOURCE_CONTENT_RATING = exports.SOURCE_LANGUAGES = exports.SOURCE_ENVIRONMENT = exports.THUMBNAIL_FILENAME = exports.VARIANT_ID = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = exports.ContentRating = void 0;
+      exports.EXTENSION_CODE_MAP = exports.IMHENTAI_FILTER_LANGUAGES = exports.SEARCH_CATEGORY_OPTIONS = exports.IMHENTAI_SORT_OPTIONS = exports.BROWSE_FEED_DEFINITIONS = exports.BROWSE_FEED_KEYS = exports.HOME_SECTION_KEYS = exports.DEFAULT_TITLE_PREFERENCE = exports.TITLE_PREFERENCE_OPTIONS = exports.DEFAULT_CUSTOM_BLACKLIST = exports.DEFAULT_TROPE_EXCLUSIONS = exports.TROPE_TAG_MAP = exports.TROPE_EXCLUSION_OPTIONS = exports.LANGUAGE_QUERY_MAP = exports.DEFAULT_LANGUAGE = exports.LANGUAGE_OPTIONS = exports.SEARCH_LANGUAGE_KEYS = exports.SEARCH_CATEGORY_KEYS = exports.CATEGORY_QUERY_MAP = exports.ALL_CATEGORIES = exports.DEFAULT_CATEGORIES = exports.CATEGORY_OPTIONS = exports.DEFAULT_BUFFER_DEPTH = exports.BUFFER_DEPTH_OPTIONS = exports.PREF_KEYS = exports.G_TH_FALLBACK_ENTRY_REGEX = exports.G_TH_OBJECT_REGEX = exports.G_TH_STRING_REGEX = exports.G_TH_PARSE_JSON_REGEX = exports.THUMB_PAGENUM_EXT_REGEX = exports.PAGES_TEXT_REGEX = exports.INLINE_LOAD_PAGES_REGEX = exports.INLINE_LOAD_ID_REGEX = void 0;
       var toolchain_1 = require_dist();
       require_types2();
       toolchain_1.ContentRating.ADULT = toolchain_1.ContentRating.MATURE;
       exports.ContentRating = toolchain_1.ContentRating;
       exports.SOURCE_ID = "org.imhentai";
       exports.SOURCE_NAME = "IMHentai";
-      exports.SOURCE_VERSION = 1.8;
+      exports.SOURCE_VERSION = 1.9;
       exports.BASE_URL = "https://imhentai.xxx";
       exports.VARIANT_ID = "org.imhentai";
       exports.THUMBNAIL_FILENAME = "imhentai.png";
@@ -886,6 +886,8 @@ var SourcePackage = (() => {
       exports.EHENTAI_BASE_URL = "https://e-hentai.org";
       exports.EHENTAI_API_URL = "https://api.e-hentai.org/api.php";
       exports.EHENTAI_GALLERY_LINK_REGEX = /\/g\/(\d+)\/([a-f0-9]+)/gi;
+      exports.TARGET_DISCOVERY_YIELD = 15;
+      exports.EHENTAI_BUFFER_DELAY_MS = 250;
       exports.EHENTAI_HEADERS = Object.freeze({
         Referer: "https://e-hentai.org/",
         "User-Agent": exports.DEFAULT_USER_AGENT,
@@ -928,18 +930,28 @@ var SourcePackage = (() => {
       exports.G_TH_OBJECT_REGEX = /g_th\s*=\s*(\{[\s\S]*?\})\s*;/i;
       exports.G_TH_FALLBACK_ENTRY_REGEX = /["']?(\d+)["']?\s*:\s*["']([^"']+)["']/g;
       exports.PREF_KEYS = {
-        CATEGORIES: "enabled_categories",
+        BUFFER_DEPTH: "page_buffer_depth",
         LANGUAGE: "content_languages",
-        TROPE_EXCLUSIONS: "heavy_trope_exclusions",
-        CUSTOM_BLACKLIST: "custom_tag_blacklist",
+        CATEGORIES: "enabled_categories",
+        TROPE_EXCLUSIONS: "blacklist_heavy_tropes",
+        CUSTOM_BLACKLIST: "custom_blacklist_tags",
         TITLE_PREFERENCE: "title_language_preference",
         // Legacy aliases
+        LEGACY_BUFFER_DEPTH: "imhentai_pref_buffer_depth",
         LEGACY_CATEGORIES: "imhentai_pref_categories",
         LEGACY_LANGUAGE: "imhentai_pref_language",
-        LEGACY_TROPE_EXCLUSIONS: "imhentai_pref_trope_exclusions",
-        LEGACY_CUSTOM_BLACKLIST: "imhentai_pref_custom_blacklist",
+        LEGACY_TROPE_EXCLUSIONS: "heavy_trope_exclusions",
+        LEGACY_TROPE_EXCLUSIONS_OLD: "imhentai_pref_trope_exclusions",
+        LEGACY_CUSTOM_BLACKLIST: "custom_tag_blacklist",
+        LEGACY_CUSTOM_BLACKLIST_OLD: "imhentai_pref_custom_blacklist",
         LEGACY_TITLE_PREFERENCE: "imhentai_pref_title_preference"
       };
+      exports.BUFFER_DEPTH_OPTIONS = Object.freeze([
+        { id: "1", title: "1 Page (Fastest / Fewer Titles)" },
+        { id: "2", title: "2 Pages (Recommended Balance \u2014 Default)" },
+        { id: "3", title: "3 Pages (Denser Results / Slight Delay)" }
+      ]);
+      exports.DEFAULT_BUFFER_DEPTH = "2";
       exports.CATEGORY_OPTIONS = Object.freeze([
         { id: "doujinshi", title: "Doujinshi", queryParam: "d" },
         { id: "manga", title: "Manga", queryParam: "m" },
@@ -998,6 +1010,7 @@ var SourcePackage = (() => {
       ]);
       exports.LANGUAGE_OPTIONS = Object.freeze([
         { id: "en", title: "English", queryParam: "en" },
+        { id: "jp", title: "Japanese", queryParam: "jp" },
         { id: "all", title: "All Languages" }
       ]);
       exports.DEFAULT_LANGUAGE = "en";
@@ -1064,8 +1077,8 @@ var SourcePackage = (() => {
       exports.DEFAULT_TROPE_EXCLUSIONS = Object.freeze([]);
       exports.DEFAULT_CUSTOM_BLACKLIST = "";
       exports.TITLE_PREFERENCE_OPTIONS = Object.freeze([
-        { id: "english", title: "English Title (Japanese in Subtitle)" },
-        { id: "japanese", title: "Japanese Title (English in Subtitle)" }
+        { id: "english", title: "English Title (Japanese Subtitle)" },
+        { id: "japanese", title: "Japanese Title (English Subtitle)" }
       ]);
       exports.DEFAULT_TITLE_PREFERENCE = "english";
       exports.HOME_SECTION_KEYS = {
@@ -1260,6 +1273,7 @@ var SourcePackage = (() => {
       exports.normalizeCategoriesList = normalizeCategoriesList;
       exports.normalizeLanguageToken = normalizeLanguageToken;
       exports.normalizeTitlePreference = normalizeTitlePreference;
+      exports.normalizeBufferDepth = normalizeBufferDepth;
       exports.buildBlacklistSet = buildBlacklistSet;
       exports.isItemBlacklisted = isItemBlacklisted;
       exports.isCardMatchingBlacklist = isCardMatchingBlacklist;
@@ -1273,6 +1287,10 @@ var SourcePackage = (() => {
       exports.updateUserPreferences = updateUserPreferences;
       var toolchain_1 = require_dist();
       var constants_js_1 = require_constants();
+      var UI_BUFFER_DEPTH_OPTIONS = constants_js_1.BUFFER_DEPTH_OPTIONS.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
       var UI_CATEGORY_OPTIONS = constants_js_1.CATEGORY_OPTIONS.map((opt) => ({
         id: opt.id,
         title: opt.title
@@ -1295,7 +1313,8 @@ var SourcePackage = (() => {
         language: constants_js_1.DEFAULT_LANGUAGE,
         titlePreference: constants_js_1.DEFAULT_TITLE_PREFERENCE,
         tropeExclusions: [...constants_js_1.DEFAULT_TROPE_EXCLUSIONS],
-        customBlacklist: constants_js_1.DEFAULT_CUSTOM_BLACKLIST
+        customBlacklist: constants_js_1.DEFAULT_CUSTOM_BLACKLIST,
+        bufferDepth: constants_js_1.DEFAULT_BUFFER_DEPTH
       };
       var isHydrated = false;
       var inflightHydration = null;
@@ -1462,6 +1481,24 @@ var SourcePackage = (() => {
         }
         return "english";
       }
+      function normalizeBufferDepth(raw) {
+        if (typeof raw === "number") {
+          const num = Math.min(3, Math.max(1, Math.floor(raw)));
+          return String(num);
+        }
+        if (typeof raw === "string") {
+          const trimmed = raw.trim();
+          if (trimmed === "1" || trimmed === "2" || trimmed === "3") {
+            return trimmed;
+          }
+          const parsed = parseInt(trimmed, 10);
+          if (!Number.isNaN(parsed)) {
+            const clamped = Math.min(3, Math.max(1, parsed));
+            return String(clamped);
+          }
+        }
+        return constants_js_1.DEFAULT_BUFFER_DEPTH;
+      }
       function buildBlacklistSet(tropeExclusions, customBlacklistText) {
         var _a, _b, _c, _d;
         const set = /* @__PURE__ */ new Set();
@@ -1535,12 +1572,15 @@ var SourcePackage = (() => {
         return false;
       }
       async function hydratePreferencesFromStore() {
+        var _a, _b;
         if (!hasObjectStore()) {
           isHydrated = true;
           return memoryPreferences;
         }
         try {
-          const [storedCategories, legacyCategories, storedLanguage, legacyLanguage, storedTitlePref, legacyTitlePref, storedTropes, legacyTropes, storedBlacklist, legacyBlacklist] = await Promise.all([
+          const [storedDepth, legacyDepth, storedCategories, legacyCategories, storedLanguage, legacyLanguage, storedTitlePref, legacyTitlePref, storedTropes, legacyTropes, legacyTropesOld, storedBlacklist, legacyBlacklist, legacyBlacklistOld] = await Promise.all([
+            ObjectStore.string(constants_js_1.PREF_KEYS.BUFFER_DEPTH).catch(() => null),
+            ObjectStore.string(constants_js_1.PREF_KEYS.LEGACY_BUFFER_DEPTH).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.CATEGORIES).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.LEGACY_CATEGORIES).catch(() => null),
             ObjectStore.string(constants_js_1.PREF_KEYS.LANGUAGE).catch(() => null),
@@ -1549,9 +1589,13 @@ var SourcePackage = (() => {
             ObjectStore.string(constants_js_1.PREF_KEYS.LEGACY_TITLE_PREFERENCE).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.TROPE_EXCLUSIONS).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.LEGACY_TROPE_EXCLUSIONS).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.LEGACY_TROPE_EXCLUSIONS_OLD).catch(() => null),
             ObjectStore.string(constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST).catch(() => null),
-            ObjectStore.string(constants_js_1.PREF_KEYS.LEGACY_CUSTOM_BLACKLIST).catch(() => null)
+            ObjectStore.string(constants_js_1.PREF_KEYS.LEGACY_CUSTOM_BLACKLIST).catch(() => null),
+            ObjectStore.string(constants_js_1.PREF_KEYS.LEGACY_CUSTOM_BLACKLIST_OLD).catch(() => null)
           ]);
+          const rawDepth = storedDepth != null ? storedDepth : legacyDepth;
+          const bufferDepth = rawDepth !== null && rawDepth !== void 0 ? normalizeBufferDepth(rawDepth) : memoryPreferences.bufferDepth;
           let categories = memoryPreferences.categories;
           const rawCat = storedCategories != null ? storedCategories : legacyCategories;
           if (rawCat !== null && rawCat !== void 0) {
@@ -1564,16 +1608,17 @@ var SourcePackage = (() => {
           const language = rawLang !== null && rawLang !== void 0 ? normalizeLanguageToken(rawLang) : memoryPreferences.language;
           const rawTitle = storedTitlePref != null ? storedTitlePref : legacyTitlePref;
           const titlePreference = rawTitle !== null && rawTitle !== void 0 ? normalizeTitlePreference(rawTitle) : memoryPreferences.titlePreference;
-          const rawTropes = storedTropes != null ? storedTropes : legacyTropes;
+          const rawTropes = (_a = storedTropes != null ? storedTropes : legacyTropes) != null ? _a : legacyTropesOld;
           const tropeExclusions = rawTropes !== null && rawTropes !== void 0 ? parseStringList(rawTropes) : memoryPreferences.tropeExclusions;
-          const rawBlacklist = storedBlacklist != null ? storedBlacklist : legacyBlacklist;
+          const rawBlacklist = (_b = storedBlacklist != null ? storedBlacklist : legacyBlacklist) != null ? _b : legacyBlacklistOld;
           const customBlacklist = typeof rawBlacklist === "string" ? rawBlacklist.trim() : memoryPreferences.customBlacklist;
           memoryPreferences = {
             categories,
             language,
             titlePreference,
             tropeExclusions,
-            customBlacklist
+            customBlacklist,
+            bufferDepth
           };
         } catch {
         }
@@ -1734,12 +1779,25 @@ var SourcePackage = (() => {
         return {
           sections: [
             {
-              header: "Language Filter",
-              footer: "Choose whether to restrict galleries to English translations (&en=1) or show All Languages.",
+              header: "Leaderboard Scan Buffer Depth",
+              footer: "How many pages of E-Hentai rankings to scan sequentially to fill out a full page after language and blacklist filtering.",
+              views: [
+                (0, toolchain_1.UIPicker)({
+                  id: constants_js_1.PREF_KEYS.BUFFER_DEPTH,
+                  title: "Leaderboard Scan Buffer Depth",
+                  options: UI_BUFFER_DEPTH_OPTIONS,
+                  currentValue: prefs.bufferDepth,
+                  defaultValue: constants_js_1.DEFAULT_BUFFER_DEPTH
+                })
+              ]
+            },
+            {
+              header: "Language Controls",
+              footer: "Filter galleries by preferred translation language (&en=1, &jp=1) or display All Languages.",
               views: [
                 (0, toolchain_1.UIPicker)({
                   id: constants_js_1.PREF_KEYS.LANGUAGE,
-                  title: "Preferred Language",
+                  title: "Content Language",
                   options: UI_LANGUAGE_OPTIONS,
                   currentValue: prefs.language,
                   defaultValue: constants_js_1.DEFAULT_LANGUAGE
@@ -1747,7 +1805,7 @@ var SourcePackage = (() => {
               ]
             },
             {
-              header: "Content Categories",
+              header: "Content & Format Categories",
               footer: "Select which content categories to include in browse feeds and search queries: Doujinshi (&d=1), Manga (&m=1), Western (&w=1), Artist CG (&a=1/&i=1), Cosplay (&c=1).",
               views: [
                 (0, toolchain_1.UISelect)({
@@ -1788,24 +1846,24 @@ var SourcePackage = (() => {
             },
             {
               header: "Custom Tag Blacklist",
-              footer: "Comma-separated list of exact tags or keywords to filter out silently (e.g. ugly bastard, mind break, lolicon).",
+              footer: "Comma-separated list of exact tags or keywords to filter out silently (e.g., mind break, ugly bastard, inflation).",
               views: [
                 (0, toolchain_1.UITextField)({
                   id: constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST,
                   title: "Blacklisted Tags",
-                  placeholder: "e.g. lolicon, ugly bastard, mind break",
+                  placeholder: "e.g., mind break, ugly bastard, inflation",
                   currentValue: (_b = prefs.customBlacklist) != null ? _b : "",
                   defaultValue: constants_js_1.DEFAULT_CUSTOM_BLACKLIST
                 })
               ]
             },
             {
-              header: "Title Formatting",
+              header: "Title Display",
               footer: "Choose whether to display the English title as primary (with Japanese in the subtitle) or prioritize the original Japanese title.",
               views: [
                 (0, toolchain_1.UIPicker)({
                   id: constants_js_1.PREF_KEYS.TITLE_PREFERENCE,
-                  title: "Title Preference",
+                  title: "Title Display",
                   options: UI_TITLE_PREFERENCE_OPTIONS,
                   currentValue: prefs.titlePreference,
                   defaultValue: constants_js_1.DEFAULT_TITLE_PREFERENCE
@@ -1816,14 +1874,23 @@ var SourcePackage = (() => {
         };
       }
       async function updateUserPreferences(data) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v;
         if (!isRecord(data)) {
           return;
         }
-        let { categories, language, titlePreference, tropeExclusions, customBlacklist } = memoryPreferences;
+        let { categories, language, titlePreference, tropeExclusions, customBlacklist, bufferDepth } = memoryPreferences;
         const storeAvailable = hasObjectStore();
         const writeTasks = [];
-        const rawCategories = (_c = (_b = (_a = data[constants_js_1.PREF_KEYS.CATEGORIES]) != null ? _a : data[constants_js_1.PREF_KEYS.LEGACY_CATEGORIES]) != null ? _b : data["enabled_categories"]) != null ? _c : data["categories"];
+        const rawDepth = (_c = (_b = (_a = data[constants_js_1.PREF_KEYS.BUFFER_DEPTH]) != null ? _a : data[constants_js_1.PREF_KEYS.LEGACY_BUFFER_DEPTH]) != null ? _b : data["page_buffer_depth"]) != null ? _c : data["buffer_depth"];
+        if (rawDepth !== void 0 && rawDepth !== null) {
+          bufferDepth = normalizeBufferDepth(rawDepth);
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.BUFFER_DEPTH, bufferDepth).catch(() => {
+            }), ObjectStore.set(constants_js_1.PREF_KEYS.LEGACY_BUFFER_DEPTH, bufferDepth).catch(() => {
+            }));
+          }
+        }
+        const rawCategories = (_f = (_e = (_d = data[constants_js_1.PREF_KEYS.CATEGORIES]) != null ? _d : data[constants_js_1.PREF_KEYS.LEGACY_CATEGORIES]) != null ? _e : data["enabled_categories"]) != null ? _f : data["categories"];
         if (rawCategories !== void 0 && rawCategories !== null) {
           const parsed = normalizeCategoriesList(rawCategories);
           categories = parsed.length > 0 ? parsed : [...constants_js_1.DEFAULT_CATEGORIES];
@@ -1833,7 +1900,7 @@ var SourcePackage = (() => {
             }));
           }
         }
-        const rawLanguage = (_f = (_e = (_d = data[constants_js_1.PREF_KEYS.LANGUAGE]) != null ? _d : data[constants_js_1.PREF_KEYS.LEGACY_LANGUAGE]) != null ? _e : data["content_languages"]) != null ? _f : data["language"];
+        const rawLanguage = (_i = (_h = (_g = data[constants_js_1.PREF_KEYS.LANGUAGE]) != null ? _g : data[constants_js_1.PREF_KEYS.LEGACY_LANGUAGE]) != null ? _h : data["content_languages"]) != null ? _i : data["language"];
         if (typeof rawLanguage === "string") {
           language = normalizeLanguageToken(rawLanguage);
           if (storeAvailable) {
@@ -1842,7 +1909,7 @@ var SourcePackage = (() => {
             }));
           }
         }
-        const rawTitlePref = (_i = (_h = (_g = data[constants_js_1.PREF_KEYS.TITLE_PREFERENCE]) != null ? _g : data[constants_js_1.PREF_KEYS.LEGACY_TITLE_PREFERENCE]) != null ? _h : data["title_language_preference"]) != null ? _i : data["title_preference"];
+        const rawTitlePref = (_l = (_k = (_j = data[constants_js_1.PREF_KEYS.TITLE_PREFERENCE]) != null ? _j : data[constants_js_1.PREF_KEYS.LEGACY_TITLE_PREFERENCE]) != null ? _k : data["title_language_preference"]) != null ? _l : data["title_preference"];
         if (typeof rawTitlePref === "string") {
           titlePreference = normalizeTitlePreference(rawTitlePref);
           if (storeAvailable) {
@@ -1851,7 +1918,7 @@ var SourcePackage = (() => {
             }));
           }
         }
-        const rawTropes = (_l = (_k = (_j = data[constants_js_1.PREF_KEYS.TROPE_EXCLUSIONS]) != null ? _j : data[constants_js_1.PREF_KEYS.LEGACY_TROPE_EXCLUSIONS]) != null ? _k : data["heavy_trope_exclusions"]) != null ? _l : data["trope_exclusions"];
+        const rawTropes = (_q = (_p = (_o = (_n = (_m = data[constants_js_1.PREF_KEYS.TROPE_EXCLUSIONS]) != null ? _m : data[constants_js_1.PREF_KEYS.LEGACY_TROPE_EXCLUSIONS]) != null ? _n : data[constants_js_1.PREF_KEYS.LEGACY_TROPE_EXCLUSIONS_OLD]) != null ? _o : data["blacklist_heavy_tropes"]) != null ? _p : data["heavy_trope_exclusions"]) != null ? _q : data["trope_exclusions"];
         if (rawTropes !== void 0 && rawTropes !== null) {
           tropeExclusions = parseStringList(rawTropes);
           if (storeAvailable) {
@@ -1860,7 +1927,7 @@ var SourcePackage = (() => {
             }));
           }
         }
-        const rawBlacklist = (_o = (_n = (_m = data[constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST]) != null ? _m : data[constants_js_1.PREF_KEYS.LEGACY_CUSTOM_BLACKLIST]) != null ? _n : data["custom_tag_blacklist"]) != null ? _o : data["blacklist"];
+        const rawBlacklist = (_v = (_u = (_t = (_s = (_r = data[constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST]) != null ? _r : data[constants_js_1.PREF_KEYS.LEGACY_CUSTOM_BLACKLIST]) != null ? _s : data[constants_js_1.PREF_KEYS.LEGACY_CUSTOM_BLACKLIST_OLD]) != null ? _t : data["custom_blacklist_tags"]) != null ? _u : data["custom_tag_blacklist"]) != null ? _v : data["blacklist"];
         if (typeof rawBlacklist === "string") {
           customBlacklist = rawBlacklist.trim();
           if (storeAvailable) {
@@ -1874,7 +1941,8 @@ var SourcePackage = (() => {
           language,
           titlePreference,
           tropeExclusions,
-          customBlacklist
+          customBlacklist,
+          bufferDepth
         };
         isHydrated = true;
         if (writeTasks.length > 0) {
@@ -2921,8 +2989,11 @@ var SourcePackage = (() => {
             return `${constants_js_1.BASE_URL}/search/?apply=Search&pp=1&lt=0&sort=top_rated&page=${safePage}${catFlags}${langFlags}`;
           case constants_js_1.BROWSE_FEED_KEYS.LATEST:
           case constants_js_1.HOME_SECTION_KEYS.LATEST_RELEASES:
-          case constants_js_1.HOME_SECTION_KEYS.FRESH_RELEASES:
-            return `${constants_js_1.BASE_URL}/?page=${safePage}${isEnglish ? "&en=1" : ""}`;
+          case constants_js_1.HOME_SECTION_KEYS.FRESH_RELEASES: {
+            const normLang = (0, preferences_js_1.normalizeLanguageToken)(prefs.language);
+            const langParam = normLang === "all" ? "" : `&${normLang === "en" ? "en" : normLang}=1`;
+            return `${constants_js_1.BASE_URL}/?page=${safePage}${langParam}`;
+          }
           case constants_js_1.BROWSE_FEED_KEYS.DISCOVER:
           default: {
             if (isPopular) {
@@ -3074,29 +3145,26 @@ var SourcePackage = (() => {
         }
         TITLE_RESOLUTION_CACHE.set(key, item);
       }
-      function getEHentaiEndpoint(feedKey, page, isEnglishPreferred = true) {
-        const safePage = Math.max(1, page || 1);
-        const pIndex = safePage - 1;
-        const langSearch = isEnglishPreferred ? "language:english$" : "";
-        const encodedSearch = encodeURIComponent(langSearch);
+      function getEHentaiEndpoint(feedKey, offset = 0) {
+        const safeOffset = Math.max(0, offset);
         switch (feedKey) {
           case constants_js_1.BROWSE_FEED_KEYS.POPULAR_DAILY:
-            return `${constants_js_1.EHENTAI_BASE_URL}/toplist.php?tl=11&p=${pIndex}`;
+            return `${constants_js_1.EHENTAI_BASE_URL}/toplist.php?tl=11&p=${safeOffset}`;
           case constants_js_1.BROWSE_FEED_KEYS.POPULAR_WEEKLY:
-            if (safePage === 1) {
+            if (safeOffset === 0) {
               return `${constants_js_1.EHENTAI_BASE_URL}/popular`;
             }
-            return `${constants_js_1.EHENTAI_BASE_URL}/?f_search=${encodedSearch}&f_sr=on&f_srdd=3&page=${pIndex}`;
+            return `${constants_js_1.EHENTAI_BASE_URL}/?f_sr=on&f_srdd=3&page=${safeOffset}`;
           case constants_js_1.BROWSE_FEED_KEYS.POPULAR_MONTHLY:
-            return `${constants_js_1.EHENTAI_BASE_URL}/toplist.php?tl=12&p=${pIndex}`;
+            return `${constants_js_1.EHENTAI_BASE_URL}/toplist.php?tl=12&p=${safeOffset}`;
           case constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_DAILY:
-            return `${constants_js_1.EHENTAI_BASE_URL}/?f_search=${encodedSearch}&f_sr=on&f_srdd=5&page=${pIndex}`;
+            return `${constants_js_1.EHENTAI_BASE_URL}/?f_sr=on&f_srdd=5&page=${safeOffset}`;
           case constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_WEEKLY:
-            return `${constants_js_1.EHENTAI_BASE_URL}/?f_search=${encodedSearch}&f_sr=on&f_srdd=4&page=${pIndex}`;
+            return `${constants_js_1.EHENTAI_BASE_URL}/?f_sr=on&f_srdd=4&page=${safeOffset}`;
           case constants_js_1.BROWSE_FEED_KEYS.TOP_RATED_MONTHLY:
-            return `${constants_js_1.EHENTAI_BASE_URL}/?f_search=${encodedSearch}&f_sr=on&f_srdd=4&page=${pIndex}`;
+            return `${constants_js_1.EHENTAI_BASE_URL}/?f_sr=on&f_srdd=4&page=${safeOffset}`;
           default:
-            return `${constants_js_1.EHENTAI_BASE_URL}/toplist.php?tl=11&p=${pIndex}`;
+            return `${constants_js_1.EHENTAI_BASE_URL}/toplist.php?tl=11&p=${safeOffset}`;
         }
       }
       function extractGalleryRefs(html) {
@@ -3166,14 +3234,6 @@ var SourcePackage = (() => {
         if (!meta || !Array.isArray(meta.tags)) {
           return false;
         }
-        const normLang = (0, preferences_js_1.normalizeLanguageToken)(prefs.language);
-        const isEnglishPreferred = normLang === "en";
-        if (isEnglishPreferred) {
-          const hasEnglishTag = meta.tags.some((t) => t === "language:english" || t === "language:translated");
-          if (!hasEnglishTag) {
-            return false;
-          }
-        }
         if ((0, preferences_js_1.isItemBlacklisted)(meta.tags, blacklistSet)) {
           return false;
         }
@@ -3196,7 +3256,7 @@ var SourcePackage = (() => {
         const fallback = cleaned.replace(/[\[\]\(\)]/g, " ").replace(/\s+/g, " ").trim();
         return fallback || title.trim();
       }
-      async function resolveTitleOnIMHentai(client, searchTitle, prefs, japaneseTitle) {
+      async function resolveTitleOnIMHentai(client, searchTitle, prefs, blacklistSet, japaneseTitle) {
         var _a, _b, _c;
         const trimmed = searchTitle.trim();
         if (!trimmed) {
@@ -3206,9 +3266,8 @@ var SourcePackage = (() => {
         if (TITLE_RESOLUTION_CACHE.has(cacheKey)) {
           return (_a = TITLE_RESOLUTION_CACHE.get(cacheKey)) != null ? _a : null;
         }
-        const isEnglish = (0, preferences_js_1.normalizeLanguageToken)(prefs.language) === "en";
-        const langParam = isEnglish ? "&en=1" : "";
-        const searchUrl = `${constants_js_1.BASE_URL}/search/?key=${encodeURIComponent(trimmed)}&apply=Search${langParam}`;
+        const langFlags = (0, preferences_js_1.buildFullLanguageQueryFlags)(prefs.language);
+        const searchUrl = `${constants_js_1.BASE_URL}/search/?key=${encodeURIComponent(trimmed)}&apply=Search${langFlags}`;
         try {
           const response = await client.get(searchUrl, {
             headers: constants_js_1.DEFAULT_HEADERS
@@ -3219,93 +3278,89 @@ var SourcePackage = (() => {
             return null;
           }
           const $ = cheerio.load(html);
-          const $firstThumb = $(".thumb").first();
-          if ($firstThumb.length === 0) {
+          const $thumbs = $(".thumb");
+          if ($thumbs.length === 0) {
             cacheResolvedItem(cacheKey, null);
             return null;
           }
-          const card = (0, scraper_js_1.extractGalleryCardFromElement)($firstThumb, $);
-          if (!card || !card.id) {
-            cacheResolvedItem(cacheKey, null);
-            return null;
+          let matchedItem = null;
+          for (let i = 0; i < $thumbs.length; i++) {
+            const $thumb = $($thumbs[i]);
+            const card = (0, scraper_js_1.extractGalleryCardFromElement)($thumb, $);
+            if (!card || !card.id)
+              continue;
+            if (!(0, preferences_js_1.isCardMatchingLanguage)(card, prefs.language)) {
+              continue;
+            }
+            if ((0, preferences_js_1.isCardMatchingBlacklist)(card, blacklistSet)) {
+              continue;
+            }
+            const display = (0, preferences_js_1.formatGalleryTitleDisplay)(card.title, card.japaneseTitle || japaneseTitle, prefs);
+            matchedItem = {
+              id: card.id,
+              title: display.title,
+              subtitle: (_c = display.subtitle) != null ? _c : card.subtitle,
+              coverImage: card.thumbnailUrl,
+              webUrl: `${constants_js_1.BASE_URL}/gallery/${card.id}/`,
+              rating: constants_js_1.ContentRating.ADULT
+            };
+            break;
           }
-          const display = (0, preferences_js_1.formatGalleryTitleDisplay)(card.title, card.japaneseTitle || japaneseTitle, prefs);
-          const item = {
-            id: card.id,
-            title: display.title,
-            subtitle: (_c = display.subtitle) != null ? _c : card.subtitle,
-            coverImage: card.thumbnailUrl,
-            webUrl: `${constants_js_1.BASE_URL}/gallery/${card.id}/`,
-            rating: constants_js_1.ContentRating.ADULT
-          };
-          cacheResolvedItem(cacheKey, item);
-          return item;
+          cacheResolvedItem(cacheKey, matchedItem);
+          return matchedItem;
         } catch {
           cacheResolvedItem(cacheKey, null);
           return null;
         }
       }
-      async function fetchAndResolveEHentaiPage(client, feedKey, pageIndex, prefs, blacklistSet) {
-        var _a;
-        const normLang = (0, preferences_js_1.normalizeLanguageToken)(prefs.language);
-        const isEnglishPreferred = normLang === "en";
-        const endpoint = getEHentaiEndpoint(feedKey, pageIndex, isEnglishPreferred);
-        let html = "";
-        try {
-          const response = await client.get(endpoint, {
-            headers: constants_js_1.EHENTAI_HEADERS
-          });
-          html = typeof response.data === "string" ? response.data : String((_a = response.data) != null ? _a : "");
-        } catch {
-          return [];
-        }
-        const refs = extractGalleryRefs(html);
-        if (refs.length === 0) {
-          return [];
-        }
-        const metadataList = await fetchEHentaiMetadata(client, refs);
-        if (metadataList.length === 0) {
-          return [];
-        }
-        const cleanSurviving = metadataList.filter((m) => evaluateGalleryMetadata(m, prefs, blacklistSet));
-        if (cleanSurviving.length === 0) {
-          return [];
-        }
-        const resolvePromises = cleanSurviving.map(async (meta) => {
-          const searchTitle = sanitizeSearchTitle(meta.title);
-          if (!searchTitle)
-            return null;
-          return resolveTitleOnIMHentai(client, searchTitle, prefs, meta.title_jpn);
-        });
-        const resolved = await Promise.all(resolvePromises);
-        const items = [];
-        const seenIds = /* @__PURE__ */ new Set();
-        for (let i = 0; i < resolved.length; i++) {
-          const it = resolved[i];
-          if (it && it.id && !seenIds.has(it.id)) {
-            seenIds.add(it.id);
-            items.push(it);
-          }
-        }
-        return items;
-      }
       async function fetchEHentaiFeedItems(client, feedKey, page, prefs) {
+        var _a;
         const resolvedPrefs = prefs != null ? prefs : await (0, preferences_js_1.getUserPreferences)();
         const blacklistSet = (0, preferences_js_1.buildBlacklistSet)(resolvedPrefs.tropeExclusions, resolvedPrefs.customBlacklist);
+        const rawDepth = parseInt(resolvedPrefs.bufferDepth || "2", 10);
+        const bufferDepth = Number.isNaN(rawDepth) ? 2 : Math.min(3, Math.max(1, rawDepth));
         const safePage = Math.max(1, page || 1);
-        const items = await fetchAndResolveEHentaiPage(client, feedKey, safePage, resolvedPrefs, blacklistSet);
-        if (items.length < 10) {
+        const baseOffset = (safePage - 1) * bufferDepth;
+        const items = [];
+        const seenIds = /* @__PURE__ */ new Set();
+        for (let b = 0; b < bufferDepth; b++) {
+          const currentOffset = baseOffset + b;
+          const endpoint = getEHentaiEndpoint(feedKey, currentOffset);
+          let html = "";
           try {
-            const backfillItems = await fetchAndResolveEHentaiPage(client, feedKey, safePage + 1, resolvedPrefs, blacklistSet);
-            const seenIds = new Set(items.map((it) => it.id));
-            for (let i = 0; i < backfillItems.length; i++) {
-              const it = backfillItems[i];
-              if (it && !seenIds.has(it.id)) {
-                seenIds.add(it.id);
-                items.push(it);
+            const response = await client.get(endpoint, {
+              headers: constants_js_1.EHENTAI_HEADERS
+            });
+            html = typeof response.data === "string" ? response.data : String((_a = response.data) != null ? _a : "");
+          } catch {
+            continue;
+          }
+          const refs = extractGalleryRefs(html);
+          if (refs.length > 0) {
+            const metadataList = await fetchEHentaiMetadata(client, refs);
+            const surviving = metadataList.filter((m) => evaluateGalleryMetadata(m, resolvedPrefs, blacklistSet));
+            if (surviving.length > 0) {
+              const resolvePromises = surviving.map((meta) => {
+                const searchTitle = sanitizeSearchTitle(meta.title);
+                if (!searchTitle)
+                  return Promise.resolve(null);
+                return resolveTitleOnIMHentai(client, searchTitle, resolvedPrefs, blacklistSet, meta.title_jpn);
+              });
+              const resolved = await Promise.all(resolvePromises);
+              for (let j = 0; j < resolved.length; j++) {
+                const it = resolved[j];
+                if (it && it.id && !seenIds.has(it.id)) {
+                  seenIds.add(it.id);
+                  items.push(it);
+                }
               }
             }
-          } catch {
+          }
+          if (items.length >= constants_js_1.TARGET_DISCOVERY_YIELD) {
+            break;
+          }
+          if (b < bufferDepth - 1) {
+            await new Promise((resolve) => setTimeout(resolve, constants_js_1.EHENTAI_BUFFER_DELAY_MS));
           }
         }
         return {
@@ -4798,7 +4853,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_org();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "org.imhentai", "name": "IMHentai", "version": 1.8, "website": "https://imhentai.xxx", "rating": 2, "thumbnail": "imhentai.png", "languages": ["en", "ja", "zh", "es", "fr", "de", "ru"] };
+      exports.SourceMetadata = { "id": "org.imhentai", "name": "IMHentai", "version": 1.9, "website": "https://imhentai.xxx", "rating": 2, "thumbnail": "imhentai.png", "languages": ["en", "ja", "zh", "es", "fr", "de", "ru"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;

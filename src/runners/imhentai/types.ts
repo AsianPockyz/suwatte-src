@@ -61,6 +61,7 @@ export interface ImHentaiUserPreferences {
   titlePreference: ImHentaiTitlePreference;
   tropeExclusions: string[];
   customBlacklist: string;
+  bufferDepth: string;
 }
 
 export interface EHentaiGalleryRef {
