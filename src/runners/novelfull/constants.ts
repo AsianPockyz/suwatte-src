@@ -9,7 +9,7 @@ export { ContentRating };
 
 export const SOURCE_ID = "org.novelfull";
 export const SOURCE_NAME = "NovelFull";
-export const SOURCE_VERSION = 1.2;
+export const SOURCE_VERSION = 1.6;
 export const BASE_URL = "https://novelfull.com";
 export const VARIANT_ID = "org.novelfull";
 export const THUMBNAIL_FILENAME = "novelfull.png";

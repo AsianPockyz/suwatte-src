@@ -1,6 +1,6 @@
 export const SOURCE_ID = "moe.atsu";
 export const SOURCE_NAME = "Atsumaru";
-export const SOURCE_VERSION = 2.4;
+export const SOURCE_VERSION = 2.6;
 
 export const BASE_URL = "https://atsu.moe";
 export const API_BASE = "https://atsu.moe/api";
@@ -222,7 +222,15 @@ export const ATSU_STATUSES: ReadonlyArray<{ id: string; title: string }> = [
 ];
 
 export const ATSU_SORT_OPTIONS: ReadonlyArray<{ id: string; title: string }> = [
-  { id: "trending", title: "Trending / Popular" },
+  { id: "trending", title: "Trending" },
+  { id: "popular_daily", title: "Popular (Today)" },
+  { id: "popular_weekly", title: "Popular (This Week)" },
+  { id: "popular_monthly", title: "Popular (This Month)" },
+  { id: "popular_all", title: "Popular (All Time)" },
+  { id: "bookmarked_daily", title: "Most Bookmarked (Today)" },
+  { id: "bookmarked_weekly", title: "Most Bookmarked (This Week)" },
+  { id: "bookmarked_monthly", title: "Most Bookmarked (This Month)" },
+  { id: "bookmarked_all", title: "Most Bookmarked (All Time)" },
   { id: "mbRating", title: "Highest Rated" },
   { id: "updatedAt", title: "Latest Updated" },
   { id: "dateAdded", title: "Recently Added" },

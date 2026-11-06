@@ -62,16 +62,24 @@ const HOME_SECTION_KEYS = {
   SPOTLIGHT: "spotlight",
   HOT_UPDATES: "hot_updates",
   POPULAR: "popular",
-  TOP_RATED: "top_rated",
+  WEEKLY_MOST_BOOKMARKED: "weekly_most_bookmarked",
 } as const;
 
 const DIRECTORY_FEED_KEYS = {
+  POPULAR_DAILY: "popular_daily",
+  POPULAR_WEEKLY: "popular_weekly",
+  POPULAR_MONTHLY: "popular_monthly",
+  POPULAR_ALL: "popular_all",
+  BOOKMARKED_DAILY: "bookmarked_daily",
+  BOOKMARKED_WEEKLY: "bookmarked_weekly",
+  BOOKMARKED_MONTHLY: "bookmarked_monthly",
+  BOOKMARKED_ALL: "bookmarked_all",
   TRENDING: "trending",
-  POPULAR: "popular",
+  TOP_RATED: "top_rated",
   LATEST: "latest",
   HOT_UPDATES: "hot_updates",
   RECENTLY_ADDED: "recently_added",
-  TOP_RATED: "top_rated",
+  POPULAR: "popular",
   MOST_BOOKMARKED: "most_bookmarked",
 } as const;
 
@@ -81,7 +89,7 @@ const STATIC_CONFIGURATION: AtsuSourceConfiguration = Object.freeze({
 });
 
 const SPOTLIGHT_DESTINATION = ItemListDestination(
-  { key: DIRECTORY_FEED_KEYS.POPULAR },
+  { key: DIRECTORY_FEED_KEYS.POPULAR_DAILY },
   "Spotlight & Trending"
 );
 const HOT_UPDATES_DESTINATION = ItemListDestination(
@@ -92,9 +100,9 @@ const LATEST_UPDATES_DESTINATION = ItemListDestination(
   { key: DIRECTORY_FEED_KEYS.LATEST },
   "Latest Updates"
 );
-const TOP_RATED_DESTINATION = ItemListDestination(
-  { key: DIRECTORY_FEED_KEYS.TOP_RATED },
-  "Top Rated Series"
+const WEEKLY_MOST_BOOKMARKED_DESTINATION = ItemListDestination(
+  { key: DIRECTORY_FEED_KEYS.BOOKMARKED_WEEKLY },
+  "Weekly Most Bookmarked"
 );
 
 const STATIC_CUSTOM_FEEDS: SourceFeed[] = [
@@ -106,11 +114,74 @@ const STATIC_CUSTOM_FEEDS: SourceFeed[] = [
     },
   },
   {
-    id: DIRECTORY_FEED_KEYS.TOP_RATED,
-    title: "Top Rated",
+    id: DIRECTORY_FEED_KEYS.POPULAR_DAILY,
+    title: "Popular (Today)",
     content: {
       list: {
-        key: DIRECTORY_FEED_KEYS.TOP_RATED,
+        key: DIRECTORY_FEED_KEYS.POPULAR_DAILY,
+      },
+    },
+  },
+  {
+    id: DIRECTORY_FEED_KEYS.POPULAR_WEEKLY,
+    title: "Popular (This Week)",
+    content: {
+      list: {
+        key: DIRECTORY_FEED_KEYS.POPULAR_WEEKLY,
+      },
+    },
+  },
+  {
+    id: DIRECTORY_FEED_KEYS.POPULAR_MONTHLY,
+    title: "Popular (This Month)",
+    content: {
+      list: {
+        key: DIRECTORY_FEED_KEYS.POPULAR_MONTHLY,
+      },
+    },
+  },
+  {
+    id: DIRECTORY_FEED_KEYS.POPULAR_ALL,
+    title: "Popular (All Time)",
+    content: {
+      list: {
+        key: DIRECTORY_FEED_KEYS.POPULAR_ALL,
+      },
+    },
+  },
+  {
+    id: DIRECTORY_FEED_KEYS.BOOKMARKED_DAILY,
+    title: "Most Bookmarked (Today)",
+    content: {
+      list: {
+        key: DIRECTORY_FEED_KEYS.BOOKMARKED_DAILY,
+      },
+    },
+  },
+  {
+    id: DIRECTORY_FEED_KEYS.BOOKMARKED_WEEKLY,
+    title: "Most Bookmarked (This Week)",
+    content: {
+      list: {
+        key: DIRECTORY_FEED_KEYS.BOOKMARKED_WEEKLY,
+      },
+    },
+  },
+  {
+    id: DIRECTORY_FEED_KEYS.BOOKMARKED_MONTHLY,
+    title: "Most Bookmarked (This Month)",
+    content: {
+      list: {
+        key: DIRECTORY_FEED_KEYS.BOOKMARKED_MONTHLY,
+      },
+    },
+  },
+  {
+    id: DIRECTORY_FEED_KEYS.BOOKMARKED_ALL,
+    title: "Most Bookmarked (All Time)",
+    content: {
+      list: {
+        key: DIRECTORY_FEED_KEYS.BOOKMARKED_ALL,
       },
     },
   },
@@ -124,11 +195,11 @@ const STATIC_CUSTOM_FEEDS: SourceFeed[] = [
     },
   },
   {
-    id: DIRECTORY_FEED_KEYS.POPULAR,
-    title: "Popular",
+    id: DIRECTORY_FEED_KEYS.TOP_RATED,
+    title: "Top Rated",
     content: {
       list: {
-        key: DIRECTORY_FEED_KEYS.POPULAR,
+        key: DIRECTORY_FEED_KEYS.TOP_RATED,
       },
     },
   },
@@ -159,15 +230,6 @@ const STATIC_CUSTOM_FEEDS: SourceFeed[] = [
       },
     },
   },
-  {
-    id: DIRECTORY_FEED_KEYS.MOST_BOOKMARKED,
-    title: "Most Bookmarked",
-    content: {
-      list: {
-        key: DIRECTORY_FEED_KEYS.MOST_BOOKMARKED,
-      },
-    },
-  },
 ];
 
 const STATIC_HOME_PAGE: HomePage = {
@@ -175,20 +237,73 @@ const STATIC_HOME_PAGE: HomePage = {
 };
 
 const SECTION_EXPLORE_PARAMS: Readonly<Record<string, ExploreParams>> = {
-  [HOME_SECTION_KEYS.SPOTLIGHT]: { mode: "popular", page: 1, perPage: 15 },
+  [HOME_SECTION_KEYS.SPOTLIGHT]: {
+    mode: "popular_daily",
+    timeframe: "daily",
+    page: 1,
+    perPage: 15,
+  },
   [HOME_SECTION_KEYS.HOT_UPDATES]: { mode: "hot_updates", page: 1, perPage: 24 },
   [HOME_SECTION_KEYS.POPULAR]: { mode: "latest", page: 1, perPage: 24 },
-  [HOME_SECTION_KEYS.TOP_RATED]: { mode: "top_rated", page: 1, perPage: 24 },
+  [HOME_SECTION_KEYS.WEEKLY_MOST_BOOKMARKED]: {
+    mode: "bookmarked_weekly",
+    timeframe: "weekly",
+    page: 1,
+    perPage: 24,
+  },
+  [DIRECTORY_FEED_KEYS.BOOKMARKED_WEEKLY]: {
+    mode: "bookmarked_weekly",
+    timeframe: "weekly",
+    page: 1,
+    perPage: 24,
+  },
+  [DIRECTORY_FEED_KEYS.TOP_RATED]: { mode: "top_rated", page: 1, perPage: 24 },
 };
 
 interface FeedDefaultConfig {
   readonly mode: ExploreParams["mode"];
   readonly defaultSortBy?: string;
   readonly defaultSortAscending?: boolean;
+  readonly defaultTimeframe?: ExploreParams["timeframe"];
 }
 
 const FEED_EXPLORE_CONFIG: Readonly<Record<string, FeedDefaultConfig>> = {
-  discover: { mode: "popular" },
+  discover: {
+    mode: "popular_daily",
+    defaultTimeframe: "daily",
+  },
+  [DIRECTORY_FEED_KEYS.POPULAR_DAILY]: {
+    mode: "popular_daily",
+    defaultTimeframe: "daily",
+  },
+  [DIRECTORY_FEED_KEYS.POPULAR_WEEKLY]: {
+    mode: "popular_weekly",
+    defaultTimeframe: "weekly",
+  },
+  [DIRECTORY_FEED_KEYS.POPULAR_MONTHLY]: {
+    mode: "popular_monthly",
+    defaultTimeframe: "monthly",
+  },
+  [DIRECTORY_FEED_KEYS.POPULAR_ALL]: {
+    mode: "popular_all",
+    defaultTimeframe: "all",
+  },
+  [DIRECTORY_FEED_KEYS.BOOKMARKED_DAILY]: {
+    mode: "bookmarked_daily",
+    defaultTimeframe: "daily",
+  },
+  [DIRECTORY_FEED_KEYS.BOOKMARKED_WEEKLY]: {
+    mode: "bookmarked_weekly",
+    defaultTimeframe: "weekly",
+  },
+  [DIRECTORY_FEED_KEYS.BOOKMARKED_MONTHLY]: {
+    mode: "bookmarked_monthly",
+    defaultTimeframe: "monthly",
+  },
+  [DIRECTORY_FEED_KEYS.BOOKMARKED_ALL]: {
+    mode: "bookmarked_all",
+    defaultTimeframe: "all",
+  },
   [DIRECTORY_FEED_KEYS.TOP_RATED]: {
     mode: "top_rated",
     defaultSortBy: "mbRating",
@@ -200,6 +315,7 @@ const FEED_EXPLORE_CONFIG: Readonly<Record<string, FeedDefaultConfig>> = {
   },
   [DIRECTORY_FEED_KEYS.POPULAR]: {
     mode: "popular",
+    defaultTimeframe: "daily",
   },
   [DIRECTORY_FEED_KEYS.LATEST]: {
     mode: "latest",
@@ -214,6 +330,11 @@ const FEED_EXPLORE_CONFIG: Readonly<Record<string, FeedDefaultConfig>> = {
   },
   [DIRECTORY_FEED_KEYS.MOST_BOOKMARKED]: {
     mode: "most_bookmarked",
+    defaultTimeframe: "all",
+  },
+  [HOME_SECTION_KEYS.WEEKLY_MOST_BOOKMARKED]: {
+    mode: "bookmarked_weekly",
+    defaultTimeframe: "weekly",
   },
 };
 
@@ -280,33 +401,67 @@ export default class Target
     // Resolve preferences once for the entire home page cycle
     const prefs = await getUserPreferences();
 
-    const [spotlightRes, latestRes, hotUpdatesRes, topRatedRes] =
-      await Promise.all([
-        this.api.fetchExplore(
-          SECTION_EXPLORE_PARAMS[HOME_SECTION_KEYS.SPOTLIGHT],
-          prefs
-        ),
-        this.api.fetchExplore(
-          SECTION_EXPLORE_PARAMS[HOME_SECTION_KEYS.POPULAR],
-          prefs
-        ),
-        this.api.fetchExplore(
-          SECTION_EXPLORE_PARAMS[HOME_SECTION_KEYS.HOT_UPDATES],
-          prefs
-        ),
-        this.api.fetchExplore(
-          SECTION_EXPLORE_PARAMS[HOME_SECTION_KEYS.TOP_RATED],
-          prefs
-        ),
-      ]);
+    const settled = await Promise.allSettled([
+      this.api.fetchExplore(
+        SECTION_EXPLORE_PARAMS[HOME_SECTION_KEYS.SPOTLIGHT],
+        prefs
+      ),
+      this.api.fetchExplore(
+        SECTION_EXPLORE_PARAMS[HOME_SECTION_KEYS.POPULAR],
+        prefs
+      ),
+      this.api.fetchExplore(
+        SECTION_EXPLORE_PARAMS[HOME_SECTION_KEYS.HOT_UPDATES],
+        prefs
+      ),
+      this.api.fetchExplore(
+        SECTION_EXPLORE_PARAMS[HOME_SECTION_KEYS.WEEKLY_MOST_BOOKMARKED],
+        prefs
+      ),
+    ]);
 
-    const sections: ItemPageSection[] = [
+    const extractItems = (
+      res: PromiseSettledResult<PagedItemList>
+    ): Item[] => {
+      if (res.status === "fulfilled" && Array.isArray(res.value?.items)) {
+        return res.value.items;
+      }
+      return [];
+    };
+
+    const spotlightItems = extractItems(settled[0]);
+    const latestItems = extractItems(settled[1]);
+    const hotUpdatesItems = extractItems(settled[2]);
+    let weeklyBookmarkedItems = extractItems(settled[3]);
+
+    // Defensive fallback for Weekly Most Bookmarked shelf: if weekly request fails or returns empty,
+    // gracefully fall back to All-Time Most Bookmarked without breaking the Discover page.
+    if (weeklyBookmarkedItems.length === 0) {
+      try {
+        const fallbackBookmarked = await this.api.fetchExplore(
+          {
+            mode: "bookmarked_all",
+            timeframe: "all",
+            page: 1,
+            perPage: 24,
+          },
+          prefs
+        );
+        if (Array.isArray(fallbackBookmarked?.items)) {
+          weeklyBookmarkedItems = fallbackBookmarked.items;
+        }
+      } catch {
+        // Omit only the failed shelf if fallback also fails
+      }
+    }
+
+    const candidateSections: ItemPageSection[] = [
       {
         id: HOME_SECTION_KEYS.SPOTLIGHT,
         title: "Spotlight & Trending",
         subtitle: "Most popular series on Atsumaru today",
         style: PageSectionStyle.BANNER,
-        items: spotlightRes.items,
+        items: spotlightItems,
         destination: SPOTLIGHT_DESTINATION,
       },
       {
@@ -314,7 +469,7 @@ export default class Target
         title: "Hot Updates",
         subtitle: "High momentum chapters and popular releases",
         style: PageSectionStyle.DEFAULT,
-        items: hotUpdatesRes.items,
+        items: hotUpdatesItems,
         destination: HOT_UPDATES_DESTINATION,
       },
       {
@@ -322,18 +477,33 @@ export default class Target
         title: "Latest Updates",
         subtitle: "Recently updated chapters across all scanlators",
         style: PageSectionStyle.DEFAULT,
-        items: latestRes.items,
+        items: latestItems,
         destination: LATEST_UPDATES_DESTINATION,
       },
       {
-        id: HOME_SECTION_KEYS.TOP_RATED,
-        title: "Top Rated Series",
-        subtitle: "Critically acclaimed manga and manhwa",
+        id: HOME_SECTION_KEYS.WEEKLY_MOST_BOOKMARKED,
+        title: "Weekly Most Bookmarked",
+        subtitle: "Most bookmarked series on Atsumaru this week",
         style: PageSectionStyle.DEFAULT,
-        items: topRatedRes.items,
-        destination: TOP_RATED_DESTINATION,
+        items: weeklyBookmarkedItems,
+        destination: WEEKLY_MOST_BOOKMARKED_DESTINATION,
       },
     ];
+
+    const sections = candidateSections.filter(
+      (sec) => Array.isArray(sec.items) && sec.items.length > 0
+    );
+
+    if (sections.length === 0) {
+      for (const res of settled) {
+        if (
+          res.status === "rejected" &&
+          res.reason instanceof CloudflareError
+        ) {
+          throw res.reason;
+        }
+      }
+    }
 
     return {
       sections,
@@ -370,11 +540,13 @@ export default class Target
     const sortBy = request.sort?.key ?? config?.defaultSortBy;
     const sortAscending =
       request.sort?.ascending ?? config?.defaultSortAscending;
+    const timeframe = config?.defaultTimeframe;
 
     return this.api.fetchExplore({
       mode: config?.mode ?? "trending",
       sortBy,
       sortAscending,
+      timeframe,
       page,
     });
   }
@@ -465,7 +637,7 @@ export default class Target
   }
 }
 
-Target.info.version = 2.4;
+Target.info.version = 2.6;
 
 export { getItemEffectiveFormat } from "./api.js";
 export { Target };

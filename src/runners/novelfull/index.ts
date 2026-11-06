@@ -21,7 +21,12 @@ import {
   type SourceInfo,
   type UIForm,
 } from "@suwatte/toolchain";
-import { canResolveNovelFullUrl, normalizeImageUrl } from "./api.js";
+import {
+  canResolveNovelFullUrl,
+  cleanAndDeduplicateTitle,
+  cleanTitle,
+  normalizeImageUrl,
+} from "./api.js";
 import {
   BASE_URL,
   BROWSE_FEED_KEYS,
@@ -49,12 +54,15 @@ import {
 } from "./preferences.js";
 import {
   NovelFullScraperClient,
+  extractChapterNumber,
   extractCoverFromElement,
   filterAndMapNovelCards,
   formatTranslatorNotes,
   mapCardToItem,
+  mapChapterEntriesToChapters,
   normalizeTypographyAndEntities,
   parseAjaxChapterOptions,
+  parseChapterNumber,
   parseNovelCards,
   parseNovelDetail,
   sanitizeChapterHtml,
@@ -69,6 +77,8 @@ import type {
   PreferenceProvider,
   Searchable,
 } from "./types.js";
+
+declare const console: { log: (...args: unknown[]) => void };
 
 const SPOTLIGHT_DESTINATION = ItemListDestination(
   { key: BROWSE_FEED_KEYS.HOT_NOVEL },
@@ -169,6 +179,11 @@ export default class Target
   static readonly filterAndMapNovelCards = filterAndMapNovelCards;
   static readonly compileBlacklistContext = compileBlacklistContext;
   static readonly isNovelAllowed = isNovelAllowed;
+  static readonly cleanTitle = cleanTitle;
+  static readonly cleanAndDeduplicateTitle = cleanTitle;
+  static readonly parseChapterNumber = parseChapterNumber;
+  static readonly extractChapterNumber = parseChapterNumber;
+  static readonly mapChapterEntriesToChapters = mapChapterEntriesToChapters;
 
   public readonly info: SourceInfo = Target.info;
   public readonly scraper: NovelFullScraperClient;
@@ -179,6 +194,11 @@ export default class Target
   public readonly filterAndMapNovelCards = filterAndMapNovelCards;
   public readonly compileBlacklistContext = compileBlacklistContext;
   public readonly isNovelAllowed = isNovelAllowed;
+  public readonly cleanTitle = cleanTitle;
+  public readonly cleanAndDeduplicateTitle = cleanTitle;
+  public readonly parseChapterNumber = parseChapterNumber;
+  public readonly extractChapterNumber = parseChapterNumber;
+  public readonly mapChapterEntriesToChapters = mapChapterEntriesToChapters;
 
   private cachedHomeSections: {
     timestamp: number;
@@ -379,7 +399,9 @@ export default class Target
   }
 
   async getContent(contentId: string): Promise<Content> {
-    return this.scraper.fetchContent(contentId);
+    const content = await this.scraper.fetchContent(contentId);
+    content.title = cleanTitle(content.title);
+    return content;
   }
 
   // =========================================================================
@@ -387,7 +409,37 @@ export default class Target
   // =========================================================================
 
   async getChapters(contentId: string): Promise<Chapter[]> {
-    return this.scraper.fetchChapters(contentId);
+    const chapters = await this.scraper.fetchChapters(contentId);
+
+    // 1. Sort descending: Highest chapter number first (Atsumaru blueprint)
+    chapters.sort((a, b) => b.number - a.number);
+
+    // 2. Assign index sequentially matching descending progression (0 = Latest Chapter)
+    chapters.forEach((ch, idx) => {
+      ch.index = idx;
+    });
+
+    // 3. Safety check: ensure chapters[0] is not less than the last chapter
+    if (
+      chapters.length > 1 &&
+      chapters[0].number < chapters[chapters.length - 1].number
+    ) {
+      chapters.reverse();
+      chapters.forEach((ch, idx) => {
+        ch.index = idx;
+      });
+    }
+
+    if (chapters.length > 0) {
+      console.log(
+        `FIRST: ${chapters[0].title} (num: ${chapters[0].number}, idx: ${chapters[0].index})`
+      );
+      console.log(
+        `LAST: ${chapters[chapters.length - 1].title} (num: ${chapters[chapters.length - 1].number}, idx: ${chapters[chapters.length - 1].index})`
+      );
+    }
+
+    return chapters;
   }
 
   async getChapterText(
@@ -415,19 +467,24 @@ export default class Target
   }
 }
 
-Target.info.version = SOURCE_VERSION;
+Target.info.version = 1.6;
 
 export {
   canResolveNovelFullUrl,
+  cleanAndDeduplicateTitle,
+  cleanTitle,
   compileBlacklistContext,
+  extractChapterNumber,
   extractCoverFromElement,
   filterAndMapNovelCards,
   formatTranslatorNotes,
   isNovelAllowed,
   mapCardToItem,
+  mapChapterEntriesToChapters,
   normalizeImageUrl,
   normalizeTypographyAndEntities,
   parseAjaxChapterOptions,
+  parseChapterNumber,
   parseNovelCards,
   parseNovelDetail,
   sanitizeChapterHtml,

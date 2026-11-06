@@ -269,6 +269,8 @@ export interface TriStateSelection {
   exclude: string[];
 }
 
+export type TimeframeOption = "daily" | "weekly" | "monthly" | "all";
+
 export interface ExploreParams {
   query?: string;
   page?: number;
@@ -279,15 +281,25 @@ export interface ExploreParams {
   status?: string;
   sortBy?: string;
   sortAscending?: boolean;
+  timeframe?: TimeframeOption | string;
   includeNsfw?: boolean;
   mode?:
     | "explore"
     | "popular"
+    | "popular_daily"
+    | "popular_weekly"
+    | "popular_monthly"
+    | "popular_all"
     | "latest"
     | "hot_updates"
     | "recently_added"
     | "top_rated"
     | "most_bookmarked"
+    | "bookmarked_daily"
+    | "bookmarked_weekly"
+    | "bookmarked_monthly"
+    | "bookmarked_all"
+    | "weekly_most_bookmarked"
     | "trending"
     | "manhwa"
     | "manga"

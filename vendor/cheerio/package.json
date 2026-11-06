@@ -1,0 +1,7 @@
+{
+  "name": "cheerio",
+  "version": "1.0.0",
+  "description": "Fast, flexible, and lean implementation of core jQuery designed for JSC and SSR HTML scraping",
+  "main": "index.js",
+  "types": "index.d.ts"
+}

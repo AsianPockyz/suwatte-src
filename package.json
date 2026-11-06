@@ -1,0 +1,17 @@
+{
+  "name": "suwatte-atsu",
+  "version": "1.9.0",
+  "scripts": {
+    "build": "suwatte build",
+    "postbuild": "node scripts/postbuild.cjs && node -e \"const fs=require('fs');const p='dist/sources.json';if(fs.existsSync(p)){const d=JSON.parse(fs.readFileSync(p,'utf8'));const s=d.sources.find(x=>x.id==='org.imhentai');if(s)s.version=1.9;fs.writeFileSync(p,JSON.stringify(d,null,2)+'\\n');}\""
+  },
+  "suwatte": {
+    "listName": "Atsumaru Source"
+  },
+  "devDependencies": {
+    "@suwatte/toolchain": "^1.0.0",
+    "@types/node": "^26.6.5",
+    "cheerio": "file:vendor/cheerio",
+    "typescript": "^7.0.2"
+  }
+}

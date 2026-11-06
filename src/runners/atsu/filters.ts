@@ -186,6 +186,58 @@ function normalizeTriState(value: unknown): TriStateSelection | undefined {
   return { include, exclude };
 }
 
+const TIMEFRAME_SORT_MAP: Readonly<
+  Record<
+    string,
+    {
+      readonly sortBy: string;
+      readonly timeframe: "daily" | "weekly" | "monthly" | "all";
+      readonly mode: ExploreParams["mode"];
+    }
+  >
+> = {
+  popular_daily: {
+    sortBy: "popular",
+    timeframe: "daily",
+    mode: "popular_daily",
+  },
+  popular_weekly: {
+    sortBy: "popular",
+    timeframe: "weekly",
+    mode: "popular_weekly",
+  },
+  popular_monthly: {
+    sortBy: "popular",
+    timeframe: "monthly",
+    mode: "popular_monthly",
+  },
+  popular_all: {
+    sortBy: "popular",
+    timeframe: "all",
+    mode: "popular_all",
+  },
+  bookmarked_daily: {
+    sortBy: "bookmarks",
+    timeframe: "daily",
+    mode: "bookmarked_daily",
+  },
+  bookmarked_weekly: {
+    sortBy: "bookmarks",
+    timeframe: "weekly",
+    mode: "bookmarked_weekly",
+  },
+  bookmarked_monthly: {
+    sortBy: "bookmarks",
+    timeframe: "monthly",
+    mode: "bookmarked_monthly",
+  },
+  bookmarked_all: {
+    sortBy: "bookmarks",
+    timeframe: "all",
+    mode: "bookmarked_all",
+  },
+};
+
 export function mapFiltersToExploreParams(
   filters?: unknown,
   sort?: { key: string; ascending?: boolean },
@@ -199,12 +251,25 @@ export function mapFiltersToExploreParams(
   };
 
   if (sort?.key) {
-    params.sortBy = sort.key;
+    const mappedSort = TIMEFRAME_SORT_MAP[sort.key];
+    if (mappedSort) {
+      params.sortBy = mappedSort.sortBy;
+      params.timeframe = mappedSort.timeframe;
+      params.mode = mappedSort.mode;
+    } else {
+      params.sortBy = sort.key;
+    }
     params.sortAscending = sort.ascending;
   }
 
   if (!isRecord(filters)) {
     return params;
+  }
+
+  const rawTimeframe =
+    filters["timeframe"] ?? filters["period"] ?? filters["time"];
+  if (typeof rawTimeframe === "string" && rawTimeframe.trim().length > 0) {
+    params.timeframe = rawTimeframe.trim();
   }
 
   const genres = normalizeTriState(filters[FILTER_IDS.GENRES]);

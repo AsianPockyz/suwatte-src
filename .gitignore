@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Temporary and reverse-engineering artifacts
+__temp__/
+__temp*
+*.tmp
+temp/
+tmp/
+*.log

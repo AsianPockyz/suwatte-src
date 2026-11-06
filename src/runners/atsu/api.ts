@@ -79,9 +79,18 @@ const DEFAULT_SCANLATOR_NAME = "Atsumaru";
  */
 const HOME_ENDPOINT_BY_MODE: Readonly<Record<string, string>> = {
   popular: "popular",
+  popular_daily: "popular",
+  popular_weekly: "popular",
+  popular_monthly: "popular",
+  popular_all: "popular",
   latest: "recentlyUpdated",
   hot_updates: "hotUpdates",
   most_bookmarked: "mostBookmarked",
+  bookmarked_daily: "mostBookmarked",
+  bookmarked_weekly: "mostBookmarked",
+  bookmarked_monthly: "mostBookmarked",
+  bookmarked_all: "mostBookmarked",
+  weekly_most_bookmarked: "mostBookmarked",
 };
 
 /** Home endpoints to fall back to if the search index is unavailable. */
@@ -91,9 +100,78 @@ const FALLBACK_HOME_ENDPOINT_BY_MODE: Readonly<Record<string, string>> = {
   top_rated: "topRated",
 };
 
+const MODE_TIMEFRAME_MAP: Readonly<
+  Record<string, "daily" | "weekly" | "monthly" | "all">
+> = {
+  popular: "daily",
+  popular_daily: "daily",
+  popular_weekly: "weekly",
+  popular_monthly: "monthly",
+  popular_all: "all",
+  most_bookmarked: "all",
+  bookmarked_daily: "daily",
+  bookmarked_weekly: "weekly",
+  bookmarked_monthly: "monthly",
+  bookmarked_all: "all",
+  weekly_most_bookmarked: "weekly",
+};
+
+export function normalizeTimeframe(
+  raw?: string | null
+): "daily" | "weekly" | "monthly" | "all" | undefined {
+  if (!raw || typeof raw !== "string") return undefined;
+  switch (raw.trim().toLowerCase()) {
+    case "day":
+    case "daily":
+    case "today":
+    case "1d":
+    case "24h":
+      return "daily";
+    case "week":
+    case "weekly":
+    case "this_week":
+    case "7d":
+      return "weekly";
+    case "month":
+    case "monthly":
+    case "this_month":
+    case "30d":
+      return "monthly";
+    case "all":
+    case "all_time":
+    case "alltime":
+    case "total":
+      return "all";
+    default:
+      return undefined;
+  }
+}
+
+export function resolveTimeframeForParams(
+  params: ExploreParams
+): "daily" | "weekly" | "monthly" | "all" | undefined {
+  const explicit = normalizeTimeframe(params.timeframe);
+  if (explicit) return explicit;
+  if (params.mode && MODE_TIMEFRAME_MAP[params.mode]) {
+    return MODE_TIMEFRAME_MAP[params.mode];
+  }
+  if (params.sortBy && MODE_TIMEFRAME_MAP[params.sortBy]) {
+    return MODE_TIMEFRAME_MAP[params.sortBy];
+  }
+  return undefined;
+}
+
+const EXPLICIT_SEARCH_SORT_KEYS: ReadonlySet<string> = new Set([
+  "mbRating",
+  "dateAdded",
+  "released",
+  "title_asc",
+  "title_desc",
+]);
+
 /**
  * Plain browsing (no query or filters) of a feed backed by a home endpoint goes to
- * that endpoint; an explicit sort or any filter needs the search index.
+ * that endpoint; an explicit search-index sort or any filter needs the search index.
  */
 function resolveHomeEndpoint(params: ExploreParams): string | undefined {
   const hasFilters =
@@ -104,9 +182,35 @@ function resolveHomeEndpoint(params: ExploreParams): string | undefined {
     !!params.tags?.exclude.length ||
     (!!params.status && params.status !== "all");
   if (hasFilters) return undefined;
-  if (params.sortBy === "updatedAt") return "recentlyUpdated";
-  if (params.sortBy) return undefined;
-  return params.mode ? HOME_ENDPOINT_BY_MODE[params.mode] : undefined;
+
+  if (params.sortBy && EXPLICIT_SEARCH_SORT_KEYS.has(params.sortBy)) {
+    return undefined;
+  }
+  if (params.sortBy === "updatedAt") {
+    return "recentlyUpdated";
+  }
+  if (params.sortBy) {
+    if (
+      params.sortBy === "popular" ||
+      params.sortBy === "popularity" ||
+      params.sortBy.startsWith("popular_")
+    ) {
+      return "popular";
+    }
+    if (
+      params.sortBy === "bookmarks" ||
+      params.sortBy === "most_bookmarked" ||
+      params.sortBy === "mostBookmarked" ||
+      params.sortBy.startsWith("bookmarked_") ||
+      params.sortBy === "weekly_most_bookmarked"
+    ) {
+      return "mostBookmarked";
+    }
+  }
+  if (params.mode && HOME_ENDPOINT_BY_MODE[params.mode]) {
+    return HOME_ENDPOINT_BY_MODE[params.mode];
+  }
+  return undefined;
 }
 
 const MANGA_CACHE_TTL_MS = 10_000;
@@ -1674,13 +1778,18 @@ export class AtsuApiClient {
   }
 
   public buildTypesenseSortBy(params: ExploreParams): string {
+    const mode = params.mode ?? "";
     const rawKey =
       params.sortBy ??
-      (params.mode === "top_rated"
+      (mode === "top_rated"
         ? "mbRating"
-        : params.mode === "latest" || params.mode === "recently_added"
+        : mode === "latest" || mode === "recently_added"
           ? "dateAdded"
-          : params.mode === "popular" || params.mode === "most_bookmarked"
+          : mode === "popular" ||
+              mode.startsWith("popular_") ||
+              mode === "most_bookmarked" ||
+              mode.startsWith("bookmarked_") ||
+              mode === "weekly_most_bookmarked"
             ? "views"
             : "trending");
 
@@ -1701,7 +1810,16 @@ export class AtsuApiClient {
     if (rawKey === "updatedAt") {
       return `dateAdded:${direction}`;
     }
-    if (rawKey === "popularity") {
+    if (
+      rawKey === "popularity" ||
+      rawKey === "popular" ||
+      rawKey.startsWith("popular_") ||
+      rawKey === "bookmarks" ||
+      rawKey === "most_bookmarked" ||
+      rawKey === "mostBookmarked" ||
+      rawKey.startsWith("bookmarked_") ||
+      rawKey === "weekly_most_bookmarked"
+    ) {
       return `views:${direction}`;
     }
 
@@ -1735,6 +1853,8 @@ export class AtsuApiClient {
       resolveFormatOverride(params)
     );
 
+    const resolvedTimeframe = resolveTimeframeForParams(params);
+
     const homeEndpoint = resolveHomeEndpoint(params);
     if (homeEndpoint) {
       return this.fetchHomeEndpoint(
@@ -1744,7 +1864,8 @@ export class AtsuApiClient {
         prefs,
         isSearchNsfwOverride,
         formatSpecs.apiTypesParam,
-        formatSpecs.apiMediumsParam
+        formatSpecs.apiMediumsParam,
+        resolvedTimeframe
       );
     }
 
@@ -1827,7 +1948,8 @@ export class AtsuApiClient {
           prefs,
           isSearchNsfwOverride,
           formatSpecs.apiTypesParam,
-          formatSpecs.apiMediumsParam
+          formatSpecs.apiMediumsParam,
+          resolvedTimeframe
         );
       }
       throw error;
@@ -1848,7 +1970,8 @@ export class AtsuApiClient {
     prefsOrAllowNsfw?: AtsuUserPreferences | boolean,
     isNsfwOverride = false,
     types?: string,
-    mediums?: string
+    mediums?: string,
+    timeframe?: string
   ): Promise<PagedItemList> {
     const prefs: AtsuUserPreferences =
       typeof prefsOrAllowNsfw === "object" && prefsOrAllowNsfw !== null
@@ -1864,12 +1987,19 @@ export class AtsuApiClient {
 
     const formatSpecs = resolveActiveFormatSpecs(prefs, types);
     const offset = Math.max(0, (page - 1) * limit);
+    const supportsTimeframe =
+      endpoint === "popular" || endpoint === "mostBookmarked";
+    const normalizedTf = supportsTimeframe
+      ? normalizeTimeframe(timeframe) ??
+        (endpoint === "popular" ? "daily" : "all")
+      : undefined;
+
     const params: Record<string, string | number | boolean | undefined> = {
       offset,
       limit,
       types: types ?? formatSpecs.apiTypesParam,
       mediums: mediums ?? formatSpecs.apiMediumsParam,
-      ...(endpoint === "popular" ? { timeframe: "daily" } : {}),
+      ...(normalizedTf ? { timeframe: normalizedTf } : {}),
       ...(allowAdult ? { adult: 1 } : {}),
     };
 

@@ -435,3 +435,42 @@ export function detectContentRating(
 
   return hasSuggestive ? ContentRating.SUGGESTIVE : ContentRating.EVERYONE;
 }
+
+/**
+ * Consolidate Title Scraping:
+ * Strips aggregator branding suffixes, online free watermarks, and repetitive titles.
+ */
+export function cleanTitle(raw: string): string {
+  let text = (raw ?? "").trim();
+  if (!text) return "";
+
+  // 1. Detect exact string repetition (e.g. "TitleTitle")
+  if (text.length % 2 === 0) {
+    const half = text.length / 2;
+    const firstHalf = text.slice(0, half);
+    const secondHalf = text.slice(half);
+    if (firstHalf === secondHalf) {
+      text = firstHalf;
+    }
+  }
+
+  // 2. Detect space-separated repetition (e.g. "Title Title")
+  const words = text.split(/\s+/);
+  if (words.length % 2 === 0 && words.length >= 2) {
+    const halfLen = words.length / 2;
+    const firstWords = words.slice(0, halfLen).join(" ");
+    const secondWords = words.slice(halfLen).join(" ");
+    if (firstWords.toLowerCase() === secondWords.toLowerCase()) {
+      text = firstWords;
+    }
+  }
+
+  return text
+    .replace(/^Read\s+/i, "")
+    .replace(/\s*[-–—|]?\s*Read\s+Novel\s+Online\s+Free.*$/i, "")
+    .replace(/\s+online\s+free.*$/i, "")
+    .replace(/\s*[-–—|]\s*NovelFull.*$/i, "")
+    .trim();
+}
+
+export const cleanAndDeduplicateTitle = cleanTitle;

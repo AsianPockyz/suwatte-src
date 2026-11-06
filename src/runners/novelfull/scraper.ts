@@ -23,6 +23,8 @@ import {
   buildFeedUrl,
   buildNovelUrl,
   buildSearchUrl,
+  cleanAndDeduplicateTitle,
+  cleanTitle,
   detectContentRating,
   extractChapterId,
   extractNovelId,
@@ -35,7 +37,6 @@ import {
   BASE_URL,
   BG_IMAGE_URL_REGEX,
   BROWSE_FEED_KEYS,
-  CHAPTER_NUMBER_REGEX,
   CLOUDFLARE_RESOLUTION_URL,
   ContentRating,
   DEFAULT_HEADERS,
@@ -43,7 +44,6 @@ import {
   FALLBACK_COVER_URL,
   IMAGE_HEADERS,
   INLINE_NOVEL_ID_REGEX,
-  LEADING_NUMBER_REGEX,
   ORIGIN_URL,
   PROMO_LINK_HREF_REGEX,
   RATE_LIMIT_PER_SECOND,
@@ -51,7 +51,6 @@ import {
   TLN_BRACKET_REGEX,
   VOLUME_NUMBER_REGEX,
   WATERMARK_PATTERNS,
-  WHITESPACE_REGEX,
 } from "./constants.js";
 import {
   compileBlacklistContext,
@@ -591,73 +590,69 @@ export function isLastListingPage(
 // ============================================================================
 
 /**
- * Parses a chapter number and optional volume number from a chapter title or slug.
+ * Bulletproof Comma-Safe Chapter Number Parsing:
+ * Multi-stage chapter number extraction handling comma-separated values (e.g. Chapter 1,000).
  */
 export function parseChapterNumber(
   title: string,
-  chapterSlug: string,
-  fallbackNumber: number
-): { number: number; volume?: number } {
-  let volume: number | undefined;
+  rawUrl: string,
+  fallbackIdx = 0
+): number {
+  // Priority 1: Extract from URL slug (cleanest, never contains commas)
+  // Matches: chapter-1-slug, chapter-1000-slug, ch-1.5-slug
+  const urlMatch = rawUrl.match(/(?:chapter|ch)[-_](\d+(?:[\.-]\d+)?)/i);
+  if (urlMatch?.[1]) {
+    const val = parseFloat(urlMatch[1].replace("-", "."));
+    if (!Number.isNaN(val)) return val;
+  }
+
+  // Priority 2: Extract from title after stripping thousands commas
+  // "Chapter 1,000: Battle" -> "Chapter 1000: Battle"
+  const cleanTitle = title.replace(/,/g, "").trim();
+
+  // Match: "Chapter 123", "Ch. 123", "C123", "C.123"
+  const cMatch = cleanTitle.match(/(?:chapter|ch\.?|^c\.?)\s*(\d+(?:\.\d+)?)/i);
+  if (cMatch?.[1]) {
+    const val = parseFloat(cMatch[1]);
+    if (!Number.isNaN(val)) return val;
+  }
+
+  // Match leading digits: "1000: Title" or "1000 - Title"
+  const leadMatch = cleanTitle.match(/^(\d+(?:\.\d+)?)\s*[:\-\.]/);
+  if (leadMatch?.[1]) {
+    const val = parseFloat(leadMatch[1]);
+    if (!Number.isNaN(val)) return val;
+  }
+
+  // Match any standalone number
+  const anyNum = cleanTitle.match(/\b(\d+(?:\.\d+)?)\b/);
+  if (anyNum?.[1]) {
+    const val = parseFloat(anyNum[1]);
+    if (!Number.isNaN(val)) return val;
+  }
+
+  return fallbackIdx;
+}
+
+/**
+ * Parses optional volume number from chapter title or URL slug.
+ */
+export function parseVolumeNumber(
+  title: string,
+  rawUrl: string
+): number | undefined {
   const volMatch =
-    VOLUME_NUMBER_REGEX.exec(title) ?? VOLUME_NUMBER_REGEX.exec(chapterSlug);
+    VOLUME_NUMBER_REGEX.exec(title) ?? VOLUME_NUMBER_REGEX.exec(rawUrl);
   if (volMatch?.[1]) {
     const parsedVol = parseInt(volMatch[1], 10);
     if (Number.isFinite(parsedVol) && parsedVol > 0) {
-      volume = parsedVol;
+      return parsedVol;
     }
   }
-
-  // 1. Chapter title match: "(?:chapter|ch\.?)\s*(\d+(?:\.\d+)?)"
-  const titleMatch = title.match(/(?:chapter|ch\.?)\s*(\d+(?:\.\d+)?)/i);
-  if (titleMatch?.[1]) {
-    const num = parseFloat(titleMatch[1]);
-    if (Number.isFinite(num) && num >= 0) {
-      return { number: num, volume };
-    }
-  }
-
-  // 2. Fallback to other episode / part keywords
-  const epMatch = title.match(/(?:episode|ep\.?|part)\s*(\d+(?:\.\d+)?)/i);
-  if (epMatch?.[1]) {
-    const num = parseFloat(epMatch[1]);
-    if (Number.isFinite(num) && num >= 0) {
-      return { number: num, volume };
-    }
-  }
-
-  // 3. Chapter slug match: "chapter-123-..."
-  const slugText = chapterSlug.replace(/[-_/]/g, " ");
-  const slugMatch = slugText.match(
-    /(?:chapter|ch\.?|episode|ep\.?|part)\s*(\d+(?:\.\d+)?)/i
-  );
-  if (slugMatch?.[1]) {
-    const num = parseFloat(slugMatch[1]);
-    if (Number.isFinite(num) && num >= 0) {
-      return { number: num, volume };
-    }
-  }
-
-  // 4. Leading number in title (e.g. "123 - The Beginning")
-  const leadingMatch = LEADING_NUMBER_REGEX.exec(title.trim());
-  if (leadingMatch?.[1]) {
-    const num = parseFloat(leadingMatch[1]);
-    if (Number.isFinite(num) && num >= 0) {
-      return { number: num, volume };
-    }
-  }
-
-  // 5. Standalone or trailing number in slug (e.g. "c123" or "...-123")
-  const slugNumMatch = slugText.match(/\b(?:c)?(\d+(?:\.\d+)?)\b/i);
-  if (slugNumMatch?.[1]) {
-    const num = parseFloat(slugNumMatch[1]);
-    if (Number.isFinite(num) && num >= 0) {
-      return { number: num, volume };
-    }
-  }
-
-  return { number: fallbackNumber, volume };
+  return undefined;
 }
+
+export const extractChapterNumber = parseChapterNumber;
 
 /**
  * Parses the `<select>` / `<option>` response from `https://novelfull.com/ajax-chapter-option?novelId=${novelId}`.
@@ -690,7 +685,8 @@ export function parseAjaxChapterOptions(
     seenIds.add(chapterId);
 
     const title = rawText || `Chapter ${idx + 1}`;
-    const { number, volume } = parseChapterNumber(title, chapterId, idx + 1);
+    const number = parseChapterNumber(title, rawVal || chapterId, idx + 1);
+    const volume = parseVolumeNumber(title, rawVal || chapterId);
     const webUrl = buildChapterUrl(cleanNovelSlug, rawVal || chapterId);
 
     entries.push({
@@ -719,7 +715,8 @@ export function parseAjaxChapterOptions(
       seenIds.add(chapterId);
 
       const title = rawText || `Chapter ${i + 1}`;
-      const { number, volume } = parseChapterNumber(title, chapterId, i + 1);
+      const number = parseChapterNumber(title, rawVal || chapterId, i + 1);
+      const volume = parseVolumeNumber(title, rawVal || chapterId);
       const webUrl = buildChapterUrl(cleanNovelSlug, rawVal || chapterId);
 
       entries.push({
@@ -769,7 +766,8 @@ export function parseOnPageChapters(
         `Chapter ${idx + 1}`
     );
     const title = rawText || `Chapter ${idx + 1}`;
-    const { number, volume } = parseChapterNumber(title, chapterId, idx + 1);
+    const number = parseChapterNumber(title, href, idx + 1);
+    const volume = parseVolumeNumber(title, href);
     const webUrl = buildChapterUrl(cleanNovelSlug, href);
 
     entries.push({
@@ -787,8 +785,8 @@ export function parseOnPageChapters(
 
 /**
  * Maps `NovelFullChapterEntry[]` to Suwatte `Chapter[]`.
- * Ensures array is returned in strictly chronological ascending order:
- * [Chapter 1, Chapter 2, Chapter 3, ..., Chapter N] with sequential index 0..N-1.
+ * Ensures array is returned in standard descending order (Atsumaru blueprint):
+ * [Latest Chapter ... Chapter 1] with sequential index 0..N-1.
  */
 export function mapChapterEntriesToChapters(
   entries: readonly NovelFullChapterEntry[],
@@ -800,71 +798,22 @@ export function mapChapterEntriesToChapters(
 
   const cleanNovelSlug = extractNovelId(novelSlug);
 
-  // Attach original index for stable tie-breaking
-  const indexedEntries = entries.map((entry, originalIndex) => ({
-    entry,
-    originalIndex,
-  }));
-
-  // Determine if original source list was in descending order
-  const firstNum = entries[0]?.number ?? 0;
-  const lastNum = entries[entries.length - 1]?.number ?? 0;
-  const isSourceDescending = firstNum > lastNum;
-
-  // Sort entries in strictly chronological ascending order
-  indexedEntries.sort((a, b) => {
-    const numA =
-      typeof a.entry.number === "number" && Number.isFinite(a.entry.number)
-        ? a.entry.number
-        : 0;
-    const numB =
-      typeof b.entry.number === "number" && Number.isFinite(b.entry.number)
-        ? b.entry.number
-        : 0;
-
-    if (numA !== numB) {
-      return numA - numB;
-    }
-
-    const volA =
-      typeof a.entry.volume === "number" && Number.isFinite(a.entry.volume)
-        ? a.entry.volume
-        : 0;
-    const volB =
-      typeof b.entry.volume === "number" && Number.isFinite(b.entry.volume)
-        ? b.entry.volume
-        : 0;
-
-    if (volA !== volB) {
-      return volA - volB;
-    }
-
-    // Stable tie-breaker: if source was descending, later original elements came first chronologically
-    return isSourceDescending
-      ? b.originalIndex - a.originalIndex
-      : a.originalIndex - b.originalIndex;
-  });
-
-  const total = indexedEntries.length;
-  const chapters = new Array<Chapter>(total);
-
-  for (let i = 0; i < total; i++) {
-    const { entry } = indexedEntries[i]!;
+  const chapters: Chapter[] = entries.map((entry, idx) => {
     const chapterNumber =
       typeof entry.number === "number" &&
       Number.isFinite(entry.number) &&
       entry.number >= 0
         ? entry.number
-        : i + 1;
+        : extractChapterNumber(entry.title || "", entry.chapterId || "", idx + 1);
 
     const chapter: Chapter = {
       id: entry.id,
-      index: i,
+      index: idx,
       number: chapterNumber,
       title: entry.title || `Chapter ${chapterNumber}`,
       language: "en",
       webUrl: entry.webUrl || buildChapterUrl(cleanNovelSlug, entry.id),
-      date: entry.date ?? new Date(1700000000000 + i * 60000),
+      date: entry.date ?? new Date(1700000000000 + idx * 60000),
       data: {
         chapterId: entry.chapterId,
         contentId: cleanNovelSlug,
@@ -880,7 +829,26 @@ export function mapChapterEntriesToChapters(
       chapter.volume = entry.volume;
     }
 
-    chapters[i] = chapter;
+    return chapter;
+  });
+
+  // 1. Sort descending: Highest chapter number first (Atsumaru blueprint)
+  chapters.sort((a, b) => b.number - a.number);
+
+  // 2. Assign index sequentially matching descending progression (0 = Latest Chapter)
+  chapters.forEach((ch, idx) => {
+    ch.index = idx;
+  });
+
+  // 3. Safety check: ensure chapters[0] is not less than the last chapter
+  if (
+    chapters.length > 1 &&
+    chapters[0].number < chapters[chapters.length - 1].number
+  ) {
+    chapters.reverse();
+    chapters.forEach((ch, idx) => {
+      ch.index = idx;
+    });
   }
 
   return chapters;
@@ -925,20 +893,14 @@ export function parseNovelDetail(
   const id = extractNovelId(contentIdOrUrl);
 
   // 1. Title (.title, h3)
-  const rawTitle =
-    $("div.desc > h3.title").text().trim() ||
-    $("h3.title").first().text().trim() ||
-    $(".col-novel-main h3").first().text().trim() ||
-    $(".books .desc h3.title").first().text().trim() ||
-    $("meta[property='og:title']").attr("content")?.trim() ||
-    id.replace(/-/g, " ");
+  const ogTitle = $("meta[property='og:title']").attr("content")?.trim() || "";
+  const domTitle = $("h3.title").first().text().trim();
 
-  const cleanedTitle = decodeHtmlEntities(rawTitle)
-    .replace(/\s*-\s*Read Novel Online Free.*$/i, "")
-    .replace(/\s*-\s*NovelFull.*$/i, "")
-    .trim();
-
-  const title = cleanedTitle || id.replace(/-/g, " ") || "Untitled Novel";
+  const rawTitle = ogTitle || domTitle || id.replace(/-/g, " ");
+  const title =
+    cleanTitle(decodeHtmlEntities(rawTitle)) ||
+    id.replace(/-/g, " ") ||
+    "Untitled Novel";
 
   // 2. High-res Cover Art (.book img, .info-holder .book img)
   const $coverContainer = $(
@@ -1167,7 +1129,7 @@ export function mapDetailToContent(
   }
 
   const content: Content = {
-    title: detail.title,
+    title: cleanAndDeduplicateTitle(detail.title),
     coverImage: detail.coverImage || FALLBACK_COVER_URL,
     webUrl: detail.webUrl,
     rating: detail.contentRating,
@@ -1743,7 +1705,9 @@ export class NovelFullScraperClient {
       getUserPreferences(),
       this.fetchNovelDetail(contentId),
     ]);
-    return mapDetailToContent(detail, prefs);
+    const content = mapDetailToContent(detail, prefs);
+    content.title = cleanTitle(content.title);
+    return content;
   }
 
   /**
@@ -1756,13 +1720,14 @@ export class NovelFullScraperClient {
     const slug = extractNovelId(contentId);
     const detail = await this.fetchNovelDetail(slug);
 
+    let chapters: Chapter[] = [];
     if (detail.numericNovelId) {
       try {
         const ajaxUrl = buildAjaxChapterUrl(detail.numericNovelId);
         const ajaxHtml = await this.fetchHtml(ajaxUrl, AJAX_HEADERS);
         const ajaxEntries = parseAjaxChapterOptions(ajaxHtml, slug);
         if (ajaxEntries.length > 0) {
-          return mapChapterEntriesToChapters(ajaxEntries, slug);
+          chapters = mapChapterEntriesToChapters(ajaxEntries, slug);
         }
       } catch (error) {
         if (error instanceof CloudflareError) {
@@ -1772,7 +1737,30 @@ export class NovelFullScraperClient {
       }
     }
 
-    return mapChapterEntriesToChapters(detail.onPageChapters, slug);
+    if (chapters.length === 0) {
+      chapters = mapChapterEntriesToChapters(detail.onPageChapters, slug);
+    }
+
+    // 1. Sort descending: Highest chapter number first (Atsumaru blueprint)
+    chapters.sort((a, b) => b.number - a.number);
+
+    // 2. Assign index sequentially matching descending progression (0 = Latest Chapter)
+    chapters.forEach((ch, idx) => {
+      ch.index = idx;
+    });
+
+    // 3. Safety check: ensure chapters[0] is not less than the last chapter
+    if (
+      chapters.length > 1 &&
+      chapters[0].number < chapters[chapters.length - 1].number
+    ) {
+      chapters.reverse();
+      chapters.forEach((ch, idx) => {
+        ch.index = idx;
+      });
+    }
+
+    return chapters;
   }
 
   /**
@@ -1796,3 +1784,5 @@ export class NovelFullScraperClient {
     };
   }
 }
+
+export { cleanAndDeduplicateTitle, cleanTitle };
