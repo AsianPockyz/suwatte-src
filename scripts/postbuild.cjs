@@ -97,7 +97,7 @@ if (fs.existsSync(sourcesJsonPath)) {
       } else {
         cleanSource.id = "moe.atsu";
         cleanSource.name = "Atsumaru";
-        cleanSource.version = 2.6;
+        cleanSource.version = 2.7;
         cleanSource.website = "https://atsu.moe";
         cleanSource.rating = 1;
         cleanSource.thumbnail = "Atsu.png";

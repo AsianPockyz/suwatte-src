@@ -33,18 +33,17 @@ import {
   DEFAULT_HEADERS,
   DEFAULT_PAGE_SIZE,
   FALLBACK_COVER_URL,
-  IMAGE_HEADERS,
+  getApiHeadersForMode,
+  getImageHeadersForMode,
   MANGA_URL_REGEX,
   NOVEL_URL_REGEX,
   ORIGIN_URL,
-  PAGE_IMAGE_HEADERS,
   RATE_LIMIT_PER_SECOND,
   REFERER_URL,
   SEARCH_ENDPOINT,
-  WEBP_ACCEPT_HEADER,
 } from "./constants.js";
 import {
-  getImageFormatPreference,
+  getConnectionBrowsingMode,
   getUserPreferences,
   normalizeFormatToken,
 } from "./preferences.js";
@@ -1530,11 +1529,10 @@ export class AtsuApiClient {
     }
 
     builder.addRequestInterceptor(async (request: NetworkRequest) => {
+      const mode = await getConnectionBrowsingMode();
       request.headers = {
-        ...DEFAULT_HEADERS,
         ...(request.headers ?? {}),
-        Referer: REFERER_URL,
-        Origin: ORIGIN_URL,
+        ...getApiHeadersForMode(mode),
       };
       return request;
     });
@@ -1565,11 +1563,14 @@ export class AtsuApiClient {
       }
     }
 
+    const mode = await getConnectionBrowsingMode();
+    const apiHeaders = getApiHeadersForMode(mode);
+
     let response: NetworkResponse;
     try {
       response = await this.client.get(url, {
         params: cleanParams,
-        headers: DEFAULT_HEADERS,
+        headers: apiHeaders,
       });
     } catch (error) {
       if (error instanceof CloudflareError) {
@@ -2482,13 +2483,16 @@ export class AtsuApiClient {
       throw new Error("Chapter ID cannot be empty.");
     }
 
-    const [imageFormat, response] = await Promise.all([
-      getImageFormatPreference(),
+    const [prefs, response] = await Promise.all([
+      getUserPreferences(),
       this.getJson<AtsuReadChapterResponse>(`${API_BASE}/read/chapter`, {
         mangaId: cleanMangaId,
         chapterId: cleanChapterId,
       }),
     ]);
+
+    const imageFormat = prefs.imageFormat;
+    const pageHeaders = getImageHeadersForMode(prefs.connectionBrowsingMode);
 
     const rawPages = response?.readChapter?.pages;
     if (!Array.isArray(rawPages) || rawPages.length === 0) {
@@ -2512,7 +2516,7 @@ export class AtsuApiClient {
 
       result[i] = {
         url: imageUrl,
-        headers: PAGE_IMAGE_HEADERS,
+        headers: pageHeaders,
         context: {
           pageId: page.id,
           pageNumber: page.number,
@@ -2527,24 +2531,27 @@ export class AtsuApiClient {
   }
 
   /**
-   * Attaches `Referer: https://atsu.moe/`, `Origin: https://atsu.moe`, and image quality
-   * `Accept` headers to outgoing image requests using memoized image format preference.
+   * Resolves image request headers dynamically according to the active Connection / Browsing Mode
+   * preference, preserving full AVIF/WebP image URLs without downgrading.
    */
   public async configureImageRequest(
-    request: NetworkRequest
+    requestOrUrl: NetworkRequest | string
   ): Promise<NetworkRequest> {
-    const imageFormat = await getImageFormatPreference();
-    const acceptHeader =
-      imageFormat === "webp" ? WEBP_ACCEPT_HEADER : IMAGE_HEADERS.Accept;
+    const mode = await getConnectionBrowsingMode();
+    const modeHeaders = getImageHeadersForMode(mode);
 
-    request.headers = {
-      ...IMAGE_HEADERS,
-      ...(request.headers ?? {}),
-      Referer: REFERER_URL,
-      Origin: ORIGIN_URL,
-      Accept: acceptHeader,
+    if (typeof requestOrUrl === "string") {
+      return {
+        url: requestOrUrl,
+        headers: modeHeaders,
+      };
+    }
+
+    return {
+      ...requestOrUrl,
+      url: requestOrUrl.url,
+      headers: modeHeaders,
     };
-    return request;
   }
 }
 

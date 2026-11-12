@@ -3,6 +3,7 @@ import {
   type UIForm,
   UIKeyboardType,
   UIPicker,
+  type UIPickerProps,
   UISelect,
   UITextField,
   UIToggle,
@@ -11,21 +12,49 @@ import {
   ALL_CONTENT_RATINGS,
   ATSU_GENRES,
   ATSU_THEMES,
+  CONNECTION_BROWSING_MODE_OPTIONS,
   CONTENT_RATING_OPTIONS,
   DEFAULT_ALLOWED_CONTENT_RATINGS,
+  DEFAULT_CONNECTION_BROWSING_MODE,
   DEFAULT_ENABLED_FORMATS,
   FORMAT_PREFERENCE_OPTIONS,
+  getApiHeadersForMode,
+  getImageHeadersForMode,
   IMAGE_FORMAT_OPTIONS,
+  normalizeConnectionBrowsingMode,
   NSFW_RATINGS_SET,
   PREF_KEYS,
 } from "./constants.js";
-import type { AtsuUserPreferences, ImageQualityFormat } from "./types.js";
+import type {
+  AtsuUserPreferences,
+  ConnectionBrowsingMode,
+  ImageQualityFormat,
+} from "./types.js";
+
+export {
+  getApiHeadersForMode,
+  getImageHeadersForMode,
+  normalizeConnectionBrowsingMode,
+};
+
+export enum PreferenceType {
+  SELECT = "picker",
+  MULTI_SELECT = "select",
+  TOGGLE = "toggle",
+  TEXT = "textfield",
+}
 
 // Pre-allocated static UI option lists to avoid re-mapping on every settings menu open
 const UI_IMAGE_FORMAT_OPTIONS = IMAGE_FORMAT_OPTIONS.map((opt) => ({
   id: opt.id,
   title: opt.title,
 }));
+
+const UI_CONNECTION_BROWSING_MODE_OPTIONS =
+  CONNECTION_BROWSING_MODE_OPTIONS.map((opt) => ({
+    id: opt.id,
+    title: opt.title,
+  }));
 
 const UI_CONTENT_RATING_OPTIONS = CONTENT_RATING_OPTIONS.map((opt) => ({
   id: opt.id,
@@ -49,6 +78,7 @@ const UI_FORMAT_PREFERENCE_OPTIONS = FORMAT_PREFERENCE_OPTIONS.map((opt) => ({
 
 let memoryPreferences: AtsuUserPreferences = {
   imageFormat: "webp",
+  connectionBrowsingMode: DEFAULT_CONNECTION_BROWSING_MODE,
   deduplicateChapters: true,
   scanlatorWhitelist: ["Asura", "Official"],
   showNsfw: false,
@@ -60,6 +90,11 @@ let memoryPreferences: AtsuUserPreferences = {
 
 let isHydrated = false;
 let inflightHydration: Promise<AtsuUserPreferences> | null = null;
+
+export function invalidatePreferencesCache(): void {
+  isHydrated = false;
+  inflightHydration = null;
+}
 
 function hasObjectStore(): boolean {
   return typeof ObjectStore !== "undefined" && ObjectStore !== null;
@@ -230,6 +265,7 @@ async function hydratePreferencesFromStore(): Promise<AtsuUserPreferences> {
   try {
     const [
       storedFormat,
+      storedBrowsingMode,
       storedDedup,
       storedWhitelist,
       storedRatings,
@@ -239,6 +275,7 @@ async function hydratePreferencesFromStore(): Promise<AtsuUserPreferences> {
       storedEnabledFormats,
     ] = await Promise.all([
       ObjectStore.string(PREF_KEYS.IMAGE_FORMAT).catch(() => null),
+      ObjectStore.string(PREF_KEYS.CONNECTION_BROWSING_MODE).catch(() => null),
       ObjectStore.get(PREF_KEYS.DEDUPLICATE_CHAPTERS).catch(() => null),
       ObjectStore.get(PREF_KEYS.SCANLATOR_WHITELIST).catch(() => null),
       ObjectStore.get(PREF_KEYS.CONTENT_RATINGS).catch(() => null),
@@ -252,6 +289,12 @@ async function hydratePreferencesFromStore(): Promise<AtsuUserPreferences> {
       storedFormat === "webp" || storedFormat === "original"
         ? storedFormat
         : memoryPreferences.imageFormat;
+
+    const connectionBrowsingMode: ConnectionBrowsingMode =
+      storedBrowsingMode !== null && storedBrowsingMode !== undefined
+        ? normalizeConnectionBrowsingMode(storedBrowsingMode)
+        : (memoryPreferences.connectionBrowsingMode ??
+          DEFAULT_CONNECTION_BROWSING_MODE);
 
     let deduplicateChapters = memoryPreferences.deduplicateChapters;
     if (typeof storedDedup === "boolean") {
@@ -298,6 +341,7 @@ async function hydratePreferencesFromStore(): Promise<AtsuUserPreferences> {
 
     memoryPreferences = {
       imageFormat,
+      connectionBrowsingMode,
       deduplicateChapters,
       scanlatorWhitelist,
       showNsfw,
@@ -335,6 +379,13 @@ export async function getImageFormatPreference(): Promise<ImageQualityFormat> {
   return (await getUserPreferences()).imageFormat;
 }
 
+export async function getConnectionBrowsingMode(): Promise<ConnectionBrowsingMode> {
+  return (
+    (await getUserPreferences()).connectionBrowsingMode ??
+    DEFAULT_CONNECTION_BROWSING_MODE
+  );
+}
+
 export async function getShowNsfwPreference(): Promise<boolean> {
   return (await getUserPreferences()).showNsfw;
 }
@@ -342,13 +393,29 @@ export async function getShowNsfwPreference(): Promise<boolean> {
 export async function buildSettingsForm(): Promise<UIForm> {
   const prefs = await getUserPreferences();
   const whitelistString = prefs.scanlatorWhitelist.join(", ");
+  const currentBrowsingMode =
+    prefs.connectionBrowsingMode ?? DEFAULT_CONNECTION_BROWSING_MODE;
+
+  const connectionBrowsingModePickerProps: UIPickerProps & {
+    description?: string;
+    type?: PreferenceType;
+  } = {
+    id: PREF_KEYS.CONNECTION_BROWSING_MODE,
+    title: "Connection / Browsing Mode",
+    description:
+      "Controls the HTTP header fingerprint sent to Atsumaru and its image CDN to prevent Cloudflare edge throttling and connection resets.",
+    type: PreferenceType.SELECT,
+    options: UI_CONNECTION_BROWSING_MODE_OPTIONS,
+    currentValue: currentBrowsingMode,
+    defaultValue: DEFAULT_CONNECTION_BROWSING_MODE,
+  };
 
   return {
     sections: [
       {
         header: "Reader & Image Settings",
         footer:
-          "Select WebP to conserve bandwidth and battery, or Original / AVIF for maximum image resolution.",
+          "Select WebP to conserve bandwidth and battery, or Original / AVIF for maximum image resolution. Controls the HTTP header fingerprint sent to Atsumaru and its image CDN to prevent Cloudflare edge throttling and connection resets.",
         views: [
           UIPicker({
             id: PREF_KEYS.IMAGE_FORMAT,
@@ -357,6 +424,7 @@ export async function buildSettingsForm(): Promise<UIForm> {
             currentValue: prefs.imageFormat,
             defaultValue: "webp",
           }),
+          UIPicker(connectionBrowsingModePickerProps),
         ],
       },
       {
@@ -454,8 +522,11 @@ export async function updateUserPreferences(
     return;
   }
 
+  invalidatePreferencesCache();
+
   let {
     imageFormat,
+    connectionBrowsingMode,
     deduplicateChapters,
     scanlatorWhitelist,
     showNsfw,
@@ -464,6 +535,9 @@ export async function updateUserPreferences(
     excludedTags,
     enabledFormats,
   } = memoryPreferences;
+  if (!connectionBrowsingMode) {
+    connectionBrowsingMode = DEFAULT_CONNECTION_BROWSING_MODE;
+  }
   if (!enabledFormats || enabledFormats.length === 0) {
     enabledFormats = [...DEFAULT_ENABLED_FORMATS];
   }
@@ -477,6 +551,21 @@ export async function updateUserPreferences(
     if (storeAvailable) {
       writeTasks.push(
         ObjectStore.set(PREF_KEYS.IMAGE_FORMAT, imageFormat).catch(() => {})
+      );
+    }
+  }
+
+  const rawBrowsingMode =
+    data[PREF_KEYS.CONNECTION_BROWSING_MODE] ??
+    data["atsu_pref_connection_browsing_mode"];
+  if (typeof rawBrowsingMode === "string") {
+    connectionBrowsingMode = normalizeConnectionBrowsingMode(rawBrowsingMode);
+    if (storeAvailable) {
+      writeTasks.push(
+        ObjectStore.set(
+          PREF_KEYS.CONNECTION_BROWSING_MODE,
+          connectionBrowsingMode
+        ).catch(() => {})
       );
     }
   }
@@ -576,6 +665,7 @@ export async function updateUserPreferences(
   // Assign a fresh immutable snapshot reference so WeakMap caches update immediately
   memoryPreferences = {
     imageFormat,
+    connectionBrowsingMode,
     deduplicateChapters,
     scanlatorWhitelist,
     showNsfw,

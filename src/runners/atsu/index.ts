@@ -29,12 +29,15 @@ import {
   CLOUDFLARE_FALLBACK_URL,
   CONTENT_URL_REGEX,
   FALLBACK_COVER_URL,
+  getApiHeadersForMode,
+  getImageHeadersForMode,
   MANGA_URL_REGEX,
   NOVEL_URL_REGEX,
   REFERER_URL,
   SOURCE_ID,
   SOURCE_NAME,
   SOURCE_VERSION,
+  STANDARD_HEADERS,
 } from "./constants.js";
 import {
   getSearchFilters,
@@ -43,7 +46,9 @@ import {
 } from "./filters.js";
 import {
   buildSettingsForm,
+  getConnectionBrowsingMode,
   getUserPreferences,
+  invalidatePreferencesCache,
   updateUserPreferences,
 } from "./preferences.js";
 import type {
@@ -86,6 +91,7 @@ const DIRECTORY_FEED_KEYS = {
 const STATIC_CONFIGURATION: AtsuSourceConfiguration = Object.freeze({
   imageReferer: REFERER_URL,
   cloudflareResolutionURL: CLOUDFLARE_FALLBACK_URL,
+  standardHeaders: STANDARD_HEADERS,
 });
 
 const SPOTLIGHT_DESTINATION = ItemListDestination(
@@ -363,23 +369,49 @@ export default class Target
   public readonly api: AtsuApiClient;
   static readonly getItemEffectiveFormat = getItemEffectiveFormat;
   public readonly getItemEffectiveFormat = getItemEffectiveFormat;
+  static readonly getImageHeadersForMode = getImageHeadersForMode;
+  public readonly getImageHeadersForMode = getImageHeadersForMode;
+  static readonly getApiHeadersForMode = getApiHeadersForMode;
+  public readonly getApiHeadersForMode = getApiHeadersForMode;
+  static readonly getConnectionBrowsingMode = getConnectionBrowsingMode;
+  public readonly getConnectionBrowsingMode = getConnectionBrowsingMode;
+  static readonly invalidatePreferencesCache = invalidatePreferencesCache;
+  public readonly invalidatePreferencesCache = invalidatePreferencesCache;
 
   constructor(api?: AtsuApiClient) {
     this.api = api instanceof AtsuApiClient ? api : new AtsuApiClient();
   }
 
   /**
-   * Provides source-level configuration including imageReferer and cloudflareResolutionURL.
+   * Provides source-level configuration including imageReferer, cloudflareResolutionURL, and standardHeaders.
    */
   getConfiguration(): SourceConfiguration {
     return STATIC_CONFIGURATION;
   }
 
   /**
-   * Intercepts outgoing image requests to attach `Referer` and `Origin` headers.
+   * Intercepts outgoing image requests to dynamically inject headers for the active Connection / Browsing Mode.
    */
-  async willRequestImage(request: NetworkRequest): Promise<NetworkRequest> {
-    return this.api.configureImageRequest(request);
+  async willRequestImage(
+    requestOrUrl: NetworkRequest | string
+  ): Promise<NetworkRequest> {
+    const url =
+      typeof requestOrUrl === "string" ? requestOrUrl : requestOrUrl.url;
+    const mode = await getConnectionBrowsingMode();
+    const headers = getImageHeadersForMode(mode);
+
+    if (typeof requestOrUrl === "string") {
+      return {
+        url,
+        headers,
+      };
+    }
+
+    return {
+      ...requestOrUrl,
+      url,
+      headers,
+    };
   }
 
   // =========================================================================
@@ -637,7 +669,15 @@ export default class Target
   }
 }
 
-Target.info.version = 2.6;
+Target.info.version = 2.7;
 
 export { getItemEffectiveFormat } from "./api.js";
+export {
+  getApiHeadersForMode,
+  getImageHeadersForMode,
+} from "./constants.js";
+export {
+  getConnectionBrowsingMode,
+  invalidatePreferencesCache,
+} from "./preferences.js";
 export { Target };

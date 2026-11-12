@@ -19,7 +19,7 @@ import {
   UIFormSchema,
 } from "./node_modules/@suwatte/toolchain/dist/validate/index.js";
 
-console.log("=== Isolated JavaScriptCore Sandbox Test (Version 2.6) ===");
+console.log("=== Isolated JavaScriptCore Sandbox Test (Version 2.7) ===");
 
 // 1. Read the compiled production bundle
 const sttPath = path.resolve("./dist/sources/moe.atsu.stt");
@@ -472,14 +472,14 @@ const metadata = SourcePackage.SourceMetadata;
 SourceInfoSchema.parse(metadata);
 assert.equal(metadata.id, "moe.atsu", "Source ID must be moe.atsu");
 assert.equal(metadata.name, "Atsumaru", "Source name must be Atsumaru");
-assert.equal(metadata.version, 2.6, "Source version must be 2.6");
+assert.equal(metadata.version, 2.7, "Source version must be 2.7");
 assert.equal(
   metadata.minSupportedAppVersion,
   undefined,
   "minSupportedAppVersion must not block install"
 );
 console.log(
-  "PASS: SourceMetadata adheres to SourceInfoSchema with version 2.6."
+  "PASS: SourceMetadata adheres to SourceInfoSchema with version 2.7."
 );
 
 // 5. Bootstrap runner instance
@@ -490,8 +490,8 @@ assert.ok(
 );
 assert.equal(
   runner.info.version,
-  2.6,
-  "Runner instance info.version must be 2.6"
+  2.7,
+  "Runner instance info.version must be 2.7"
 );
 console.log("PASS: runner instantiated via SourcePackage.bootstrap().");
 
@@ -562,8 +562,22 @@ assert.ok(
   "useClientForImageRequests must be false or stripped"
 );
 assert.equal(config.cloudflareResolutionURL, "https://atsu.moe");
+assert.equal(
+  config.standardHeaders?.Referer,
+  "https://atsu.moe/",
+  "standardHeaders must initialize with mobile_safari Referer"
+);
+assert.equal(
+  config.standardHeaders?.Origin,
+  "https://atsu.moe",
+  "standardHeaders must initialize with mobile_safari Origin"
+);
+assert.ok(
+  config.standardHeaders?.["User-Agent"]?.includes("Version/18.3"),
+  "standardHeaders must initialize with Mobile Safari 18.3 User-Agent"
+);
 console.log(
-  "PASS: getConfiguration() adheres to SourceConfigurationSchema without useClientForImageRequests."
+  "PASS: getConfiguration() adheres to SourceConfigurationSchema with standardHeaders and without useClientForImageRequests."
 );
 
 // 7. Verify Search Filters & Sort Options initialization and caching
@@ -652,6 +666,103 @@ assert.equal(
   "Format & Medium Preferences",
   "Section 5 header mismatch"
 );
+
+// Verify Section 1 (Reader & Image Settings) has Image Format AND Connection / Browsing Mode
+const readerSectionViews = settingsForm.sections[0].views;
+assert.equal(
+  readerSectionViews.length,
+  2,
+  "Reader & Image Settings must contain 2 pickers (Image Quality / Format and Connection / Browsing Mode)"
+);
+const browsingModeView = readerSectionViews.find(
+  (v) => (v.picker?.props?.id ?? v.id) === "connection_browsing_mode"
+);
+assert.ok(
+  browsingModeView,
+  "getPreferenceMenu() must include connection_browsing_mode in Reader & Image Settings"
+);
+const browsingModeProps = browsingModeView.picker?.props ?? browsingModeView;
+assert.equal(
+  browsingModeProps.title,
+  "Connection / Browsing Mode",
+  "connection_browsing_mode title mismatch"
+);
+assert.equal(
+  browsingModeProps.defaultValue,
+  "mobile_safari",
+  "connection_browsing_mode default must be mobile_safari"
+);
+assert.equal(
+  JSON.stringify(browsingModeProps.options),
+  JSON.stringify([
+    { id: "mobile_safari", title: "Mobile Safari Mimicry (Recommended)" },
+    { id: "standard_native", title: "Standard / Native" },
+    { id: "strict_browser", title: "Strict Browser" },
+  ]),
+  "connection_browsing_mode options must match the 3 required profiles"
+);
+
+// Verify willRequestImage across all 3 Connection / Browsing Mode profiles and AVIF preservation
+const avifUrl = "https://cdn.atsu.moe/static/pages/solo/100/001.avif";
+const defaultImgReq = await runner.willRequestImage(avifUrl);
+assert.equal(
+  defaultImgReq.url,
+  avifUrl,
+  "willRequestImage must preserve .avif URL without downgrading"
+);
+assert.equal(
+  defaultImgReq.headers?.Referer,
+  "https://atsu.moe/",
+  "mobile_safari image headers must include Referer"
+);
+assert.equal(
+  defaultImgReq.headers?.Origin,
+  "https://atsu.moe",
+  "mobile_safari image headers must include Origin"
+);
+assert.equal(
+  defaultImgReq.headers?.Accept,
+  "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+  "mobile_safari image headers must include AVIF/WebP Accept"
+);
+assert.equal(
+  defaultImgReq.headers?.["Accept-Language"],
+  "en-US,en;q=0.9",
+  "mobile_safari image headers must include Accept-Language"
+);
+assert.ok(
+  defaultImgReq.headers?.["User-Agent"]?.includes("iPhone OS 18_3"),
+  "mobile_safari image headers must include iPhone OS 18_3 User-Agent"
+);
+
+// Switch to standard_native mode and verify immediate effect via willRequestImage
+await runner.onFormSubmitted("atsu_settings", {
+  connection_browsing_mode: "standard_native",
+});
+const standardImgReq = await runner.willRequestImage({ url: avifUrl });
+assert.equal(standardImgReq.url, avifUrl);
+assert.equal(
+  JSON.stringify(standardImgReq.headers),
+  JSON.stringify({ Referer: "https://atsu.moe/" }),
+  "standard_native image headers must strictly be { Referer: 'https://atsu.moe/' }"
+);
+
+// Switch to strict_browser mode and verify Sec-Fetch-* and Cache-Control headers
+await runner.onFormSubmitted("atsu_settings", {
+  connection_browsing_mode: "strict_browser",
+});
+const strictImgReq = await runner.willRequestImage(avifUrl);
+assert.equal(strictImgReq.url, avifUrl);
+assert.equal(strictImgReq.headers?.["Sec-Fetch-Dest"], "image");
+assert.equal(strictImgReq.headers?.["Sec-Fetch-Mode"], "no-cors");
+assert.equal(strictImgReq.headers?.["Sec-Fetch-Site"], "same-site");
+assert.equal(strictImgReq.headers?.["Cache-Control"], "no-cache");
+assert.equal(strictImgReq.headers?.Pragma, "no-cache");
+
+// Restore default mobile_safari mode
+await runner.onFormSubmitted("atsu_settings", {
+  connection_browsing_mode: "mobile_safari",
+});
 
 // Verify Section 5 (Format & Medium Preferences) has all 6 formats with default Manga, Manhwa, Manhua
 const formatPrefSelect = settingsForm.sections[4].views[0];
@@ -2088,9 +2199,10 @@ assert.ok(
 const atsuManifest = sourcesCatalog.sources.find((s) => s.id === "moe.atsu");
 const imManifest = sourcesCatalog.sources.find((s) => s.id === "org.imhentai");
 assert.ok(atsuManifest, "moe.atsu manifest entry must exist in dist/sources.json");
-assert.equal(atsuManifest.version, 2.6);
+assert.equal(atsuManifest.version, 2.7);
 assert.equal(atsuManifest.thumbnail, "Atsu.png");
 assert.equal(atsuManifest.variantId, "moe.atsu");
+assert.equal(atsuManifest.environment, "jsc");
 assert.equal(atsuManifest.minSupportedAppVersion, undefined);
 
 const novelfullManifest = sourcesCatalog.sources.find((s) => s.id === "org.novelfull");

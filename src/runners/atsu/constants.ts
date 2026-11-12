@@ -1,6 +1,8 @@
+import type { ConnectionBrowsingMode } from "./types.js";
+
 export const SOURCE_ID = "moe.atsu";
 export const SOURCE_NAME = "Atsumaru";
-export const SOURCE_VERSION = 2.6;
+export const SOURCE_VERSION = 2.7;
 
 export const BASE_URL = "https://atsu.moe";
 export const API_BASE = "https://atsu.moe/api";
@@ -20,30 +22,128 @@ export const NOVEL_URL_REGEX = /^https?:\/\/(?:www\.)?atsu\.moe\/novel\/([^/?#]+
 export const CONTENT_URL_REGEX =
   /^https?:\/\/(?:www\.)?atsu\.moe\/(manga|novel)\/([^/?#]+)/i;
 
-export const DEFAULT_HEADERS: Readonly<Record<string, string>> = Object.freeze({
-  Referer: REFERER_URL,
-  Origin: ORIGIN_URL,
-  Accept: "application/json, text/plain, */*",
-  "Content-Type": "application/json",
-  "User-Agent":
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
-});
+export const MOBILE_SAFARI_USER_AGENT =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Mobile/15E148 Safari/604.1";
 
-export const IMAGE_HEADERS: Readonly<Record<string, string>> = Object.freeze({
-  Referer: REFERER_URL,
-  Origin: ORIGIN_URL,
-  Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
-});
+export const DEFAULT_CONNECTION_BROWSING_MODE: ConnectionBrowsingMode =
+  "mobile_safari";
+
+export const CONNECTION_BROWSING_MODE_OPTIONS = [
+  { id: "mobile_safari", title: "Mobile Safari Mimicry (Recommended)" },
+  { id: "standard_native", title: "Standard / Native" },
+  { id: "strict_browser", title: "Strict Browser" },
+] as const;
+
+export const MOBILE_SAFARI_IMAGE_HEADERS: Readonly<Record<string, string>> =
+  Object.freeze({
+    "User-Agent": MOBILE_SAFARI_USER_AGENT,
+    Referer: REFERER_URL,
+    Origin: ORIGIN_URL,
+    Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+  });
+
+export const MOBILE_SAFARI_API_HEADERS: Readonly<Record<string, string>> =
+  Object.freeze({
+    "User-Agent": MOBILE_SAFARI_USER_AGENT,
+    Referer: REFERER_URL,
+    Origin: ORIGIN_URL,
+    Accept: "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+  });
+
+export const STANDARD_NATIVE_IMAGE_HEADERS: Readonly<Record<string, string>> =
+  Object.freeze({
+    Referer: REFERER_URL,
+  });
+
+export const STANDARD_NATIVE_API_HEADERS: Readonly<Record<string, string>> =
+  Object.freeze({
+    Referer: REFERER_URL,
+    Accept: "application/json, text/plain, */*",
+  });
+
+export const STRICT_BROWSER_IMAGE_HEADERS: Readonly<Record<string, string>> =
+  Object.freeze({
+    "User-Agent": MOBILE_SAFARI_USER_AGENT,
+    Referer: REFERER_URL,
+    Origin: ORIGIN_URL,
+    Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Sec-Fetch-Dest": "image",
+    "Sec-Fetch-Mode": "no-cors",
+    "Sec-Fetch-Site": "same-site",
+    "Cache-Control": "no-cache",
+    Pragma: "no-cache",
+  });
+
+export const STRICT_BROWSER_API_HEADERS: Readonly<Record<string, string>> =
+  Object.freeze({
+    "User-Agent": MOBILE_SAFARI_USER_AGENT,
+    Referer: REFERER_URL,
+    Origin: ORIGIN_URL,
+    Accept: "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+    "Cache-Control": "no-cache",
+  });
+
+export function normalizeConnectionBrowsingMode(
+  raw: unknown
+): ConnectionBrowsingMode {
+  if (raw === "standard_native" || raw === "strict_browser" || raw === "mobile_safari") {
+    return raw;
+  }
+  return DEFAULT_CONNECTION_BROWSING_MODE;
+}
+
+export function getImageHeadersForMode(
+  mode?: ConnectionBrowsingMode | string | null
+): Record<string, string> {
+  switch (normalizeConnectionBrowsingMode(mode)) {
+    case "standard_native":
+      return { ...STANDARD_NATIVE_IMAGE_HEADERS };
+    case "strict_browser":
+      return { ...STRICT_BROWSER_IMAGE_HEADERS };
+    case "mobile_safari":
+    default:
+      return { ...MOBILE_SAFARI_IMAGE_HEADERS };
+  }
+}
+
+export function getApiHeadersForMode(
+  mode?: ConnectionBrowsingMode | string | null
+): Record<string, string> {
+  switch (normalizeConnectionBrowsingMode(mode)) {
+    case "standard_native":
+      return { ...STANDARD_NATIVE_API_HEADERS };
+    case "strict_browser":
+      return { ...STRICT_BROWSER_API_HEADERS };
+    case "mobile_safari":
+    default:
+      return { ...MOBILE_SAFARI_API_HEADERS };
+  }
+}
+
+export const STANDARD_HEADERS: Readonly<Record<string, string>> =
+  MOBILE_SAFARI_IMAGE_HEADERS;
+
+export const DEFAULT_HEADERS: Readonly<Record<string, string>> =
+  MOBILE_SAFARI_API_HEADERS;
+
+export const IMAGE_HEADERS: Readonly<Record<string, string>> =
+  MOBILE_SAFARI_IMAGE_HEADERS;
 
 export const WEBP_ACCEPT_HEADER = "image/webp,image/apng,image/*,*/*;q=0.8";
 
-export const PAGE_IMAGE_HEADERS: Readonly<Record<string, string>> = Object.freeze({
-  Referer: REFERER_URL,
-  Origin: ORIGIN_URL,
-});
+export const PAGE_IMAGE_HEADERS: Readonly<Record<string, string>> =
+  MOBILE_SAFARI_IMAGE_HEADERS;
 
 export const PREF_KEYS = {
   IMAGE_FORMAT: "atsu_pref_image_format",
+  CONNECTION_BROWSING_MODE: "connection_browsing_mode",
   DEDUPLICATE_CHAPTERS: "atsu_pref_deduplicate_chapters",
   SCANLATOR_WHITELIST: "atsu_pref_scanlator_whitelist",
   SHOW_NSFW: "atsu_pref_show_nsfw",

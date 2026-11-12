@@ -235,8 +235,14 @@ export interface AtsuAvailableFiltersResponse {
 
 export type ImageQualityFormat = "webp" | "original";
 
+export type ConnectionBrowsingMode =
+  | "mobile_safari"
+  | "standard_native"
+  | "strict_browser";
+
 export interface AtsuUserPreferences {
   imageFormat: ImageQualityFormat;
+  connectionBrowsingMode?: ConnectionBrowsingMode;
   deduplicateChapters: boolean;
   scanlatorWhitelist: string[];
   showNsfw: boolean;
@@ -258,6 +264,7 @@ export interface CompiledFilterContext {
 
 export interface AtsuSourceConfiguration extends SourceConfiguration {
   cloudflareResolutionURL?: string;
+  standardHeaders?: Readonly<Record<string, string>>;
 }
 
 export interface AtsuChapterPage extends ChapterPage {
