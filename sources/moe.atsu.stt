@@ -821,10 +821,13 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.ATSU_SORT_OPTIONS = exports.ATSU_STATUSES = exports.ATSU_FORMATS = exports.ATSU_THEMES = exports.ATSU_GENRES = exports.IMAGE_FORMAT_OPTIONS = exports.NSFW_RATINGS_SET = exports.ALL_CONTENT_RATINGS = exports.DEFAULT_ALLOWED_CONTENT_RATINGS = exports.CONTENT_RATING_OPTIONS = exports.DEFAULT_ENABLED_FORMATS = exports.FORMAT_PREFERENCE_OPTIONS = exports.PREF_KEYS = exports.PAGE_IMAGE_HEADERS = exports.WEBP_ACCEPT_HEADER = exports.IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.CONTENT_URL_REGEX = exports.NOVEL_URL_REGEX = exports.MANGA_URL_REGEX = exports.RATE_LIMIT_PER_SECOND = exports.DEFAULT_PAGE_SIZE = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_FALLBACK_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.CDN_STATIC_BASE = exports.SEARCH_ENDPOINT = exports.API_BASE = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = void 0;
+      exports.ATSU_SORT_OPTIONS = exports.ATSU_STATUSES = exports.ATSU_FORMATS = exports.ATSU_THEMES = exports.ATSU_GENRES = exports.IMAGE_FORMAT_OPTIONS = exports.NSFW_RATINGS_SET = exports.ALL_CONTENT_RATINGS = exports.DEFAULT_ALLOWED_CONTENT_RATINGS = exports.CONTENT_RATING_OPTIONS = exports.DEFAULT_ENABLED_FORMATS = exports.FORMAT_PREFERENCE_OPTIONS = exports.PREF_KEYS = exports.PAGE_IMAGE_HEADERS = exports.WEBP_ACCEPT_HEADER = exports.IMAGE_HEADERS = exports.DEFAULT_HEADERS = exports.STANDARD_HEADERS = exports.STRICT_BROWSER_API_HEADERS = exports.STRICT_BROWSER_IMAGE_HEADERS = exports.STANDARD_NATIVE_API_HEADERS = exports.STANDARD_NATIVE_IMAGE_HEADERS = exports.MOBILE_SAFARI_API_HEADERS = exports.MOBILE_SAFARI_IMAGE_HEADERS = exports.CONNECTION_BROWSING_MODE_OPTIONS = exports.DEFAULT_CONNECTION_BROWSING_MODE = exports.MOBILE_SAFARI_USER_AGENT = exports.CONTENT_URL_REGEX = exports.NOVEL_URL_REGEX = exports.MANGA_URL_REGEX = exports.RATE_LIMIT_PER_SECOND = exports.DEFAULT_PAGE_SIZE = exports.FALLBACK_COVER_URL = exports.CLOUDFLARE_FALLBACK_URL = exports.ORIGIN_URL = exports.REFERER_URL = exports.CDN_STATIC_BASE = exports.SEARCH_ENDPOINT = exports.API_BASE = exports.BASE_URL = exports.SOURCE_VERSION = exports.SOURCE_NAME = exports.SOURCE_ID = void 0;
+      exports.normalizeConnectionBrowsingMode = normalizeConnectionBrowsingMode;
+      exports.getImageHeadersForMode = getImageHeadersForMode;
+      exports.getApiHeadersForMode = getApiHeadersForMode;
       exports.SOURCE_ID = "moe.atsu";
       exports.SOURCE_NAME = "Atsumaru";
-      exports.SOURCE_VERSION = 2.6;
+      exports.SOURCE_VERSION = 2.7;
       exports.BASE_URL = "https://atsu.moe";
       exports.API_BASE = "https://atsu.moe/api";
       exports.SEARCH_ENDPOINT = `${exports.BASE_URL}/collections/manga/documents/search`;
@@ -838,25 +841,93 @@ var SourcePackage = (() => {
       exports.MANGA_URL_REGEX = /^https?:\/\/(?:www\.)?atsu\.moe\/manga\/([^/?#]+)/i;
       exports.NOVEL_URL_REGEX = /^https?:\/\/(?:www\.)?atsu\.moe\/novel\/([^/?#]+)/i;
       exports.CONTENT_URL_REGEX = /^https?:\/\/(?:www\.)?atsu\.moe\/(manga|novel)\/([^/?#]+)/i;
-      exports.DEFAULT_HEADERS = Object.freeze({
+      exports.MOBILE_SAFARI_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Mobile/15E148 Safari/604.1";
+      exports.DEFAULT_CONNECTION_BROWSING_MODE = "mobile_safari";
+      exports.CONNECTION_BROWSING_MODE_OPTIONS = [
+        { id: "mobile_safari", title: "Mobile Safari Mimicry (Recommended)" },
+        { id: "standard_native", title: "Standard / Native" },
+        { id: "strict_browser", title: "Strict Browser" }
+      ];
+      exports.MOBILE_SAFARI_IMAGE_HEADERS = Object.freeze({
+        "User-Agent": exports.MOBILE_SAFARI_USER_AGENT,
+        Referer: exports.REFERER_URL,
+        Origin: exports.ORIGIN_URL,
+        Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9"
+      });
+      exports.MOBILE_SAFARI_API_HEADERS = Object.freeze({
+        "User-Agent": exports.MOBILE_SAFARI_USER_AGENT,
         Referer: exports.REFERER_URL,
         Origin: exports.ORIGIN_URL,
         Accept: "application/json, text/plain, */*",
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1"
+        "Accept-Language": "en-US,en;q=0.9"
       });
-      exports.IMAGE_HEADERS = Object.freeze({
+      exports.STANDARD_NATIVE_IMAGE_HEADERS = Object.freeze({
+        Referer: exports.REFERER_URL
+      });
+      exports.STANDARD_NATIVE_API_HEADERS = Object.freeze({
+        Referer: exports.REFERER_URL,
+        Accept: "application/json, text/plain, */*"
+      });
+      exports.STRICT_BROWSER_IMAGE_HEADERS = Object.freeze({
+        "User-Agent": exports.MOBILE_SAFARI_USER_AGENT,
         Referer: exports.REFERER_URL,
         Origin: exports.ORIGIN_URL,
-        Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
+        Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Sec-Fetch-Dest": "image",
+        "Sec-Fetch-Mode": "no-cors",
+        "Sec-Fetch-Site": "same-site",
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache"
       });
-      exports.WEBP_ACCEPT_HEADER = "image/webp,image/apng,image/*,*/*;q=0.8";
-      exports.PAGE_IMAGE_HEADERS = Object.freeze({
+      exports.STRICT_BROWSER_API_HEADERS = Object.freeze({
+        "User-Agent": exports.MOBILE_SAFARI_USER_AGENT,
         Referer: exports.REFERER_URL,
-        Origin: exports.ORIGIN_URL
+        Origin: exports.ORIGIN_URL,
+        Accept: "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin",
+        "Cache-Control": "no-cache"
       });
+      function normalizeConnectionBrowsingMode(raw) {
+        if (raw === "standard_native" || raw === "strict_browser" || raw === "mobile_safari") {
+          return raw;
+        }
+        return exports.DEFAULT_CONNECTION_BROWSING_MODE;
+      }
+      function getImageHeadersForMode(mode) {
+        switch (normalizeConnectionBrowsingMode(mode)) {
+          case "standard_native":
+            return { ...exports.STANDARD_NATIVE_IMAGE_HEADERS };
+          case "strict_browser":
+            return { ...exports.STRICT_BROWSER_IMAGE_HEADERS };
+          case "mobile_safari":
+          default:
+            return { ...exports.MOBILE_SAFARI_IMAGE_HEADERS };
+        }
+      }
+      function getApiHeadersForMode(mode) {
+        switch (normalizeConnectionBrowsingMode(mode)) {
+          case "standard_native":
+            return { ...exports.STANDARD_NATIVE_API_HEADERS };
+          case "strict_browser":
+            return { ...exports.STRICT_BROWSER_API_HEADERS };
+          case "mobile_safari":
+          default:
+            return { ...exports.MOBILE_SAFARI_API_HEADERS };
+        }
+      }
+      exports.STANDARD_HEADERS = exports.MOBILE_SAFARI_IMAGE_HEADERS;
+      exports.DEFAULT_HEADERS = exports.MOBILE_SAFARI_API_HEADERS;
+      exports.IMAGE_HEADERS = exports.MOBILE_SAFARI_IMAGE_HEADERS;
+      exports.WEBP_ACCEPT_HEADER = "image/webp,image/apng,image/*,*/*;q=0.8";
+      exports.PAGE_IMAGE_HEADERS = exports.MOBILE_SAFARI_IMAGE_HEADERS;
       exports.PREF_KEYS = {
         IMAGE_FORMAT: "atsu_pref_image_format",
+        CONNECTION_BROWSING_MODE: "connection_browsing_mode",
         DEDUPLICATE_CHAPTERS: "atsu_pref_deduplicate_chapters",
         SCANLATOR_WHITELIST: "atsu_pref_scanlator_whitelist",
         SHOW_NSFW: "atsu_pref_show_nsfw",
@@ -1048,6 +1119,8 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
+      exports.PreferenceType = exports.normalizeConnectionBrowsingMode = exports.getImageHeadersForMode = exports.getApiHeadersForMode = void 0;
+      exports.invalidatePreferencesCache = invalidatePreferencesCache;
       exports.hasNsfwRating = hasNsfwRating;
       exports.parseStringList = parseStringList;
       exports.parseScanlatorWhitelist = parseScanlatorWhitelist;
@@ -1055,12 +1128,33 @@ var SourcePackage = (() => {
       exports.normalizeFormatsList = normalizeFormatsList;
       exports.getUserPreferences = getUserPreferences;
       exports.getImageFormatPreference = getImageFormatPreference;
+      exports.getConnectionBrowsingMode = getConnectionBrowsingMode;
       exports.getShowNsfwPreference = getShowNsfwPreference;
       exports.buildSettingsForm = buildSettingsForm;
       exports.updateUserPreferences = updateUserPreferences;
       var toolchain_1 = require_dist();
       var constants_js_1 = require_constants();
+      Object.defineProperty(exports, "getApiHeadersForMode", { enumerable: true, get: function() {
+        return constants_js_1.getApiHeadersForMode;
+      } });
+      Object.defineProperty(exports, "getImageHeadersForMode", { enumerable: true, get: function() {
+        return constants_js_1.getImageHeadersForMode;
+      } });
+      Object.defineProperty(exports, "normalizeConnectionBrowsingMode", { enumerable: true, get: function() {
+        return constants_js_1.normalizeConnectionBrowsingMode;
+      } });
+      var PreferenceType;
+      (function(PreferenceType2) {
+        PreferenceType2["SELECT"] = "picker";
+        PreferenceType2["MULTI_SELECT"] = "select";
+        PreferenceType2["TOGGLE"] = "toggle";
+        PreferenceType2["TEXT"] = "textfield";
+      })(PreferenceType || (exports.PreferenceType = PreferenceType = {}));
       var UI_IMAGE_FORMAT_OPTIONS = constants_js_1.IMAGE_FORMAT_OPTIONS.map((opt) => ({
+        id: opt.id,
+        title: opt.title
+      }));
+      var UI_CONNECTION_BROWSING_MODE_OPTIONS = constants_js_1.CONNECTION_BROWSING_MODE_OPTIONS.map((opt) => ({
         id: opt.id,
         title: opt.title
       }));
@@ -1082,6 +1176,7 @@ var SourcePackage = (() => {
       }));
       var memoryPreferences = {
         imageFormat: "webp",
+        connectionBrowsingMode: constants_js_1.DEFAULT_CONNECTION_BROWSING_MODE,
         deduplicateChapters: true,
         scanlatorWhitelist: ["Asura", "Official"],
         showNsfw: false,
@@ -1092,6 +1187,10 @@ var SourcePackage = (() => {
       };
       var isHydrated = false;
       var inflightHydration = null;
+      function invalidatePreferencesCache() {
+        isHydrated = false;
+        inflightHydration = null;
+      }
       function hasObjectStore() {
         return typeof ObjectStore !== "undefined" && ObjectStore !== null;
       }
@@ -1238,14 +1337,15 @@ var SourcePackage = (() => {
         return Array.from(unique);
       }
       async function hydratePreferencesFromStore() {
-        var _a;
+        var _a, _b;
         if (!hasObjectStore()) {
           isHydrated = true;
           return memoryPreferences;
         }
         try {
-          const [storedFormat, storedDedup, storedWhitelist, storedRatings, storedLegacyNsfw, storedExcludedGenres, storedExcludedTags, storedEnabledFormats] = await Promise.all([
+          const [storedFormat, storedBrowsingMode, storedDedup, storedWhitelist, storedRatings, storedLegacyNsfw, storedExcludedGenres, storedExcludedTags, storedEnabledFormats] = await Promise.all([
             ObjectStore.string(constants_js_1.PREF_KEYS.IMAGE_FORMAT).catch(() => null),
+            ObjectStore.string(constants_js_1.PREF_KEYS.CONNECTION_BROWSING_MODE).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.DEDUPLICATE_CHAPTERS).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.SCANLATOR_WHITELIST).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.CONTENT_RATINGS).catch(() => null),
@@ -1255,6 +1355,7 @@ var SourcePackage = (() => {
             ObjectStore.get(constants_js_1.PREF_KEYS.ENABLED_FORMATS).catch(() => null)
           ]);
           const imageFormat = storedFormat === "webp" || storedFormat === "original" ? storedFormat : memoryPreferences.imageFormat;
+          const connectionBrowsingMode = storedBrowsingMode !== null && storedBrowsingMode !== void 0 ? (0, constants_js_1.normalizeConnectionBrowsingMode)(storedBrowsingMode) : (_a = memoryPreferences.connectionBrowsingMode) != null ? _a : constants_js_1.DEFAULT_CONNECTION_BROWSING_MODE;
           let deduplicateChapters = memoryPreferences.deduplicateChapters;
           if (typeof storedDedup === "boolean") {
             deduplicateChapters = storedDedup;
@@ -1276,7 +1377,7 @@ var SourcePackage = (() => {
           }
           const excludedGenres = storedExcludedGenres !== null && storedExcludedGenres !== void 0 ? parseStringList(storedExcludedGenres) : memoryPreferences.excludedGenres;
           const excludedTags = storedExcludedTags !== null && storedExcludedTags !== void 0 ? parseStringList(storedExcludedTags) : memoryPreferences.excludedTags;
-          let enabledFormats = (_a = memoryPreferences.enabledFormats) != null ? _a : [...constants_js_1.DEFAULT_ENABLED_FORMATS];
+          let enabledFormats = (_b = memoryPreferences.enabledFormats) != null ? _b : [...constants_js_1.DEFAULT_ENABLED_FORMATS];
           if (storedEnabledFormats !== null && storedEnabledFormats !== void 0) {
             const parsedFormats = normalizeFormatsList(storedEnabledFormats);
             if (parsedFormats.length > 0) {
@@ -1286,6 +1387,7 @@ var SourcePackage = (() => {
           const showNsfw = hasNsfwRating(contentRatings);
           memoryPreferences = {
             imageFormat,
+            connectionBrowsingMode,
             deduplicateChapters,
             scanlatorWhitelist,
             showNsfw,
@@ -1314,18 +1416,32 @@ var SourcePackage = (() => {
       async function getImageFormatPreference() {
         return (await getUserPreferences()).imageFormat;
       }
+      async function getConnectionBrowsingMode() {
+        var _a;
+        return (_a = (await getUserPreferences()).connectionBrowsingMode) != null ? _a : constants_js_1.DEFAULT_CONNECTION_BROWSING_MODE;
+      }
       async function getShowNsfwPreference() {
         return (await getUserPreferences()).showNsfw;
       }
       async function buildSettingsForm() {
-        var _a;
+        var _a, _b;
         const prefs = await getUserPreferences();
         const whitelistString = prefs.scanlatorWhitelist.join(", ");
+        const currentBrowsingMode = (_a = prefs.connectionBrowsingMode) != null ? _a : constants_js_1.DEFAULT_CONNECTION_BROWSING_MODE;
+        const connectionBrowsingModePickerProps = {
+          id: constants_js_1.PREF_KEYS.CONNECTION_BROWSING_MODE,
+          title: "Connection / Browsing Mode",
+          description: "Controls the HTTP header fingerprint sent to Atsumaru and its image CDN to prevent Cloudflare edge throttling and connection resets.",
+          type: PreferenceType.SELECT,
+          options: UI_CONNECTION_BROWSING_MODE_OPTIONS,
+          currentValue: currentBrowsingMode,
+          defaultValue: constants_js_1.DEFAULT_CONNECTION_BROWSING_MODE
+        };
         return {
           sections: [
             {
               header: "Reader & Image Settings",
-              footer: "Select WebP to conserve bandwidth and battery, or Original / AVIF for maximum image resolution.",
+              footer: "Select WebP to conserve bandwidth and battery, or Original / AVIF for maximum image resolution. Controls the HTTP header fingerprint sent to Atsumaru and its image CDN to prevent Cloudflare edge throttling and connection resets.",
               views: [
                 (0, toolchain_1.UIPicker)({
                   id: constants_js_1.PREF_KEYS.IMAGE_FORMAT,
@@ -1333,7 +1449,8 @@ var SourcePackage = (() => {
                   options: UI_IMAGE_FORMAT_OPTIONS,
                   currentValue: prefs.imageFormat,
                   defaultValue: "webp"
-                })
+                }),
+                (0, toolchain_1.UIPicker)(connectionBrowsingModePickerProps)
               ]
             },
             {
@@ -1405,7 +1522,7 @@ var SourcePackage = (() => {
                   options: UI_FORMAT_PREFERENCE_OPTIONS,
                   exclude: false,
                   currentValue: {
-                    include: (_a = prefs.enabledFormats) != null ? _a : [...constants_js_1.DEFAULT_ENABLED_FORMATS],
+                    include: (_b = prefs.enabledFormats) != null ? _b : [...constants_js_1.DEFAULT_ENABLED_FORMATS],
                     exclude: []
                   },
                   defaultValue: {
@@ -1419,11 +1536,15 @@ var SourcePackage = (() => {
         };
       }
       async function updateUserPreferences(data) {
-        var _a;
+        var _a, _b;
         if (!isRecord(data)) {
           return;
         }
-        let { imageFormat, deduplicateChapters, scanlatorWhitelist, showNsfw, contentRatings, excludedGenres, excludedTags, enabledFormats } = memoryPreferences;
+        invalidatePreferencesCache();
+        let { imageFormat, connectionBrowsingMode, deduplicateChapters, scanlatorWhitelist, showNsfw, contentRatings, excludedGenres, excludedTags, enabledFormats } = memoryPreferences;
+        if (!connectionBrowsingMode) {
+          connectionBrowsingMode = constants_js_1.DEFAULT_CONNECTION_BROWSING_MODE;
+        }
         if (!enabledFormats || enabledFormats.length === 0) {
           enabledFormats = [...constants_js_1.DEFAULT_ENABLED_FORMATS];
         }
@@ -1434,6 +1555,14 @@ var SourcePackage = (() => {
           imageFormat = rawFormat === "original" ? "original" : "webp";
           if (storeAvailable) {
             writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.IMAGE_FORMAT, imageFormat).catch(() => {
+            }));
+          }
+        }
+        const rawBrowsingMode = (_a = data[constants_js_1.PREF_KEYS.CONNECTION_BROWSING_MODE]) != null ? _a : data["atsu_pref_connection_browsing_mode"];
+        if (typeof rawBrowsingMode === "string") {
+          connectionBrowsingMode = (0, constants_js_1.normalizeConnectionBrowsingMode)(rawBrowsingMode);
+          if (storeAvailable) {
+            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.CONNECTION_BROWSING_MODE, connectionBrowsingMode).catch(() => {
             }));
           }
         }
@@ -1491,7 +1620,7 @@ var SourcePackage = (() => {
             }));
           }
         }
-        const rawEnabledFormats = (_a = data[constants_js_1.PREF_KEYS.ENABLED_FORMATS]) != null ? _a : data["atsu_pref_formats"];
+        const rawEnabledFormats = (_b = data[constants_js_1.PREF_KEYS.ENABLED_FORMATS]) != null ? _b : data["atsu_pref_formats"];
         if (rawEnabledFormats !== void 0 && rawEnabledFormats !== null) {
           const parsedFormats = normalizeFormatsList(rawEnabledFormats);
           enabledFormats = parsedFormats.length > 0 ? parsedFormats : [...constants_js_1.DEFAULT_ENABLED_FORMATS];
@@ -1502,6 +1631,7 @@ var SourcePackage = (() => {
         }
         memoryPreferences = {
           imageFormat,
+          connectionBrowsingMode,
           deduplicateChapters,
           scanlatorWhitelist,
           showNsfw,
@@ -2559,11 +2689,10 @@ var SourcePackage = (() => {
           }
           builder.addRequestInterceptor(async (request) => {
             var _a;
+            const mode = await (0, preferences_js_1.getConnectionBrowsingMode)();
             request.headers = {
-              ...constants_js_1.DEFAULT_HEADERS,
               ...(_a = request.headers) != null ? _a : {},
-              Referer: constants_js_1.REFERER_URL,
-              Origin: constants_js_1.ORIGIN_URL
+              ...(0, constants_js_1.getApiHeadersForMode)(mode)
             };
             return request;
           });
@@ -2588,11 +2717,13 @@ var SourcePackage = (() => {
               }
             }
           }
+          const mode = await (0, preferences_js_1.getConnectionBrowsingMode)();
+          const apiHeaders = (0, constants_js_1.getApiHeadersForMode)(mode);
           let response;
           try {
             response = await this.client.get(url, {
               params: cleanParams,
-              headers: constants_js_1.DEFAULT_HEADERS
+              headers: apiHeaders
             });
           } catch (error) {
             if (error instanceof CloudflareError) {
@@ -3200,13 +3331,15 @@ var SourcePackage = (() => {
           if (!cleanChapterId) {
             throw new Error("Chapter ID cannot be empty.");
           }
-          const [imageFormat, response] = await Promise.all([
-            (0, preferences_js_1.getImageFormatPreference)(),
+          const [prefs, response] = await Promise.all([
+            (0, preferences_js_1.getUserPreferences)(),
             this.getJson(`${constants_js_1.API_BASE}/read/chapter`, {
               mangaId: cleanMangaId,
               chapterId: cleanChapterId
             })
           ]);
+          const imageFormat = prefs.imageFormat;
+          const pageHeaders = (0, constants_js_1.getImageHeadersForMode)(prefs.connectionBrowsingMode);
           const rawPages = (_a = response == null ? void 0 : response.readChapter) == null ? void 0 : _a.pages;
           if (!Array.isArray(rawPages) || rawPages.length === 0) {
             throw new Error(`No page images returned for manga "${cleanMangaId}" chapter "${cleanChapterId}".`);
@@ -3221,7 +3354,7 @@ var SourcePackage = (() => {
             const imageUrl = resolveImageUrl(page.image, imageFormat, constants_js_1.FALLBACK_COVER_URL);
             result[i] = {
               url: imageUrl,
-              headers: constants_js_1.PAGE_IMAGE_HEADERS,
+              headers: pageHeaders,
               context: {
                 pageId: page.id,
                 pageNumber: page.number,
@@ -3234,21 +3367,23 @@ var SourcePackage = (() => {
           return result;
         }
         /**
-         * Attaches `Referer: https://atsu.moe/`, `Origin: https://atsu.moe`, and image quality
-         * `Accept` headers to outgoing image requests using memoized image format preference.
+         * Resolves image request headers dynamically according to the active Connection / Browsing Mode
+         * preference, preserving full AVIF/WebP image URLs without downgrading.
          */
-        async configureImageRequest(request) {
-          var _a;
-          const imageFormat = await (0, preferences_js_1.getImageFormatPreference)();
-          const acceptHeader = imageFormat === "webp" ? constants_js_1.WEBP_ACCEPT_HEADER : constants_js_1.IMAGE_HEADERS.Accept;
-          request.headers = {
-            ...constants_js_1.IMAGE_HEADERS,
-            ...(_a = request.headers) != null ? _a : {},
-            Referer: constants_js_1.REFERER_URL,
-            Origin: constants_js_1.ORIGIN_URL,
-            Accept: acceptHeader
+        async configureImageRequest(requestOrUrl) {
+          const mode = await (0, preferences_js_1.getConnectionBrowsingMode)();
+          const modeHeaders = (0, constants_js_1.getImageHeadersForMode)(mode);
+          if (typeof requestOrUrl === "string") {
+            return {
+              url: requestOrUrl,
+              headers: modeHeaders
+            };
+          }
+          return {
+            ...requestOrUrl,
+            url: requestOrUrl.url,
+            headers: modeHeaders
           };
-          return request;
         }
       };
       exports.AtsuApiClient = AtsuApiClient;
@@ -3477,7 +3612,7 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.Target = exports.getItemEffectiveFormat = void 0;
+      exports.Target = exports.invalidatePreferencesCache = exports.getConnectionBrowsingMode = exports.getImageHeadersForMode = exports.getApiHeadersForMode = exports.getItemEffectiveFormat = void 0;
       var toolchain_1 = require_dist();
       var api_js_1 = require_api();
       var constants_js_1 = require_constants();
@@ -3508,7 +3643,8 @@ var SourcePackage = (() => {
       };
       var STATIC_CONFIGURATION = Object.freeze({
         imageReferer: constants_js_1.REFERER_URL,
-        cloudflareResolutionURL: constants_js_1.CLOUDFLARE_FALLBACK_URL
+        cloudflareResolutionURL: constants_js_1.CLOUDFLARE_FALLBACK_URL,
+        standardHeaders: constants_js_1.STANDARD_HEADERS
       });
       var SPOTLIGHT_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: DIRECTORY_FEED_KEYS.POPULAR_DAILY }, "Spotlight & Trending");
       var HOT_UPDATES_DESTINATION = (0, toolchain_1.ItemListDestination)({ key: DIRECTORY_FEED_KEYS.HOT_UPDATES }, "Hot Updates");
@@ -3741,19 +3877,36 @@ var SourcePackage = (() => {
           __publicField(this, "info", _Target.info);
           __publicField(this, "api");
           __publicField(this, "getItemEffectiveFormat", api_js_1.getItemEffectiveFormat);
+          __publicField(this, "getImageHeadersForMode", constants_js_1.getImageHeadersForMode);
+          __publicField(this, "getApiHeadersForMode", constants_js_1.getApiHeadersForMode);
+          __publicField(this, "getConnectionBrowsingMode", preferences_js_1.getConnectionBrowsingMode);
+          __publicField(this, "invalidatePreferencesCache", preferences_js_1.invalidatePreferencesCache);
           this.api = api instanceof api_js_1.AtsuApiClient ? api : new api_js_1.AtsuApiClient();
         }
         /**
-         * Provides source-level configuration including imageReferer and cloudflareResolutionURL.
+         * Provides source-level configuration including imageReferer, cloudflareResolutionURL, and standardHeaders.
          */
         getConfiguration() {
           return STATIC_CONFIGURATION;
         }
         /**
-         * Intercepts outgoing image requests to attach `Referer` and `Origin` headers.
+         * Intercepts outgoing image requests to dynamically inject headers for the active Connection / Browsing Mode.
          */
-        async willRequestImage(request) {
-          return this.api.configureImageRequest(request);
+        async willRequestImage(requestOrUrl) {
+          const url = typeof requestOrUrl === "string" ? requestOrUrl : requestOrUrl.url;
+          const mode = await (0, preferences_js_1.getConnectionBrowsingMode)();
+          const headers = (0, constants_js_1.getImageHeadersForMode)(mode);
+          if (typeof requestOrUrl === "string") {
+            return {
+              url,
+              headers
+            };
+          }
+          return {
+            ...requestOrUrl,
+            url,
+            headers
+          };
         }
         // =========================================================================
         // HomeProvider
@@ -3939,13 +4092,31 @@ var SourcePackage = (() => {
         languages: ["en"]
       });
       __publicField(_Target, "getItemEffectiveFormat", api_js_1.getItemEffectiveFormat);
+      __publicField(_Target, "getImageHeadersForMode", constants_js_1.getImageHeadersForMode);
+      __publicField(_Target, "getApiHeadersForMode", constants_js_1.getApiHeadersForMode);
+      __publicField(_Target, "getConnectionBrowsingMode", preferences_js_1.getConnectionBrowsingMode);
+      __publicField(_Target, "invalidatePreferencesCache", preferences_js_1.invalidatePreferencesCache);
       var Target = _Target;
       exports.default = Target;
       exports.Target = Target;
-      Target.info.version = 2.6;
+      Target.info.version = 2.7;
       var api_js_2 = require_api();
       Object.defineProperty(exports, "getItemEffectiveFormat", { enumerable: true, get: function() {
         return api_js_2.getItemEffectiveFormat;
+      } });
+      var constants_js_2 = require_constants();
+      Object.defineProperty(exports, "getApiHeadersForMode", { enumerable: true, get: function() {
+        return constants_js_2.getApiHeadersForMode;
+      } });
+      Object.defineProperty(exports, "getImageHeadersForMode", { enumerable: true, get: function() {
+        return constants_js_2.getImageHeadersForMode;
+      } });
+      var preferences_js_2 = require_preferences();
+      Object.defineProperty(exports, "getConnectionBrowsingMode", { enumerable: true, get: function() {
+        return preferences_js_2.getConnectionBrowsingMode;
+      } });
+      Object.defineProperty(exports, "invalidatePreferencesCache", { enumerable: true, get: function() {
+        return preferences_js_2.invalidatePreferencesCache;
       } });
     }
   });
@@ -3975,7 +4146,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_moe();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "moe.atsu", "name": "Atsumaru", "version": 2.6, "website": "https://atsu.moe", "rating": 1, "thumbnail": "https://atsu.moe/favicon.ico", "languages": ["en"] };
+      exports.SourceMetadata = { "id": "moe.atsu", "name": "Atsumaru", "version": 2.7, "website": "https://atsu.moe", "rating": 1, "thumbnail": "https://atsu.moe/favicon.ico", "languages": ["en"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;
