@@ -966,6 +966,7 @@ var SourcePackage = (() => {
         COMPLETED_NOVELS: "completed-novel"
       };
       exports.PREF_KEYS = {
+        STYLE_CHAPTER_HEADER: "style_chapter_header",
         SANITIZE_ADS: "sanitize_ads",
         FORMAT_TLN: "format_tln",
         NORMALIZE_SPACING: "normalize_spacing",
@@ -1396,6 +1397,7 @@ var SourcePackage = (() => {
         ]
       ]));
       var memoryPreferences = {
+        styleChapterHeader: true,
         sanitizeAds: true,
         formatTln: true,
         normalizeSpacing: true,
@@ -1546,7 +1548,8 @@ var SourcePackage = (() => {
           return memoryPreferences;
         }
         try {
-          const [storedSanitizeAds, storedFormatTln, storedNormalizeSpacing, storedSplitDialogue, storedFormatCallouts, storedSmartTypography, storedExcludedGenres, storedCustomBlacklist] = await Promise.all([
+          const [storedStyleChapterHeader, storedSanitizeAds, storedFormatTln, storedNormalizeSpacing, storedSplitDialogue, storedFormatCallouts, storedSmartTypography, storedExcludedGenres, storedCustomBlacklist] = await Promise.all([
+            ObjectStore.get(constants_js_1.PREF_KEYS.STYLE_CHAPTER_HEADER).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.SANITIZE_ADS).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.FORMAT_TLN).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.NORMALIZE_SPACING).catch(() => null),
@@ -1556,6 +1559,7 @@ var SourcePackage = (() => {
             ObjectStore.get(constants_js_1.PREF_KEYS.EXCLUDED_GENRES).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST).catch(() => null)
           ]);
+          const styleChapterHeader = storedStyleChapterHeader !== null && storedStyleChapterHeader !== void 0 ? parseBooleanPref(storedStyleChapterHeader, memoryPreferences.styleChapterHeader) : memoryPreferences.styleChapterHeader;
           const sanitizeAds = storedSanitizeAds !== null && storedSanitizeAds !== void 0 ? parseBooleanPref(storedSanitizeAds, memoryPreferences.sanitizeAds) : memoryPreferences.sanitizeAds;
           const formatTln = storedFormatTln !== null && storedFormatTln !== void 0 ? parseBooleanPref(storedFormatTln, memoryPreferences.formatTln) : memoryPreferences.formatTln;
           const normalizeSpacing = storedNormalizeSpacing !== null && storedNormalizeSpacing !== void 0 ? parseBooleanPref(storedNormalizeSpacing, memoryPreferences.normalizeSpacing) : memoryPreferences.normalizeSpacing;
@@ -1565,6 +1569,7 @@ var SourcePackage = (() => {
           const excludedGenres = storedExcludedGenres !== null && storedExcludedGenres !== void 0 ? parseStringList(storedExcludedGenres) : memoryPreferences.excludedGenres;
           const customBlacklist = storedCustomBlacklist !== null && storedCustomBlacklist !== void 0 ? parseStringList(storedCustomBlacklist) : memoryPreferences.customBlacklist;
           memoryPreferences = {
+            styleChapterHeader,
             sanitizeAds,
             formatTln,
             normalizeSpacing,
@@ -1736,8 +1741,14 @@ var SourcePackage = (() => {
           sections: [
             {
               header: "Reader Layout & Typography",
-              footer: "Auto-Split Multi-Speaker Dialogue breaks dense wall-of-text paragraphs into separate paragraphs. Clean Paragraph Structure & Headers converts line breaks into proper paragraphs, removes blank spacer lines, and strips duplicate chapter headers. Format System Windows & Stat Blocks highlights [System Alerts], <Telepathy> lines, and stat screens in distinct callout blocks. Book-Grade Quotes & Scene Dividers converts straight quotes to curly quotes, formats em-dashes, and cleans up ASCII scene breaks.",
+              footer: "Bold & Separate Chapter Titles separates the chapter title from the opening paragraph and renders it as a bold heading with a divider. Auto-Split Multi-Speaker Dialogue breaks dense wall-of-text paragraphs containing multiple spoken lines into separate paragraphs. Discrete Paragraph Blocks & Spacing converts line breaks into distinct HTML paragraphs for cleaner spacing and more accurate page resume. Format System Windows & Stat Blocks highlights [System Alerts], <Telepathy> lines, and stat screens in distinct callout blocks. Book-Grade Quotes & Scene Dividers converts straight quotes to curly quotes, formats em-dashes, and cleans up ASCII scene breaks.",
               views: [
+                (0, toolchain_1.UIToggle)({
+                  id: constants_js_1.PREF_KEYS.STYLE_CHAPTER_HEADER,
+                  title: "Bold & Separate Chapter Titles",
+                  currentValue: prefs.styleChapterHeader,
+                  defaultValue: true
+                }),
                 (0, toolchain_1.UIToggle)({
                   id: constants_js_1.PREF_KEYS.SPLIT_DIALOGUE,
                   title: "Auto-Split Multi-Speaker Dialogue",
@@ -1746,7 +1757,7 @@ var SourcePackage = (() => {
                 }),
                 (0, toolchain_1.UIToggle)({
                   id: constants_js_1.PREF_KEYS.NORMALIZE_SPACING,
-                  title: "Clean Paragraph Structure & Headers",
+                  title: "Discrete Paragraph Blocks & Spacing",
                   currentValue: prefs.normalizeSpacing,
                   defaultValue: true
                 }),
@@ -1817,7 +1828,7 @@ var SourcePackage = (() => {
         if (!isRecord(data)) {
           return;
         }
-        let { sanitizeAds, formatTln, normalizeSpacing, splitDialogue, formatCallouts, smartTypography, excludedGenres, customBlacklist } = memoryPreferences;
+        let { styleChapterHeader, sanitizeAds, formatTln, normalizeSpacing, splitDialogue, formatCallouts, smartTypography, excludedGenres, customBlacklist } = memoryPreferences;
         const storeAvailable = hasObjectStore();
         const writeTasks = [];
         const applyBoolPref = (key, current) => {
@@ -1831,6 +1842,7 @@ var SourcePackage = (() => {
           }
           return next;
         };
+        styleChapterHeader = applyBoolPref(constants_js_1.PREF_KEYS.STYLE_CHAPTER_HEADER, styleChapterHeader);
         sanitizeAds = applyBoolPref(constants_js_1.PREF_KEYS.SANITIZE_ADS, sanitizeAds);
         formatTln = applyBoolPref(constants_js_1.PREF_KEYS.FORMAT_TLN, formatTln);
         normalizeSpacing = applyBoolPref(constants_js_1.PREF_KEYS.NORMALIZE_SPACING, normalizeSpacing);
@@ -1852,6 +1864,7 @@ var SourcePackage = (() => {
           }
         }
         memoryPreferences = {
+          styleChapterHeader,
           sanitizeAds,
           formatTln,
           normalizeSpacing,
@@ -2951,6 +2964,7 @@ var SourcePackage = (() => {
       exports.formatTranslatorNotes = formatTranslatorNotes;
       exports.stripAggregatorWatermarks = stripAggregatorWatermarks;
       exports.escapeNonHtmlBrackets = escapeNonHtmlBrackets;
+      exports.extractPageChapterTitle = extractPageChapterTitle;
       exports.applySmartTypographyToHtml = applySmartTypographyToHtml;
       exports.sanitizeChapterHtml = sanitizeChapterHtml;
       var toolchain_1 = require_dist();
@@ -2976,6 +2990,107 @@ var SourcePackage = (() => {
       var HORIZONTAL_SPACE_COLLAPSE_REGEX = /[ \t]{2,}/g;
       var STANDALONE_NAV_LEAK_REGEX = /^(?:prev(?:ious)?\s+chapter|next\s+chapter|table\s+of\s+contents)$/i;
       var DUPLICATE_CHAPTER_HEADER_REGEX = /^(?:(?:volume|vol\.?|book)\s+\d+[\s,:;\-–—]*)?(?:(?:chapter|ch\.?|episode|ep\.?)\s*\d+(?:[.,]\d+)?(?:\s*[:\-–—|]\s*\S.*)?|c\.?\s*\d+(?:\.\d+)?\s*[:\-–—]\s*\S.*)$/i;
+      var LEADING_CHAPTER_TITLE_REGEX = /^(?:(?:volume|vol\.?|book)\s+\d+[\s,:;\-–—]*)?(?:chapter|ch\.?|c\.?)\s*\d+(?:,\d{3})*(?:\.\d+)?/i;
+      var LEADING_CHAPTER_TITLE_WITH_SEP_REGEX = /^((?:(?:volume|vol\.?|book)\s+\d+[\s,:;\-–—]*)?(?:chapter|ch\.?|c\.?)\s*\d+(?:,\d{3})*(?:\.\d+)?)(?:\s*([:\-–—|])\s*|\s+)([\s\S]*)$/i;
+      var LEADING_INLINE_TAG_HEADER_REGEX = /^<(?:b|strong|em|i|span)\b[^>]*>([\s\S]*?)<\/(?:b|strong|em|i|span)>\s*([\s\S]*)$/i;
+      var CHAPTER_TITLE_MARKERS = [
+        'class="chapter-title"',
+        "class='chapter-title'",
+        'class="chapter-title ',
+        "class='chapter-title "
+      ];
+      var CHAPTER_TITLE_CLASS_REGEX = /<([a-z0-9]+)\b[^>]*\bclass\s*=\s*(?:"[^"]*\bchapter-title\b[^"]*"|'[^']*\bchapter-title\b[^']*')[^>]*>/i;
+      var TITLE_ATTR_REGEX = /\btitle\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
+      var SENTENCE_END_BEFORE_PROSE_REGEX = /([.!?…])(["”'’]?)\s+([A-Z“"'‘\[&])/g;
+      var ABBREV_END_REGEX = /\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|Ch|Vol|No|Ep|Pt)\.$/i;
+      var WORD_SCAN_REGEX = /\S+/g;
+      var STRAY_AMP_REGEX = /&(?!(?:amp|lt|gt|quot|apos|nbsp|#\d+|#x[0-9a-fA-F]+);)/gi;
+      var TITLE_CONNECTORS_SET = /* @__PURE__ */ new Set([
+        "of",
+        "the",
+        "a",
+        "an",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "and",
+        "or",
+        "nor",
+        "but",
+        "by",
+        "with",
+        "from",
+        "as",
+        "into",
+        "onto",
+        "upon",
+        "vs",
+        "v"
+      ]);
+      var NON_TITLE_PROSE_STARTERS_SET = /* @__PURE__ */ new Set([
+        "of",
+        "was",
+        "is",
+        "are",
+        "were",
+        "had",
+        "has",
+        "have",
+        "will",
+        "would",
+        "could",
+        "should",
+        "shall",
+        "can",
+        "may",
+        "might",
+        "must",
+        "and",
+        "but",
+        "or",
+        "nor",
+        "so",
+        "yet",
+        "that",
+        "which",
+        "who",
+        "whom",
+        "whose",
+        "when",
+        "where",
+        "while",
+        "as",
+        "at",
+        "by",
+        "for",
+        "from",
+        "in",
+        "into",
+        "on",
+        "to",
+        "with",
+        "about",
+        "after",
+        "before",
+        "during",
+        "through",
+        "until",
+        "since",
+        "became",
+        "ended",
+        "began",
+        "started",
+        "continued",
+        "remained",
+        "turned",
+        "made",
+        "took",
+        "gave",
+        "went",
+        "came"
+      ]);
       var SCENE_BREAK_REGEX = /^(?:\*(?:\s*\*){2,}|-(?:\s*-){2,}|~(?:\s*~){2,}|=(?:\s*=){2,}|o0o|0o0)$/i;
       var CALLOUT_BRACKET_REGEX = /^\[[^\]]{3,160}\]$/;
       var CALLOUT_RAW_ANGLE_REGEX = /^<[^>]{2,160}>$/;
@@ -3990,6 +4105,277 @@ var SourcePackage = (() => {
       function isDuplicateChapterHeader(textOnly) {
         return textOnly.length <= 160 && DUPLICATE_CHAPTER_HEADER_REGEX.test(textOnly);
       }
+      function extractPageChapterTitle(html) {
+        var _a, _b;
+        if (!html || typeof html !== "string") {
+          return null;
+        }
+        let markerIdx = -1;
+        for (let i = 0; i < CHAPTER_TITLE_MARKERS.length; i++) {
+          const idx = html.indexOf(CHAPTER_TITLE_MARKERS[i]);
+          if (idx !== -1 && (markerIdx === -1 || idx < markerIdx)) {
+            markerIdx = idx;
+          }
+        }
+        if (markerIdx === -1) {
+          const rawIdx = html.indexOf("chapter-title");
+          if (rawIdx === -1) {
+            return null;
+          }
+          const windowStart = Math.max(0, rawIdx - 120);
+          const windowEnd = Math.min(html.length, rawIdx + 120);
+          const match = CHAPTER_TITLE_CLASS_REGEX.exec(html.slice(windowStart, windowEnd));
+          if (!match) {
+            return null;
+          }
+          markerIdx = windowStart + match.index;
+        }
+        const openTagStart = html.lastIndexOf("<", markerIdx);
+        const openTagEnd = html.indexOf(">", markerIdx);
+        if (openTagStart === -1 || openTagEnd === -1 || openTagEnd <= openTagStart) {
+          return null;
+        }
+        const openTagSlice = html.slice(openTagStart + 1, openTagEnd);
+        const spaceIdx = openTagSlice.search(/\s/);
+        const tagName = (spaceIdx === -1 ? openTagSlice : openTagSlice.slice(0, spaceIdx)).trim().toLowerCase();
+        if (!tagName) {
+          return null;
+        }
+        const closeTag = `</${tagName}>`;
+        const searchLimit = Math.min(html.length, openTagEnd + 1024);
+        let closeIdx = html.indexOf(closeTag, openTagEnd + 1);
+        if (closeIdx === -1 || closeIdx > searchLimit) {
+          closeIdx = html.slice(openTagEnd + 1, searchLimit).toLowerCase().indexOf(closeTag);
+          if (closeIdx !== -1) {
+            closeIdx += openTagEnd + 1;
+          }
+        }
+        let rawTitle = "";
+        if (closeIdx !== -1) {
+          rawTitle = html.slice(openTagEnd + 1, closeIdx).replace(STRIP_TAGS_REGEX, " ");
+        }
+        let decoded = (0, preferences_js_1.decodeHtmlEntities)(rawTitle);
+        if (!decoded) {
+          const attrMatch = TITLE_ATTR_REGEX.exec(openTagSlice);
+          const attrVal = (_b = (_a = attrMatch == null ? void 0 : attrMatch[1]) != null ? _a : attrMatch == null ? void 0 : attrMatch[2]) != null ? _b : "";
+          decoded = (0, preferences_js_1.decodeHtmlEntities)(attrVal);
+        }
+        if (!decoded || decoded.length > 160) {
+          return null;
+        }
+        return decoded;
+      }
+      function escapeChapterTitleText(title, isAlreadyEntitySafe, smartTypography) {
+        let escaped = isAlreadyEntitySafe ? title.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(STRAY_AMP_REGEX, "&amp;") : title.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        if (smartTypography) {
+          escaped = applySmartTypographyToHtml(escaped);
+        }
+        return escaped.trim();
+      }
+      function formatChapterHeadingHtml(titleText, isAlreadyEntitySafe, smartTypography) {
+        const safeTitle = escapeChapterTitleText(titleText, isAlreadyEntitySafe, smartTypography);
+        return `<h2><strong>${safeTitle}</strong></h2><hr />`;
+      }
+      function sliceHtmlFromTextOffset(block, textOffset) {
+        if (!block.includes("<")) {
+          return block.slice(textOffset).trim();
+        }
+        let pos = 0;
+        let visibleCount = 0;
+        const len = block.length;
+        let prevSpace = true;
+        while (pos < len && visibleCount < textOffset) {
+          const code = block.charCodeAt(pos);
+          if (code === 60) {
+            const closeIdx = block.indexOf(">", pos);
+            if (closeIdx === -1)
+              break;
+            pos = closeIdx + 1;
+            continue;
+          }
+          const isSpace = code === 32 || code === 9 || code === 10 || code === 13;
+          if (isSpace) {
+            if (!prevSpace) {
+              visibleCount++;
+              prevSpace = true;
+            }
+            pos++;
+          } else {
+            prevSpace = false;
+            visibleCount++;
+            pos++;
+          }
+        }
+        while (pos < len) {
+          const code = block.charCodeAt(pos);
+          if (code === 32 || code === 9 || code === 10 || code === 13) {
+            pos++;
+            continue;
+          }
+          if (code === 60 && block.charCodeAt(pos + 1) === 47) {
+            const closeIdx = block.indexOf(">", pos);
+            if (closeIdx !== -1) {
+              pos = closeIdx + 1;
+              continue;
+            }
+          }
+          break;
+        }
+        return block.slice(pos).trim();
+      }
+      function isLowercaseWord(word) {
+        for (let i = 0; i < word.length; i++) {
+          const ch = word.charAt(i);
+          if (ch >= "a" && ch <= "z")
+            return true;
+          if (ch >= "A" && ch <= "Z")
+            return false;
+          if (ch >= "0" && ch <= "9")
+            return false;
+        }
+        return false;
+      }
+      function stripEdgePunctuationLower(word) {
+        return word.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, "").toLowerCase();
+      }
+      function extractOrSplitLeadingChapterTitle(block, textOnly, fallbackTitle) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+        if (!LEADING_CHAPTER_TITLE_REGEX.test(textOnly)) {
+          return null;
+        }
+        const partsMatch = LEADING_CHAPTER_TITLE_WITH_SEP_REGEX.exec(textOnly);
+        if (!partsMatch) {
+          return {
+            titleText: textOnly.trim(),
+            remainderBlock: null
+          };
+        }
+        const prefix = ((_a = partsMatch[1]) != null ? _a : "").trim();
+        const sep = (_b = partsMatch[2]) != null ? _b : "";
+        const rest = ((_c = partsMatch[3]) != null ? _c : "").trim();
+        if (!rest) {
+          return {
+            titleText: prefix,
+            remainderBlock: null
+          };
+        }
+        const restStart = textOnly.indexOf(rest, prefix.length);
+        if (!sep) {
+          const firstWordMatch = /^\S+/.exec(rest);
+          const firstWord = (_d = firstWordMatch == null ? void 0 : firstWordMatch[0]) != null ? _d : "";
+          const firstWordBare = stripEdgePunctuationLower(firstWord);
+          if (rest.charAt(0) === "," || rest.charAt(0) === ";" || NON_TITLE_PROSE_STARTERS_SET.has(firstWordBare) || isLowercaseWord(firstWord)) {
+            return null;
+          }
+        }
+        if (block.charCodeAt(0) === 60) {
+          const inlineMatch = LEADING_INLINE_TAG_HEADER_REGEX.exec(block);
+          if (inlineMatch) {
+            const innerText = ((_e = inlineMatch[1]) != null ? _e : "").replace(STRIP_TAGS_REGEX, "").replace(ENTITIES_NBSP_REGEX, " ").trim();
+            const afterTag = ((_f = inlineMatch[2]) != null ? _f : "").trim();
+            if (innerText && innerText.length <= 140 && LEADING_CHAPTER_TITLE_REGEX.test(innerText)) {
+              return {
+                titleText: innerText,
+                remainderBlock: afterTag || null
+              };
+            }
+          }
+        }
+        if (fallbackTitle && textOnly.length > fallbackTitle.length && textOnly.toLowerCase().startsWith(fallbackTitle.toLowerCase())) {
+          const afterFallback = textOnly.slice(fallbackTitle.length);
+          const trimmedAfter = afterFallback.replace(/^[\s.:;\-–—|]+/, "").trim();
+          if (!trimmedAfter) {
+            return {
+              titleText: textOnly.slice(0, fallbackTitle.length).trim(),
+              remainderBlock: null
+            };
+          }
+          const splitOffset = textOnly.indexOf(trimmedAfter, fallbackTitle.length);
+          if (splitOffset !== -1) {
+            return {
+              titleText: textOnly.slice(0, fallbackTitle.length).trim(),
+              remainderBlock: sliceHtmlFromTextOffset(block, splitOffset)
+            };
+          }
+        }
+        SENTENCE_END_BEFORE_PROSE_REGEX.lastIndex = 0;
+        let sentMatch;
+        while ((sentMatch = SENTENCE_END_BEFORE_PROSE_REGEX.exec(rest)) !== null) {
+          const endPunct = (_g = sentMatch[1]) != null ? _g : "";
+          const endQuote = (_h = sentMatch[2]) != null ? _h : "";
+          const punctEndInRest = sentMatch.index + endPunct.length + endQuote.length;
+          if (restStart + punctEndInRest > 130) {
+            break;
+          }
+          const beforeBoundary = rest.slice(0, sentMatch.index + 1);
+          if (endPunct === "." && ABBREV_END_REGEX.test(beforeBoundary)) {
+            continue;
+          }
+          const nextCharInRest = sentMatch.index + sentMatch[0].length - ((_j = (_i = sentMatch[3]) == null ? void 0 : _i.length) != null ? _j : 1);
+          const titleEndInRest = endPunct === "." && !endQuote ? sentMatch.index : punctEndInRest;
+          const titleText = textOnly.slice(0, restStart + titleEndInRest).trim().replace(/[:\-–—|]+$/, "").trim();
+          return {
+            titleText: titleText || prefix,
+            remainderBlock: sliceHtmlFromTextOffset(block, restStart + nextCharInRest)
+          };
+        }
+        const quoteOrBracketMatch = /\s+(?=["“]|&lt;|\[)/.exec(rest);
+        if (quoteOrBracketMatch && restStart + quoteOrBracketMatch.index <= 125) {
+          const splitAt = restStart + quoteOrBracketMatch.index;
+          const nextStart = splitAt + quoteOrBracketMatch[0].length;
+          return {
+            titleText: textOnly.slice(0, splitAt).trim(),
+            remainderBlock: sliceHtmlFromTextOffset(block, nextStart)
+          };
+        }
+        const hasSentenceEnding = /[.!?…”"'’]$/.test(textOnly) || textOnly.endsWith("&gt;") || textOnly.length > 90;
+        if (hasSentenceEnding) {
+          const tokens = [];
+          WORD_SCAN_REGEX.lastIndex = 0;
+          let tokMatch;
+          while ((tokMatch = WORD_SCAN_REGEX.exec(rest)) !== null) {
+            const w = tokMatch[0];
+            tokens.push({
+              word: w,
+              bareLower: stripEdgePunctuationLower(w),
+              start: tokMatch.index,
+              end: tokMatch.index + w.length
+            });
+          }
+          for (let i = 0; i < tokens.length; i++) {
+            const tok = tokens[i];
+            if (isLowercaseWord(tok.word) && !TITLE_CONNECTORS_SET.has(tok.bareLower)) {
+              let starterIdx = i - 1;
+              while (starterIdx > 0 && TITLE_CONNECTORS_SET.has(tokens[starterIdx].bareLower)) {
+                starterIdx--;
+              }
+              if (starterIdx <= 0 && !sep) {
+                return null;
+              }
+              const splitOffsetInRest = starterIdx >= 0 ? tokens[starterIdx].start : 0;
+              if (restStart + splitOffsetInRest <= 130) {
+                const titleRaw = splitOffsetInRest === 0 ? prefix : textOnly.slice(0, restStart + splitOffsetInRest).trim();
+                const cleanHeading = titleRaw.replace(/[:\-–—|]+$/, "").trim();
+                return {
+                  titleText: cleanHeading || prefix,
+                  remainderBlock: sliceHtmlFromTextOffset(block, restStart + splitOffsetInRest)
+                };
+              }
+              break;
+            }
+          }
+        }
+        if (textOnly.length <= 140) {
+          return {
+            titleText: textOnly.trim(),
+            remainderBlock: null
+          };
+        }
+        return null;
+      }
+      function normalizeHeaderForDupCheck(text) {
+        return text.toLowerCase().replace(/\s+/g, " ").trim();
+      }
       function formatProseSegment(prose, initialPrevChar) {
         if (!prose) {
           return { formatted: prose, lastChar: initialPrevChar };
@@ -4088,12 +4474,14 @@ var SourcePackage = (() => {
         if (!rawHtml || typeof rawHtml !== "string") {
           return "<p>No chapter text available.</p>";
         }
+        const styleChapterHeader = (prefs == null ? void 0 : prefs.styleChapterHeader) !== false;
         const sanitizeAds = (prefs == null ? void 0 : prefs.sanitizeAds) !== false;
         const formatTln = (prefs == null ? void 0 : prefs.formatTln) !== false;
         const normalizeSpacing = (prefs == null ? void 0 : prefs.normalizeSpacing) !== false;
         const splitDialogue = (prefs == null ? void 0 : prefs.splitDialogue) !== false;
         const formatCallouts = (prefs == null ? void 0 : prefs.formatCallouts) !== false;
         const smartTypography = (prefs == null ? void 0 : prefs.smartTypography) !== false;
+        const fallbackChapterTitle = styleChapterHeader ? extractPageChapterTitle(rawHtml) : null;
         const rawFragment = extractChapterFragment(rawHtml);
         const withoutComments = rawFragment.replace(HTML_COMMENTS_REGEX, "");
         const escapedHtml = escapeNonHtmlBrackets(withoutComments);
@@ -4118,11 +4506,13 @@ var SourcePackage = (() => {
           const rawBlocks = bodyHtml.split(BLOCK_BOUNDARY_REGEX);
           const outputBlocks = [];
           let checkedLeadingHeader = false;
+          let checkedDuplicateSecond = false;
+          let extractedHeaderNorm = null;
           for (let i = 0, len = rawBlocks.length; i < len; i++) {
-            const block = (_b = rawBlocks[i]) == null ? void 0 : _b.replace(HORIZONTAL_SPACE_COLLAPSE_REGEX, " ").trim();
+            let block = (_b = rawBlocks[i]) == null ? void 0 : _b.replace(HORIZONTAL_SPACE_COLLAPSE_REGEX, " ").trim();
             if (!block)
               continue;
-            const textOnly = block.replace(STRIP_TAGS_REGEX, "").replace(ENTITIES_NBSP_REGEX, " ").trim();
+            let textOnly = block.replace(STRIP_TAGS_REGEX, "").replace(ENTITIES_NBSP_REGEX, " ").trim();
             if (!textOnly)
               continue;
             if (sanitizeAds && STANDALONE_NAV_LEAK_REGEX.test(textOnly)) {
@@ -4130,7 +4520,28 @@ var SourcePackage = (() => {
             }
             if (!checkedLeadingHeader) {
               checkedLeadingHeader = true;
-              if (isDuplicateChapterHeader(textOnly)) {
+              if (styleChapterHeader) {
+                const splitHeader = extractOrSplitLeadingChapterTitle(block, textOnly, fallbackChapterTitle);
+                if (splitHeader) {
+                  outputBlocks.push(formatChapterHeadingHtml(splitHeader.titleText, true, smartTypography));
+                  extractedHeaderNorm = normalizeHeaderForDupCheck(splitHeader.titleText);
+                  if (!splitHeader.remainderBlock) {
+                    continue;
+                  }
+                  block = splitHeader.remainderBlock.replace(HORIZONTAL_SPACE_COLLAPSE_REGEX, " ").trim();
+                  textOnly = block.replace(STRIP_TAGS_REGEX, "").replace(ENTITIES_NBSP_REGEX, " ").trim();
+                  if (!textOnly) {
+                    continue;
+                  }
+                  checkedDuplicateSecond = true;
+                } else if (fallbackChapterTitle) {
+                  outputBlocks.push(formatChapterHeadingHtml(fallbackChapterTitle, false, smartTypography));
+                  extractedHeaderNorm = normalizeHeaderForDupCheck(fallbackChapterTitle);
+                }
+              }
+            } else if (!checkedDuplicateSecond) {
+              checkedDuplicateSecond = true;
+              if (styleChapterHeader && extractedHeaderNorm && (normalizeHeaderForDupCheck(textOnly) === extractedHeaderNorm || isDuplicateChapterHeader(textOnly))) {
                 continue;
               }
             }
@@ -4150,7 +4561,7 @@ var SourcePackage = (() => {
               }
               const formattedSub = smartTypography ? applySmartTypographyToHtml(sub) : sub;
               if (formatCallouts && isCalloutBlock(subTextOnly)) {
-                outputBlocks.push(`<blockquote>${formattedSub}</blockquote>`);
+                outputBlocks.push(`<blockquote><p>${formattedSub}</p></blockquote>`);
               } else {
                 outputBlocks.push(`<p>${formattedSub}</p>`);
               }
@@ -4161,6 +4572,14 @@ var SourcePackage = (() => {
           bodyHtml = bodyHtml.replace(EMPTY_P_REGEX, "").trim();
           if (smartTypography) {
             bodyHtml = applySmartTypographyToHtml(bodyHtml);
+          }
+          if (styleChapterHeader && fallbackChapterTitle && bodyHtml) {
+            const leadingPlain = bodyHtml.slice(0, 200).replace(STRIP_TAGS_REGEX, "").trim();
+            if (!LEADING_CHAPTER_TITLE_REGEX.test(leadingPlain)) {
+              bodyHtml = `${formatChapterHeadingHtml(fallbackChapterTitle, false, smartTypography)}
+
+${bodyHtml}`;
+            }
           }
         }
         if (!bodyHtml) {
@@ -4448,7 +4867,7 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.Target = exports.stripAggregatorWatermarks = exports.sanitizeChapterHtml = exports.parseNovelDetail = exports.parseNovelCards = exports.parseChapterNumber = exports.parseAjaxChapterOptions = exports.normalizeTypographyAndEntities = exports.normalizeImageUrl = exports.mapChapterEntriesToChapters = exports.mapCardToItem = exports.isNovelAllowed = exports.formatTranslatorNotes = exports.filterAndMapNovelCards = exports.extractCoverFromElement = exports.extractChapterNumber = exports.escapeNonHtmlBrackets = exports.compileBlacklistContext = exports.cleanTitle = exports.cleanAndDeduplicateTitle = exports.canResolveNovelFullUrl = exports.applySmartTypographyToHtml = void 0;
+      exports.Target = exports.stripAggregatorWatermarks = exports.sanitizeChapterHtml = exports.parseNovelDetail = exports.parseNovelCards = exports.parseChapterNumber = exports.parseAjaxChapterOptions = exports.normalizeTypographyAndEntities = exports.normalizeImageUrl = exports.mapChapterEntriesToChapters = exports.mapCardToItem = exports.isNovelAllowed = exports.formatTranslatorNotes = exports.filterAndMapNovelCards = exports.extractPageChapterTitle = exports.extractCoverFromElement = exports.extractChapterNumber = exports.escapeNonHtmlBrackets = exports.compileBlacklistContext = exports.cleanTitle = exports.cleanAndDeduplicateTitle = exports.canResolveNovelFullUrl = exports.applySmartTypographyToHtml = void 0;
       var toolchain_1 = require_dist();
       var api_js_1 = require_api();
       Object.defineProperty(exports, "canResolveNovelFullUrl", { enumerable: true, get: function() {
@@ -4484,6 +4903,9 @@ var SourcePackage = (() => {
       } });
       Object.defineProperty(exports, "extractCoverFromElement", { enumerable: true, get: function() {
         return scraper_js_1.extractCoverFromElement;
+      } });
+      Object.defineProperty(exports, "extractPageChapterTitle", { enumerable: true, get: function() {
+        return scraper_js_1.extractPageChapterTitle;
       } });
       Object.defineProperty(exports, "filterAndMapNovelCards", { enumerable: true, get: function() {
         return scraper_js_1.filterAndMapNovelCards;

@@ -35,6 +35,7 @@ export interface TriStateSelection {
 }
 
 export interface NovelFullUserPreferences {
+  styleChapterHeader: boolean;
   sanitizeAds: boolean;
   formatTln: boolean;
   normalizeSpacing: boolean;

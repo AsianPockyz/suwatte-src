@@ -96,6 +96,114 @@ const STANDALONE_NAV_LEAK_REGEX =
 
 const DUPLICATE_CHAPTER_HEADER_REGEX =
   /^(?:(?:volume|vol\.?|book)\s+\d+[\s,:;\-–—]*)?(?:(?:chapter|ch\.?|episode|ep\.?)\s*\d+(?:[.,]\d+)?(?:\s*[:\-–—|]\s*\S.*)?|c\.?\s*\d+(?:\.\d+)?\s*[:\-–—]\s*\S.*)$/i;
+const LEADING_CHAPTER_TITLE_REGEX =
+  /^(?:(?:volume|vol\.?|book)\s+\d+[\s,:;\-–—]*)?(?:chapter|ch\.?|c\.?)\s*\d+(?:,\d{3})*(?:\.\d+)?/i;
+const LEADING_CHAPTER_TITLE_WITH_SEP_REGEX =
+  /^((?:(?:volume|vol\.?|book)\s+\d+[\s,:;\-–—]*)?(?:chapter|ch\.?|c\.?)\s*\d+(?:,\d{3})*(?:\.\d+)?)(?:\s*([:\-–—|])\s*|\s+)([\s\S]*)$/i;
+const LEADING_INLINE_TAG_HEADER_REGEX =
+  /^<(?:b|strong|em|i|span)\b[^>]*>([\s\S]*?)<\/(?:b|strong|em|i|span)>\s*([\s\S]*)$/i;
+const CHAPTER_TITLE_MARKERS: readonly string[] = [
+  'class="chapter-title"',
+  "class='chapter-title'",
+  'class="chapter-title ',
+  "class='chapter-title ",
+];
+const CHAPTER_TITLE_CLASS_REGEX =
+  /<([a-z0-9]+)\b[^>]*\bclass\s*=\s*(?:"[^"]*\bchapter-title\b[^"]*"|'[^']*\bchapter-title\b[^']*')[^>]*>/i;
+const TITLE_ATTR_REGEX = /\btitle\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
+const SENTENCE_END_BEFORE_PROSE_REGEX =
+  /([.!?…])(["”'’]?)\s+([A-Z“"'‘\[&])/g;
+const ABBREV_END_REGEX =
+  /\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|Ch|Vol|No|Ep|Pt)\.$/i;
+const WORD_SCAN_REGEX = /\S+/g;
+const STRAY_AMP_REGEX =
+  /&(?!(?:amp|lt|gt|quot|apos|nbsp|#\d+|#x[0-9a-fA-F]+);)/gi;
+const TITLE_CONNECTORS_SET: ReadonlySet<string> = new Set([
+  "of",
+  "the",
+  "a",
+  "an",
+  "in",
+  "on",
+  "at",
+  "to",
+  "for",
+  "and",
+  "or",
+  "nor",
+  "but",
+  "by",
+  "with",
+  "from",
+  "as",
+  "into",
+  "onto",
+  "upon",
+  "vs",
+  "v",
+]);
+const NON_TITLE_PROSE_STARTERS_SET: ReadonlySet<string> = new Set([
+  "of",
+  "was",
+  "is",
+  "are",
+  "were",
+  "had",
+  "has",
+  "have",
+  "will",
+  "would",
+  "could",
+  "should",
+  "shall",
+  "can",
+  "may",
+  "might",
+  "must",
+  "and",
+  "but",
+  "or",
+  "nor",
+  "so",
+  "yet",
+  "that",
+  "which",
+  "who",
+  "whom",
+  "whose",
+  "when",
+  "where",
+  "while",
+  "as",
+  "at",
+  "by",
+  "for",
+  "from",
+  "in",
+  "into",
+  "on",
+  "to",
+  "with",
+  "about",
+  "after",
+  "before",
+  "during",
+  "through",
+  "until",
+  "since",
+  "became",
+  "ended",
+  "began",
+  "started",
+  "continued",
+  "remained",
+  "turned",
+  "made",
+  "took",
+  "gave",
+  "went",
+  "came",
+]);
 const SCENE_BREAK_REGEX =
   /^(?:\*(?:\s*\*){2,}|-(?:\s*-){2,}|~(?:\s*~){2,}|=(?:\s*=){2,}|o0o|0o0)$/i;
 const CALLOUT_BRACKET_REGEX = /^\[[^\]]{3,160}\]$/;
@@ -1614,6 +1722,404 @@ function isDuplicateChapterHeader(textOnly: string): boolean {
   return textOnly.length <= 160 && DUPLICATE_CHAPTER_HEADER_REGEX.test(textOnly);
 }
 
+/**
+ * Fast `indexOf`-based extraction of the page-level `.chapter-title` fallback text
+ * before slicing `#chapter-content`.
+ */
+export function extractPageChapterTitle(html: string): string | null {
+  if (!html || typeof html !== "string") {
+    return null;
+  }
+
+  let markerIdx = -1;
+  for (let i = 0; i < CHAPTER_TITLE_MARKERS.length; i++) {
+    const idx = html.indexOf(CHAPTER_TITLE_MARKERS[i]!);
+    if (idx !== -1 && (markerIdx === -1 || idx < markerIdx)) {
+      markerIdx = idx;
+    }
+  }
+
+  if (markerIdx === -1) {
+    const rawIdx = html.indexOf("chapter-title");
+    if (rawIdx === -1) {
+      return null;
+    }
+    const windowStart = Math.max(0, rawIdx - 120);
+    const windowEnd = Math.min(html.length, rawIdx + 120);
+    const match = CHAPTER_TITLE_CLASS_REGEX.exec(
+      html.slice(windowStart, windowEnd)
+    );
+    if (!match) {
+      return null;
+    }
+    markerIdx = windowStart + match.index;
+  }
+
+  const openTagStart = html.lastIndexOf("<", markerIdx);
+  const openTagEnd = html.indexOf(">", markerIdx);
+  if (openTagStart === -1 || openTagEnd === -1 || openTagEnd <= openTagStart) {
+    return null;
+  }
+
+  const openTagSlice = html.slice(openTagStart + 1, openTagEnd);
+  const spaceIdx = openTagSlice.search(/\s/);
+  const tagName = (
+    spaceIdx === -1 ? openTagSlice : openTagSlice.slice(0, spaceIdx)
+  )
+    .trim()
+    .toLowerCase();
+  if (!tagName) {
+    return null;
+  }
+
+  const closeTag = `</${tagName}>`;
+  const searchLimit = Math.min(html.length, openTagEnd + 1024);
+  let closeIdx = html.indexOf(closeTag, openTagEnd + 1);
+  if (closeIdx === -1 || closeIdx > searchLimit) {
+    closeIdx = html
+      .slice(openTagEnd + 1, searchLimit)
+      .toLowerCase()
+      .indexOf(closeTag);
+    if (closeIdx !== -1) {
+      closeIdx += openTagEnd + 1;
+    }
+  }
+
+  let rawTitle = "";
+  if (closeIdx !== -1) {
+    rawTitle = html
+      .slice(openTagEnd + 1, closeIdx)
+      .replace(STRIP_TAGS_REGEX, " ");
+  }
+
+  let decoded = decodeHtmlEntities(rawTitle);
+  if (!decoded) {
+    const attrMatch = TITLE_ATTR_REGEX.exec(openTagSlice);
+    const attrVal = attrMatch?.[1] ?? attrMatch?.[2] ?? "";
+    decoded = decodeHtmlEntities(attrVal);
+  }
+
+  if (!decoded || decoded.length > 160) {
+    return null;
+  }
+  return decoded;
+}
+
+function escapeChapterTitleText(
+  title: string,
+  isAlreadyEntitySafe: boolean,
+  smartTypography: boolean
+): string {
+  let escaped = isAlreadyEntitySafe
+    ? title
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(STRAY_AMP_REGEX, "&amp;")
+    : title
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+  if (smartTypography) {
+    escaped = applySmartTypographyToHtml(escaped);
+  }
+  return escaped.trim();
+}
+
+function formatChapterHeadingHtml(
+  titleText: string,
+  isAlreadyEntitySafe: boolean,
+  smartTypography: boolean
+): string {
+  const safeTitle = escapeChapterTitleText(
+    titleText,
+    isAlreadyEntitySafe,
+    smartTypography
+  );
+  return `<h2><strong>${safeTitle}</strong></h2><hr />`;
+}
+
+function sliceHtmlFromTextOffset(block: string, textOffset: number): string {
+  if (!block.includes("<")) {
+    return block.slice(textOffset).trim();
+  }
+  let pos = 0;
+  let visibleCount = 0;
+  const len = block.length;
+  let prevSpace = true;
+
+  while (pos < len && visibleCount < textOffset) {
+    const code = block.charCodeAt(pos);
+    if (code === 60) {
+      const closeIdx = block.indexOf(">", pos);
+      if (closeIdx === -1) break;
+      pos = closeIdx + 1;
+      continue;
+    }
+    const isSpace = code === 32 || code === 9 || code === 10 || code === 13;
+    if (isSpace) {
+      if (!prevSpace) {
+        visibleCount++;
+        prevSpace = true;
+      }
+      pos++;
+    } else {
+      prevSpace = false;
+      visibleCount++;
+      pos++;
+    }
+  }
+
+  while (pos < len) {
+    const code = block.charCodeAt(pos);
+    if (code === 32 || code === 9 || code === 10 || code === 13) {
+      pos++;
+      continue;
+    }
+    if (code === 60 && block.charCodeAt(pos + 1) === 47) {
+      const closeIdx = block.indexOf(">", pos);
+      if (closeIdx !== -1) {
+        pos = closeIdx + 1;
+        continue;
+      }
+    }
+    break;
+  }
+
+  return block.slice(pos).trim();
+}
+
+function isLowercaseWord(word: string): boolean {
+  for (let i = 0; i < word.length; i++) {
+    const ch = word.charAt(i);
+    if (ch >= "a" && ch <= "z") return true;
+    if (ch >= "A" && ch <= "Z") return false;
+    if (ch >= "0" && ch <= "9") return false;
+  }
+  return false;
+}
+
+function stripEdgePunctuationLower(word: string): string {
+  return word.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, "").toLowerCase();
+}
+
+interface ExtractedChapterTitleResult {
+  titleText: string;
+  remainderBlock: string | null;
+}
+
+function extractOrSplitLeadingChapterTitle(
+  block: string,
+  textOnly: string,
+  fallbackTitle: string | null
+): ExtractedChapterTitleResult | null {
+  if (!LEADING_CHAPTER_TITLE_REGEX.test(textOnly)) {
+    return null;
+  }
+
+  const partsMatch = LEADING_CHAPTER_TITLE_WITH_SEP_REGEX.exec(textOnly);
+  if (!partsMatch) {
+    return {
+      titleText: textOnly.trim(),
+      remainderBlock: null,
+    };
+  }
+
+  const prefix = (partsMatch[1] ?? "").trim();
+  const sep = partsMatch[2] ?? "";
+  const rest = (partsMatch[3] ?? "").trim();
+
+  if (!rest) {
+    return {
+      titleText: prefix,
+      remainderBlock: null,
+    };
+  }
+
+  const restStart = textOnly.indexOf(rest, prefix.length);
+
+  // If no explicit separator after chapter number, reject obvious prose starters like "Chapter 3 of the manual..."
+  if (!sep) {
+    const firstWordMatch = /^\S+/.exec(rest);
+    const firstWord = firstWordMatch?.[0] ?? "";
+    const firstWordBare = stripEdgePunctuationLower(firstWord);
+    if (
+      rest.charAt(0) === "," ||
+      rest.charAt(0) === ";" ||
+      NON_TITLE_PROSE_STARTERS_SET.has(firstWordBare) ||
+      isLowercaseWord(firstWord)
+    ) {
+      return null;
+    }
+  }
+
+  // Priority 1: Inline wrapper tag around the chapter title (e.g. <strong>Chapter 2239: Title</strong> Prose...)
+  if (block.charCodeAt(0) === 60) {
+    const inlineMatch = LEADING_INLINE_TAG_HEADER_REGEX.exec(block);
+    if (inlineMatch) {
+      const innerText = (inlineMatch[1] ?? "")
+        .replace(STRIP_TAGS_REGEX, "")
+        .replace(ENTITIES_NBSP_REGEX, " ")
+        .trim();
+      const afterTag = (inlineMatch[2] ?? "").trim();
+      if (
+        innerText &&
+        innerText.length <= 140 &&
+        LEADING_CHAPTER_TITLE_REGEX.test(innerText)
+      ) {
+        return {
+          titleText: innerText,
+          remainderBlock: afterTag || null,
+        };
+      }
+    }
+  }
+
+  // Priority 2: Exact prefix match against page-level .chapter-title fallback
+  if (
+    fallbackTitle &&
+    textOnly.length > fallbackTitle.length &&
+    textOnly.toLowerCase().startsWith(fallbackTitle.toLowerCase())
+  ) {
+    const afterFallback = textOnly.slice(fallbackTitle.length);
+    const trimmedAfter = afterFallback.replace(/^[\s.:;\-–—|]+/, "").trim();
+    if (!trimmedAfter) {
+      return {
+        titleText: textOnly.slice(0, fallbackTitle.length).trim(),
+        remainderBlock: null,
+      };
+    }
+    const splitOffset = textOnly.indexOf(trimmedAfter, fallbackTitle.length);
+    if (splitOffset !== -1) {
+      return {
+        titleText: textOnly.slice(0, fallbackTitle.length).trim(),
+        remainderBlock: sliceHtmlFromTextOffset(block, splitOffset),
+      };
+    }
+  }
+
+  // Priority 3: Sentence boundary within first 120 chars (e.g. "Chapter 2239: The Void Lord. Noah stepped forward.")
+  SENTENCE_END_BEFORE_PROSE_REGEX.lastIndex = 0;
+  let sentMatch: RegExpExecArray | null;
+  while ((sentMatch = SENTENCE_END_BEFORE_PROSE_REGEX.exec(rest)) !== null) {
+    const endPunct = sentMatch[1] ?? "";
+    const endQuote = sentMatch[2] ?? "";
+    const punctEndInRest = sentMatch.index + endPunct.length + endQuote.length;
+    if (restStart + punctEndInRest > 130) {
+      break;
+    }
+    const beforeBoundary = rest.slice(0, sentMatch.index + 1);
+    if (endPunct === "." && ABBREV_END_REGEX.test(beforeBoundary)) {
+      continue;
+    }
+    const nextCharInRest =
+      sentMatch.index + sentMatch[0].length - (sentMatch[3]?.length ?? 1);
+    const titleEndInRest =
+      endPunct === "." && !endQuote
+        ? sentMatch.index
+        : punctEndInRest;
+    const titleText = textOnly
+      .slice(0, restStart + titleEndInRest)
+      .trim()
+      .replace(/[:\-–—|]+$/, "")
+      .trim();
+    return {
+      titleText: titleText || prefix,
+      remainderBlock: sliceHtmlFromTextOffset(block, restStart + nextCharInRest),
+    };
+  }
+
+  // Priority 4: Glued quote or bracket callout starting prose after the title
+  const quoteOrBracketMatch = /\s+(?=["“]|&lt;|\[)/.exec(rest);
+  if (
+    quoteOrBracketMatch &&
+    restStart + quoteOrBracketMatch.index <= 125
+  ) {
+    const splitAt = restStart + quoteOrBracketMatch.index;
+    const nextStart =
+      splitAt + quoteOrBracketMatch[0].length;
+    return {
+      titleText: textOnly.slice(0, splitAt).trim(),
+      remainderBlock: sliceHtmlFromTextOffset(block, nextStart),
+    };
+  }
+
+  // Priority 5: Glued Title-Case title immediately before a prose sentence ("Chapter 2239: The Void Lord Noah stepped forward.")
+  const hasSentenceEnding =
+    /[.!?…”"'’]$/.test(textOnly) ||
+    textOnly.endsWith("&gt;") ||
+    textOnly.length > 90;
+
+  if (hasSentenceEnding) {
+    const tokens: Array<{
+      word: string;
+      bareLower: string;
+      start: number;
+      end: number;
+    }> = [];
+    WORD_SCAN_REGEX.lastIndex = 0;
+    let tokMatch: RegExpExecArray | null;
+    while ((tokMatch = WORD_SCAN_REGEX.exec(rest)) !== null) {
+      const w = tokMatch[0];
+      tokens.push({
+        word: w,
+        bareLower: stripEdgePunctuationLower(w),
+        start: tokMatch.index,
+        end: tokMatch.index + w.length,
+      });
+    }
+
+    for (let i = 0; i < tokens.length; i++) {
+      const tok = tokens[i]!;
+      if (isLowercaseWord(tok.word) && !TITLE_CONNECTORS_SET.has(tok.bareLower)) {
+        let starterIdx = i - 1;
+        while (
+          starterIdx > 0 &&
+          TITLE_CONNECTORS_SET.has(tokens[starterIdx]!.bareLower)
+        ) {
+          starterIdx--;
+        }
+
+        if (starterIdx <= 0 && !sep) {
+          return null;
+        }
+
+        const splitOffsetInRest =
+          starterIdx >= 0 ? tokens[starterIdx]!.start : 0;
+        if (restStart + splitOffsetInRest <= 130) {
+          const titleRaw =
+            splitOffsetInRest === 0
+              ? prefix
+              : textOnly.slice(0, restStart + splitOffsetInRest).trim();
+          const cleanHeading = titleRaw.replace(/[:\-–—|]+$/, "").trim();
+          return {
+            titleText: cleanHeading || prefix,
+            remainderBlock: sliceHtmlFromTextOffset(
+              block,
+              restStart + splitOffsetInRest
+            ),
+          };
+        }
+        break;
+      }
+    }
+  }
+
+  // Standalone chapter title without glued prose
+  if (textOnly.length <= 140) {
+    return {
+      titleText: textOnly.trim(),
+      remainderBlock: null,
+    };
+  }
+
+  return null;
+}
+
+function normalizeHeaderForDupCheck(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
 function formatProseSegment(
   prose: string,
   initialPrevChar: string
@@ -1742,6 +2248,7 @@ export function sanitizeChapterHtml(
     return "<p>No chapter text available.</p>";
   }
 
+  const styleChapterHeader = prefs?.styleChapterHeader !== false;
   const sanitizeAds = prefs?.sanitizeAds !== false;
   const formatTln = prefs?.formatTln !== false;
   const normalizeSpacing = prefs?.normalizeSpacing !== false;
@@ -1749,7 +2256,10 @@ export function sanitizeChapterHtml(
   const formatCallouts = prefs?.formatCallouts !== false;
   const smartTypography = prefs?.smartTypography !== false;
 
-  // 1. Fast slice extraction of chapter content container
+  // 1. Fast page-level .chapter-title fallback extraction & indexOf slice of #chapter-content
+  const fallbackChapterTitle = styleChapterHeader
+    ? extractPageChapterTitle(rawHtml)
+    : null;
   const rawFragment = extractChapterFragment(rawHtml);
   const withoutComments = rawFragment.replace(HTML_COMMENTS_REGEX, "");
   const escapedHtml = escapeNonHtmlBrackets(withoutComments);
@@ -1785,14 +2295,16 @@ export function sanitizeChapterHtml(
     const rawBlocks = bodyHtml.split(BLOCK_BOUNDARY_REGEX);
     const outputBlocks: string[] = [];
     let checkedLeadingHeader = false;
+    let checkedDuplicateSecond = false;
+    let extractedHeaderNorm: string | null = null;
 
     for (let i = 0, len = rawBlocks.length; i < len; i++) {
-      const block = rawBlocks[i]
+      let block = rawBlocks[i]
         ?.replace(HORIZONTAL_SPACE_COLLAPSE_REGEX, " ")
         .trim();
       if (!block) continue;
 
-      const textOnly = block
+      let textOnly = block
         .replace(STRIP_TAGS_REGEX, "")
         .replace(ENTITIES_NBSP_REGEX, " ")
         .trim();
@@ -1804,7 +2316,57 @@ export function sanitizeChapterHtml(
 
       if (!checkedLeadingHeader) {
         checkedLeadingHeader = true;
-        if (isDuplicateChapterHeader(textOnly)) {
+        if (styleChapterHeader) {
+          const splitHeader = extractOrSplitLeadingChapterTitle(
+            block,
+            textOnly,
+            fallbackChapterTitle
+          );
+          if (splitHeader) {
+            outputBlocks.push(
+              formatChapterHeadingHtml(
+                splitHeader.titleText,
+                true,
+                smartTypography
+              )
+            );
+            extractedHeaderNorm = normalizeHeaderForDupCheck(
+              splitHeader.titleText
+            );
+            if (!splitHeader.remainderBlock) {
+              continue;
+            }
+            block = splitHeader.remainderBlock
+              .replace(HORIZONTAL_SPACE_COLLAPSE_REGEX, " ")
+              .trim();
+            textOnly = block
+              .replace(STRIP_TAGS_REGEX, "")
+              .replace(ENTITIES_NBSP_REGEX, " ")
+              .trim();
+            if (!textOnly) {
+              continue;
+            }
+            checkedDuplicateSecond = true;
+          } else if (fallbackChapterTitle) {
+            outputBlocks.push(
+              formatChapterHeadingHtml(
+                fallbackChapterTitle,
+                false,
+                smartTypography
+              )
+            );
+            extractedHeaderNorm =
+              normalizeHeaderForDupCheck(fallbackChapterTitle);
+          }
+        }
+      } else if (!checkedDuplicateSecond) {
+        checkedDuplicateSecond = true;
+        if (
+          styleChapterHeader &&
+          extractedHeaderNorm &&
+          (normalizeHeaderForDupCheck(textOnly) === extractedHeaderNorm ||
+            isDuplicateChapterHeader(textOnly))
+        ) {
           continue;
         }
       }
@@ -1839,7 +2401,7 @@ export function sanitizeChapterHtml(
           : sub;
 
         if (formatCallouts && isCalloutBlock(subTextOnly)) {
-          outputBlocks.push(`<blockquote>${formattedSub}</blockquote>`);
+          outputBlocks.push(`<blockquote><p>${formattedSub}</p></blockquote>`);
         } else {
           outputBlocks.push(`<p>${formattedSub}</p>`);
         }
@@ -1851,6 +2413,15 @@ export function sanitizeChapterHtml(
     bodyHtml = bodyHtml.replace(EMPTY_P_REGEX, "").trim();
     if (smartTypography) {
       bodyHtml = applySmartTypographyToHtml(bodyHtml);
+    }
+    if (styleChapterHeader && fallbackChapterTitle && bodyHtml) {
+      const leadingPlain = bodyHtml
+        .slice(0, 200)
+        .replace(STRIP_TAGS_REGEX, "")
+        .trim();
+      if (!LEADING_CHAPTER_TITLE_REGEX.test(leadingPlain)) {
+        bodyHtml = `${formatChapterHeadingHtml(fallbackChapterTitle, false, smartTypography)}\n\n${bodyHtml}`;
+      }
     }
   }
 

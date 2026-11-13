@@ -201,6 +201,7 @@ export const BROWSE_FEED_KEYS = {
 // ============================================================================
 
 export const PREF_KEYS = {
+  STYLE_CHAPTER_HEADER: "style_chapter_header",
   SANITIZE_ADS: "sanitize_ads",
   FORMAT_TLN: "format_tln",
   NORMALIZE_SPACING: "normalize_spacing",

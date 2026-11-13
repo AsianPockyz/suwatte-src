@@ -38,6 +38,7 @@ const GENRE_Lookup_MAP: ReadonlyMap<string, string> = new Map(
 );
 
 let memoryPreferences: NovelFullUserPreferences = {
+  styleChapterHeader: true,
   sanitizeAds: true,
   formatTln: true,
   normalizeSpacing: true,
@@ -211,6 +212,7 @@ async function hydratePreferencesFromStore(): Promise<NovelFullUserPreferences> 
 
   try {
     const [
+      storedStyleChapterHeader,
       storedSanitizeAds,
       storedFormatTln,
       storedNormalizeSpacing,
@@ -220,6 +222,7 @@ async function hydratePreferencesFromStore(): Promise<NovelFullUserPreferences> 
       storedExcludedGenres,
       storedCustomBlacklist,
     ] = await Promise.all([
+      ObjectStore.get(PREF_KEYS.STYLE_CHAPTER_HEADER).catch(() => null),
       ObjectStore.get(PREF_KEYS.SANITIZE_ADS).catch(() => null),
       ObjectStore.get(PREF_KEYS.FORMAT_TLN).catch(() => null),
       ObjectStore.get(PREF_KEYS.NORMALIZE_SPACING).catch(() => null),
@@ -229,6 +232,15 @@ async function hydratePreferencesFromStore(): Promise<NovelFullUserPreferences> 
       ObjectStore.get(PREF_KEYS.EXCLUDED_GENRES).catch(() => null),
       ObjectStore.get(PREF_KEYS.CUSTOM_BLACKLIST).catch(() => null),
     ]);
+
+    const styleChapterHeader =
+      storedStyleChapterHeader !== null &&
+      storedStyleChapterHeader !== undefined
+        ? parseBooleanPref(
+            storedStyleChapterHeader,
+            memoryPreferences.styleChapterHeader
+          )
+        : memoryPreferences.styleChapterHeader;
 
     const sanitizeAds =
       storedSanitizeAds !== null && storedSanitizeAds !== undefined
@@ -283,6 +295,7 @@ async function hydratePreferencesFromStore(): Promise<NovelFullUserPreferences> 
         : memoryPreferences.customBlacklist;
 
     memoryPreferences = {
+      styleChapterHeader,
       sanitizeAds,
       formatTln,
       normalizeSpacing,
@@ -511,8 +524,14 @@ export async function buildSettingsForm(): Promise<UIForm> {
       {
         header: "Reader Layout & Typography",
         footer:
-          "Auto-Split Multi-Speaker Dialogue breaks dense wall-of-text paragraphs into separate paragraphs. Clean Paragraph Structure & Headers converts line breaks into proper paragraphs, removes blank spacer lines, and strips duplicate chapter headers. Format System Windows & Stat Blocks highlights [System Alerts], <Telepathy> lines, and stat screens in distinct callout blocks. Book-Grade Quotes & Scene Dividers converts straight quotes to curly quotes, formats em-dashes, and cleans up ASCII scene breaks.",
+          "Bold & Separate Chapter Titles separates the chapter title from the opening paragraph and renders it as a bold heading with a divider. Auto-Split Multi-Speaker Dialogue breaks dense wall-of-text paragraphs containing multiple spoken lines into separate paragraphs. Discrete Paragraph Blocks & Spacing converts line breaks into distinct HTML paragraphs for cleaner spacing and more accurate page resume. Format System Windows & Stat Blocks highlights [System Alerts], <Telepathy> lines, and stat screens in distinct callout blocks. Book-Grade Quotes & Scene Dividers converts straight quotes to curly quotes, formats em-dashes, and cleans up ASCII scene breaks.",
         views: [
+          UIToggle({
+            id: PREF_KEYS.STYLE_CHAPTER_HEADER,
+            title: "Bold & Separate Chapter Titles",
+            currentValue: prefs.styleChapterHeader,
+            defaultValue: true,
+          }),
           UIToggle({
             id: PREF_KEYS.SPLIT_DIALOGUE,
             title: "Auto-Split Multi-Speaker Dialogue",
@@ -521,7 +540,7 @@ export async function buildSettingsForm(): Promise<UIForm> {
           }),
           UIToggle({
             id: PREF_KEYS.NORMALIZE_SPACING,
-            title: "Clean Paragraph Structure & Headers",
+            title: "Discrete Paragraph Blocks & Spacing",
             currentValue: prefs.normalizeSpacing,
             defaultValue: true,
           }),
@@ -599,6 +618,7 @@ export async function updateUserPreferences(
   }
 
   let {
+    styleChapterHeader,
     sanitizeAds,
     formatTln,
     normalizeSpacing,
@@ -622,6 +642,10 @@ export async function updateUserPreferences(
     return next;
   };
 
+  styleChapterHeader = applyBoolPref(
+    PREF_KEYS.STYLE_CHAPTER_HEADER,
+    styleChapterHeader
+  );
   sanitizeAds = applyBoolPref(PREF_KEYS.SANITIZE_ADS, sanitizeAds);
   formatTln = applyBoolPref(PREF_KEYS.FORMAT_TLN, formatTln);
   normalizeSpacing = applyBoolPref(
@@ -662,6 +686,7 @@ export async function updateUserPreferences(
   }
 
   memoryPreferences = {
+    styleChapterHeader,
     sanitizeAds,
     formatTln,
     normalizeSpacing,

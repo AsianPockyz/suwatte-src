@@ -490,6 +490,7 @@ assert.equal(
 assert.equal(
   JSON.stringify(nfPrefMenu.sections[0].views.map((v) => v.toggle.props.id)),
   JSON.stringify([
+    "style_chapter_header",
     "split_dialogue",
     "normalize_spacing",
     "format_callouts",
@@ -507,6 +508,7 @@ assert.equal(nfPrefMenu.sections[2].header, "Content Exclusions / Blacklist");
 
 // Apply exclusions: exclude Harem genre and "mtl" keyword
 await nfRunner.onFormSubmitted("novelfull_prefs", {
+  style_chapter_header: true,
   sanitize_ads: true,
   format_tln: true,
   normalize_spacing: true,
@@ -1368,6 +1370,7 @@ const v18SampleHtml = `
 <body>
   <div id="chapter-content" class="chapter-c">
     <p>Chapter 1: Title</p>
+    <p>Chapter 1: Title</p>
     <p>"Hello there!" "General Kenobi?" <span class="speaker" data-id="npc-1">"We meet again."</span></p>
     <p>"I won't forgive you for this betrayal!" Arthur slammed his heavy gauntlet onto the oak table, shattering the porcelain teacup into razor-sharp splinters. "You crossed the line this time," Elena replied coldly, drawing her silver blade as frost crept across the stone floor.</p>
     <p>He shouted "Fire!" and charged.</p>
@@ -1385,6 +1388,7 @@ const v18SampleHtml = `
 `;
 
 const v18Formatted = nfRunner.sanitizeChapterHtml(v18SampleHtml, {
+  styleChapterHeader: true,
   sanitizeAds: true,
   formatTln: true,
   normalizeSpacing: true,
@@ -1393,14 +1397,75 @@ const v18Formatted = nfRunner.sanitizeChapterHtml(v18SampleHtml, {
   smartTypography: true,
 });
 
-// Duplicate header stripped, while prose starting with "Chapter 3..." is kept
+// Bold & separated chapter heading rendered once (duplicate second copy stripped), while prose starting with "Chapter 3..." is kept
 assert.ok(
-  !v18Formatted.includes("Chapter 1: Title"),
-  "Duplicate chapter header at start of chapter body must be stripped"
+  v18Formatted.startsWith("<h2><strong>Chapter 1: Title</strong></h2><hr />"),
+  "Leading chapter header must render as <h2><strong>...</strong></h2><hr />"
+);
+assert.equal(
+  v18Formatted.split("Chapter 1: Title").length - 1,
+  1,
+  "Duplicate second copy of chapter title at start of body must be stripped"
 );
 assert.ok(
   v18Formatted.includes("<p>Chapter 3 of the manual was missing.</p>"),
   "Prose mentioning Chapter 3 mid-sentence must NOT be falsely stripped"
+);
+
+// Split chapter title separated by <br> from opening sentence
+const brHeaderSampleHtml = `
+<div id="chapter-content" class="chapter-c">
+  <p>Chapter 2239: The Void Lord<br>Noah stepped forward.<br>Line two.<br/>Line three.</p>
+</div>
+`;
+const brHeaderFormatted = nfRunner.sanitizeChapterHtml(brHeaderSampleHtml, {
+  styleChapterHeader: true,
+  normalizeSpacing: true,
+});
+assert.equal(
+  brHeaderFormatted,
+  "<h2><strong>Chapter 2239: The Void Lord</strong></h2><hr />\n\n<p>Noah stepped forward.</p>\n\n<p>Line two.</p>\n\n<p>Line three.</p>",
+  "Chapter title separated by <br> must render as <h2><strong>...</strong></h2><hr /> followed by discrete <p> blocks"
+);
+
+// Split glued chapter title from opening sentence (no <br> separator)
+const gluedHeaderSampleHtml = `
+<div id="chapter-content" class="chapter-c">
+  <p>Chapter 2239: The Void Lord Noah stepped forward.</p>
+</div>
+`;
+const gluedHeaderFormatted = nfRunner.sanitizeChapterHtml(gluedHeaderSampleHtml, {
+  styleChapterHeader: true,
+  normalizeSpacing: true,
+});
+assert.equal(
+  gluedHeaderFormatted,
+  "<h2><strong>Chapter 2239: The Void Lord</strong></h2><hr />\n\n<p>Noah stepped forward.</p>",
+  "Glued chapter title without <br> must split cleanly into <h2><strong>...</strong></h2><hr /> and separate <p>"
+);
+
+// Fallback page-level .chapter-title extraction when #chapter-content lacks a leading title
+const fallbackTitlePageHtml = `
+<!DOCTYPE html>
+<html>
+<body>
+  <div class="container">
+    <h2><a class="chapter-title" href="/void/chapter-2240.html">Chapter 2240: Eternal Crown</a></h2>
+    <div id="chapter-content" class="chapter-c">
+      <p>The throne room fell silent.</p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+const fallbackTitleFormatted = nfRunner.sanitizeChapterHtml(fallbackTitlePageHtml, {
+  styleChapterHeader: true,
+  normalizeSpacing: true,
+});
+assert.equal(
+  fallbackTitleFormatted,
+  "<h2><strong>Chapter 2240: Eternal Crown</strong></h2><hr />\n\n<p>The throne room fell silent.</p>",
+  "Page-level .chapter-title must be prepended when chapter body lacks a heading"
 );
 
 // Back-to-back quotes split & dense multi-speaker >220 char beat split
@@ -1424,17 +1489,17 @@ assert.ok(
 // Telepathy split + callout wrapping + < > preservation
 assert.ok(
   v18Formatted.includes(
-    "<blockquote>&lt;Who goes there?&gt;</blockquote>\n\n<blockquote>&lt;Step into the light.&gt;</blockquote>"
+    "<blockquote><p>&lt;Who goes there?&gt;</p></blockquote>\n\n<blockquote><p>&lt;Step into the light.&gt;</p></blockquote>"
   ),
-  "Back-to-back telepathy pairs must split and format into distinct callout blockquotes"
+  "Back-to-back telepathy pairs must split and format into distinct <blockquote><p>...</p></blockquote> callouts"
 );
 assert.ok(
-  v18Formatted.includes("<blockquote>[System Notification: Level Up!]</blockquote>"),
-  "[System Notification: Level Up!] must format into <blockquote>"
+  v18Formatted.includes("<blockquote><p>[System Notification: Level Up!]</p></blockquote>"),
+  "[System Notification: Level Up!] must format into <blockquote><p>...</p></blockquote>"
 );
 assert.ok(
-  v18Formatted.includes("<blockquote>&lt;Come forward.&gt;</blockquote>"),
-  "<Come forward.> must format into <blockquote> while staying encoded as &lt;Come forward.&gt;"
+  v18Formatted.includes("<blockquote><p>&lt;Come forward.&gt;</p></blockquote>"),
+  "<Come forward.> must format into <blockquote><p>...</p></blockquote> while staying encoded as &lt;Come forward.&gt;"
 );
 const $v18Rendered = cheerio.load(v18Formatted);
 assert.ok(
@@ -1442,9 +1507,9 @@ assert.ok(
   "Rendered HTML must visibly preserve '<Come forward.>' inside callout"
 );
 assert.ok(
-  v18Formatted.includes("<blockquote>Name: Sung Jin-Woo</blockquote>") &&
-    v18Formatted.includes("<blockquote>| STR: 145 | AGI: 138 | INT: 99 |</blockquote>"),
-  "Stat headers and pipe-delimited stat lines must format into <blockquote>"
+  v18Formatted.includes("<blockquote><p>Name: Sung Jin-Woo</p></blockquote>") &&
+    v18Formatted.includes("<blockquote><p>| STR: 145 | AGI: 138 | INT: 99 |</p></blockquote>"),
+  "Stat headers and pipe-delimited stat lines must format into <blockquote><p>...</p></blockquote>"
 );
 
 // Scene divider conversion & HTML attribute preservation
@@ -1463,6 +1528,7 @@ assert.ok(
 
 // Verify toggles can cleanly disable each feature
 const v18RawToggles = nfRunner.sanitizeChapterHtml(v18SampleHtml, {
+  styleChapterHeader: false,
   sanitizeAds: true,
   formatTln: true,
   normalizeSpacing: true,
@@ -1470,6 +1536,11 @@ const v18RawToggles = nfRunner.sanitizeChapterHtml(v18SampleHtml, {
   formatCallouts: false,
   smartTypography: false,
 });
+assert.ok(
+  !v18RawToggles.includes("<h2><strong>") &&
+    v18RawToggles.includes("<p>Chapter 1: Title</p>"),
+  "style_chapter_header=false must keep chapter header as normal <p> without <h2><strong>"
+);
 assert.ok(
   v18RawToggles.includes('<p>"Hello there!" "General Kenobi?"'),
   "split_dialogue=false must keep adjacent dialogue unsplit"
@@ -1486,7 +1557,7 @@ assert.ok(
 );
 
 console.log(
-  "PASS: v1.8 Reader Layout & Typography Engine (dialogue split, callouts, smart quotes, scene breaks, duplicate header removal) verified."
+  "PASS: v1.8 Reader Layout & Typography Engine (bold/split headers, discrete <p> blocks, dialogue split, callouts, smart quotes, scene breaks) verified."
 );
 
 // 13. Verify Multi-Source Catalog Manifest (dist/sources.json & root sources.json)
