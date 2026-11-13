@@ -829,7 +829,7 @@ var SourcePackage = (() => {
       } });
       exports.SOURCE_ID = "org.novelfull";
       exports.SOURCE_NAME = "NovelFull";
-      exports.SOURCE_VERSION = 1.7;
+      exports.SOURCE_VERSION = 1.8;
       exports.BASE_URL = "https://novelfull.com";
       exports.VARIANT_ID = "org.novelfull";
       exports.THUMBNAIL_FILENAME = "novelfull.png";
@@ -969,6 +969,9 @@ var SourcePackage = (() => {
         SANITIZE_ADS: "sanitize_ads",
         FORMAT_TLN: "format_tln",
         NORMALIZE_SPACING: "normalize_spacing",
+        SPLIT_DIALOGUE: "split_dialogue",
+        FORMAT_CALLOUTS: "format_callouts",
+        SMART_TYPOGRAPHY: "smart_typography",
         EXCLUDED_GENRES: "excluded_genres",
         CUSTOM_BLACKLIST: "custom_blacklist"
       };
@@ -1396,6 +1399,9 @@ var SourcePackage = (() => {
         sanitizeAds: true,
         formatTln: true,
         normalizeSpacing: true,
+        splitDialogue: true,
+        formatCallouts: true,
+        smartTypography: true,
         excludedGenres: [],
         customBlacklist: []
       };
@@ -1540,22 +1546,31 @@ var SourcePackage = (() => {
           return memoryPreferences;
         }
         try {
-          const [storedSanitizeAds, storedFormatTln, storedNormalizeSpacing, storedExcludedGenres, storedCustomBlacklist] = await Promise.all([
+          const [storedSanitizeAds, storedFormatTln, storedNormalizeSpacing, storedSplitDialogue, storedFormatCallouts, storedSmartTypography, storedExcludedGenres, storedCustomBlacklist] = await Promise.all([
             ObjectStore.get(constants_js_1.PREF_KEYS.SANITIZE_ADS).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.FORMAT_TLN).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.NORMALIZE_SPACING).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.SPLIT_DIALOGUE).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.FORMAT_CALLOUTS).catch(() => null),
+            ObjectStore.get(constants_js_1.PREF_KEYS.SMART_TYPOGRAPHY).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.EXCLUDED_GENRES).catch(() => null),
             ObjectStore.get(constants_js_1.PREF_KEYS.CUSTOM_BLACKLIST).catch(() => null)
           ]);
           const sanitizeAds = storedSanitizeAds !== null && storedSanitizeAds !== void 0 ? parseBooleanPref(storedSanitizeAds, memoryPreferences.sanitizeAds) : memoryPreferences.sanitizeAds;
           const formatTln = storedFormatTln !== null && storedFormatTln !== void 0 ? parseBooleanPref(storedFormatTln, memoryPreferences.formatTln) : memoryPreferences.formatTln;
           const normalizeSpacing = storedNormalizeSpacing !== null && storedNormalizeSpacing !== void 0 ? parseBooleanPref(storedNormalizeSpacing, memoryPreferences.normalizeSpacing) : memoryPreferences.normalizeSpacing;
+          const splitDialogue = storedSplitDialogue !== null && storedSplitDialogue !== void 0 ? parseBooleanPref(storedSplitDialogue, memoryPreferences.splitDialogue) : memoryPreferences.splitDialogue;
+          const formatCallouts = storedFormatCallouts !== null && storedFormatCallouts !== void 0 ? parseBooleanPref(storedFormatCallouts, memoryPreferences.formatCallouts) : memoryPreferences.formatCallouts;
+          const smartTypography = storedSmartTypography !== null && storedSmartTypography !== void 0 ? parseBooleanPref(storedSmartTypography, memoryPreferences.smartTypography) : memoryPreferences.smartTypography;
           const excludedGenres = storedExcludedGenres !== null && storedExcludedGenres !== void 0 ? parseStringList(storedExcludedGenres) : memoryPreferences.excludedGenres;
           const customBlacklist = storedCustomBlacklist !== null && storedCustomBlacklist !== void 0 ? parseStringList(storedCustomBlacklist) : memoryPreferences.customBlacklist;
           memoryPreferences = {
             sanitizeAds,
             formatTln,
             normalizeSpacing,
+            splitDialogue,
+            formatCallouts,
+            smartTypography,
             excludedGenres,
             customBlacklist
           };
@@ -1720,8 +1735,38 @@ var SourcePackage = (() => {
         return {
           sections: [
             {
-              header: "Reading & Typography Enhancements",
-              footer: "Configure NovelFull's native chapter text sanitization engine, translator note callouts, and paragraph typography.",
+              header: "Reader Layout & Typography",
+              footer: "Auto-Split Multi-Speaker Dialogue breaks dense wall-of-text paragraphs into separate paragraphs. Clean Paragraph Structure & Headers converts line breaks into proper paragraphs, removes blank spacer lines, and strips duplicate chapter headers. Format System Windows & Stat Blocks highlights [System Alerts], <Telepathy> lines, and stat screens in distinct callout blocks. Book-Grade Quotes & Scene Dividers converts straight quotes to curly quotes, formats em-dashes, and cleans up ASCII scene breaks.",
+              views: [
+                (0, toolchain_1.UIToggle)({
+                  id: constants_js_1.PREF_KEYS.SPLIT_DIALOGUE,
+                  title: "Auto-Split Multi-Speaker Dialogue",
+                  currentValue: prefs.splitDialogue,
+                  defaultValue: true
+                }),
+                (0, toolchain_1.UIToggle)({
+                  id: constants_js_1.PREF_KEYS.NORMALIZE_SPACING,
+                  title: "Clean Paragraph Structure & Headers",
+                  currentValue: prefs.normalizeSpacing,
+                  defaultValue: true
+                }),
+                (0, toolchain_1.UIToggle)({
+                  id: constants_js_1.PREF_KEYS.FORMAT_CALLOUTS,
+                  title: "Format System Windows & Stat Blocks",
+                  currentValue: prefs.formatCallouts,
+                  defaultValue: true
+                }),
+                (0, toolchain_1.UIToggle)({
+                  id: constants_js_1.PREF_KEYS.SMART_TYPOGRAPHY,
+                  title: "Book-Grade Quotes & Scene Dividers",
+                  currentValue: prefs.smartTypography,
+                  defaultValue: true
+                })
+              ]
+            },
+            {
+              header: "Sanitization & Translator Notes",
+              footer: "Configure NovelFull's native chapter ad/watermark sanitization engine and translator note callouts.",
               views: [
                 (0, toolchain_1.UIToggle)({
                   id: constants_js_1.PREF_KEYS.SANITIZE_ADS,
@@ -1733,12 +1778,6 @@ var SourcePackage = (() => {
                   id: constants_js_1.PREF_KEYS.FORMAT_TLN,
                   title: "Format Translator Notes into Callouts",
                   currentValue: prefs.formatTln,
-                  defaultValue: true
-                }),
-                (0, toolchain_1.UIToggle)({
-                  id: constants_js_1.PREF_KEYS.NORMALIZE_SPACING,
-                  title: "Normalize Paragraph Spacing & Punctuation",
-                  currentValue: prefs.normalizeSpacing,
                   defaultValue: true
                 })
               ]
@@ -1778,30 +1817,26 @@ var SourcePackage = (() => {
         if (!isRecord(data)) {
           return;
         }
-        let { sanitizeAds, formatTln, normalizeSpacing, excludedGenres, customBlacklist } = memoryPreferences;
+        let { sanitizeAds, formatTln, normalizeSpacing, splitDialogue, formatCallouts, smartTypography, excludedGenres, customBlacklist } = memoryPreferences;
         const storeAvailable = hasObjectStore();
         const writeTasks = [];
-        if (data[constants_js_1.PREF_KEYS.SANITIZE_ADS] !== void 0) {
-          sanitizeAds = parseBooleanPref(data[constants_js_1.PREF_KEYS.SANITIZE_ADS], sanitizeAds);
+        const applyBoolPref = (key, current) => {
+          const raw = data[key];
+          if (raw === void 0)
+            return current;
+          const next = parseBooleanPref(raw, current);
           if (storeAvailable) {
-            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.SANITIZE_ADS, sanitizeAds).catch(() => {
+            writeTasks.push(ObjectStore.set(key, next).catch(() => {
             }));
           }
-        }
-        if (data[constants_js_1.PREF_KEYS.FORMAT_TLN] !== void 0) {
-          formatTln = parseBooleanPref(data[constants_js_1.PREF_KEYS.FORMAT_TLN], formatTln);
-          if (storeAvailable) {
-            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.FORMAT_TLN, formatTln).catch(() => {
-            }));
-          }
-        }
-        if (data[constants_js_1.PREF_KEYS.NORMALIZE_SPACING] !== void 0) {
-          normalizeSpacing = parseBooleanPref(data[constants_js_1.PREF_KEYS.NORMALIZE_SPACING], normalizeSpacing);
-          if (storeAvailable) {
-            writeTasks.push(ObjectStore.set(constants_js_1.PREF_KEYS.NORMALIZE_SPACING, normalizeSpacing).catch(() => {
-            }));
-          }
-        }
+          return next;
+        };
+        sanitizeAds = applyBoolPref(constants_js_1.PREF_KEYS.SANITIZE_ADS, sanitizeAds);
+        formatTln = applyBoolPref(constants_js_1.PREF_KEYS.FORMAT_TLN, formatTln);
+        normalizeSpacing = applyBoolPref(constants_js_1.PREF_KEYS.NORMALIZE_SPACING, normalizeSpacing);
+        splitDialogue = applyBoolPref(constants_js_1.PREF_KEYS.SPLIT_DIALOGUE, splitDialogue);
+        formatCallouts = applyBoolPref(constants_js_1.PREF_KEYS.FORMAT_CALLOUTS, formatCallouts);
+        smartTypography = applyBoolPref(constants_js_1.PREF_KEYS.SMART_TYPOGRAPHY, smartTypography);
         if (data[constants_js_1.PREF_KEYS.EXCLUDED_GENRES] !== void 0 && data[constants_js_1.PREF_KEYS.EXCLUDED_GENRES] !== null) {
           excludedGenres = parseStringList(data[constants_js_1.PREF_KEYS.EXCLUDED_GENRES]);
           if (storeAvailable) {
@@ -1820,6 +1855,9 @@ var SourcePackage = (() => {
           sanitizeAds,
           formatTln,
           normalizeSpacing,
+          splitDialogue,
+          formatCallouts,
+          smartTypography,
           excludedGenres,
           customBlacklist
         };
@@ -2913,6 +2951,7 @@ var SourcePackage = (() => {
       exports.formatTranslatorNotes = formatTranslatorNotes;
       exports.stripAggregatorWatermarks = stripAggregatorWatermarks;
       exports.escapeNonHtmlBrackets = escapeNonHtmlBrackets;
+      exports.applySmartTypographyToHtml = applySmartTypographyToHtml;
       exports.sanitizeChapterHtml = sanitizeChapterHtml;
       var toolchain_1 = require_dist();
       var cheerio = __importStar(require_cheerio());
@@ -2927,7 +2966,6 @@ var SourcePackage = (() => {
       var preferences_js_1 = require_preferences();
       var NOVEL_CACHE_TTL_MS = 3e4;
       var NOVEL_CACHE_MAX_ENTRIES = 25;
-      var TAG_SCANNER_REGEX = /<\/?div\b[^>]*>/gi;
       var CHAPTER_CONTAINER_START_REGEX = /<(?:div|section|article)\b[^>]*(?:id\s*=\s*["'](?:chapter-content|chr-content)["']|class\s*=\s*["'][^"']*\b(?:chapter-c|chr-c|chapter-content|desc-text)\b)[^>]*>/i;
       var DESC_FALLBACK_START_REGEX = /<div\b[^>]*\bclass\s*=\s*["'][^"']*\bdesc\b[^"']*>/i;
       var STRIP_TAGS_REGEX = /<[^>]+>/g;
@@ -2937,6 +2975,19 @@ var SourcePackage = (() => {
       var BLOCK_BOUNDARY_REGEX = /<\/?(?:p|div|center|blockquote|section|article|h[1-6]|hr)\b[^>]*>|<br\s*\/?>|\r?\n/gi;
       var HORIZONTAL_SPACE_COLLAPSE_REGEX = /[ \t]{2,}/g;
       var STANDALONE_NAV_LEAK_REGEX = /^(?:prev(?:ious)?\s+chapter|next\s+chapter|table\s+of\s+contents)$/i;
+      var DUPLICATE_CHAPTER_HEADER_REGEX = /^(?:(?:volume|vol\.?|book)\s+\d+[\s,:;\-–—]*)?(?:(?:chapter|ch\.?|episode|ep\.?)\s*\d+(?:[.,]\d+)?(?:\s*[:\-–—|]\s*\S.*)?|c\.?\s*\d+(?:\.\d+)?\s*[:\-–—]\s*\S.*)$/i;
+      var SCENE_BREAK_REGEX = /^(?:\*(?:\s*\*){2,}|-(?:\s*-){2,}|~(?:\s*~){2,}|=(?:\s*=){2,}|o0o|0o0)$/i;
+      var CALLOUT_BRACKET_REGEX = /^\[[^\]]{3,160}\]$/;
+      var CALLOUT_RAW_ANGLE_REGEX = /^<[^>]{2,160}>$/;
+      var STAT_PIPE_REGEX = /\|.*\|/;
+      var STAT_HEADER_REGEX = /^(?:Name|Level|Realm|HP|MP|Class|Title)\s*:/i;
+      var BACK_TO_BACK_QUOTE_SPLIT_REGEX = /([.!?…]["”'’](?:<\/(?:span|em|i|b|strong|u)>)?)\s+((?:<(?:span|em|i|b|strong|u)(?:\s+[^>]*)?>)?["“'‘])/g;
+      var BACK_TO_BACK_TELEPATHY_SPLIT_REGEX = /([.!?…]["”'’]?&gt;)\s+(&lt;[^&]|["“'‘][A-Za-z0-9])/g;
+      var QUOTE_TO_TELEPATHY_SPLIT_REGEX = /([.!?…]["”'’])\s+(&lt;[A-Za-z0-9“"'‘])/g;
+      var LONG_DIALOGUE_BEAT_SPLIT_REGEX = /([.!?…,]["”']\s+[^"“”<>\n]{2,160}?[.!?…])\s+(["“'][A-Z])/g;
+      var HTML_TAG_OR_ENTITY_REGEX = /(<[^>]+>|&[a-zA-Z0-9#]+;)/g;
+      var DOUBLE_HYPHEN_REGEX = /---?/g;
+      var TRIPLE_DOT_REGEX = /\.\.\./g;
       var ANGLE_BRACKET_PAIR_REGEX = /<([^<>]+)>/g;
       var CLOSING_HTML_TAG_REGEX = /^\/\s*([a-zA-Z][a-zA-Z0-9]*)\s*$/;
       var OPENING_HTML_TAG_REGEX = /^([a-zA-Z][a-zA-Z0-9]*)(?:\s+([\s\S]*?))?\s*\/?$/;
@@ -3648,30 +3699,118 @@ var SourcePackage = (() => {
         };
         return content;
       }
-      function extractChapterFragment(html) {
-        const startMatch = CHAPTER_CONTAINER_START_REGEX.exec(html);
-        if (!startMatch) {
-          const descMatch = DESC_FALLBACK_START_REGEX.exec(html);
-          if (!descMatch)
-            return html;
-          const startIndex2 = descMatch.index + descMatch[0].length;
-          return extractDivSlice(html, startIndex2);
+      var CHAPTER_CONTAINER_MARKERS = [
+        'id="chapter-content"',
+        "id='chapter-content'",
+        'id="chr-content"',
+        "id='chr-content'",
+        'class="chapter-c"',
+        "class='chapter-c'",
+        'class="chapter-c ',
+        "class='chapter-c "
+      ];
+      function extractContainerTagName(html, openTagStart) {
+        const prefix = html.slice(openTagStart + 1, openTagStart + 9).toLowerCase();
+        if (prefix.startsWith("div")) {
+          const ch = prefix.charCodeAt(3);
+          if (ch === 32 || ch === 9 || ch === 10 || ch === 13 || ch === 62) {
+            return "div";
+          }
+        } else if (prefix.startsWith("section")) {
+          const ch = prefix.charCodeAt(7);
+          if (ch === 32 || ch === 9 || ch === 10 || ch === 13 || ch === 62) {
+            return "section";
+          }
+        } else if (prefix.startsWith("article")) {
+          const ch = prefix.charCodeAt(7);
+          if (ch === 32 || ch === 9 || ch === 10 || ch === 13 || ch === 62) {
+            return "article";
+          }
         }
-        const startIndex = startMatch.index + startMatch[0].length;
-        return extractDivSlice(html, startIndex);
+        return null;
       }
-      function extractDivSlice(html, startIndex) {
+      function extractChapterFragment(html) {
+        var _a;
+        let earliestMarkerIdx = -1;
+        for (let i = 0; i < CHAPTER_CONTAINER_MARKERS.length; i++) {
+          const idx = html.indexOf(CHAPTER_CONTAINER_MARKERS[i]);
+          if (idx !== -1 && (earliestMarkerIdx === -1 || idx < earliestMarkerIdx)) {
+            earliestMarkerIdx = idx;
+          }
+        }
+        if (earliestMarkerIdx !== -1) {
+          const openTagStart = html.lastIndexOf("<", earliestMarkerIdx);
+          const openTagEnd = html.indexOf(">", earliestMarkerIdx);
+          if (openTagStart !== -1 && openTagEnd !== -1 && openTagStart < earliestMarkerIdx) {
+            const tagName = extractContainerTagName(html, openTagStart);
+            if (tagName) {
+              return extractElementSliceByIndexOf(html, openTagEnd + 1, tagName);
+            }
+          }
+        }
+        const startMatch = CHAPTER_CONTAINER_START_REGEX.exec(html);
+        if (startMatch) {
+          const startIndex = startMatch.index + startMatch[0].length;
+          const tagName = (_a = extractContainerTagName(html, startMatch.index)) != null ? _a : "div";
+          return extractElementSliceByIndexOf(html, startIndex, tagName);
+        }
+        const descMatch = DESC_FALLBACK_START_REGEX.exec(html);
+        if (descMatch) {
+          const startIndex = descMatch.index + descMatch[0].length;
+          return extractElementSliceByIndexOf(html, startIndex, "div");
+        }
+        return html;
+      }
+      function extractElementSliceByIndexOf(html, startIndex, tagName) {
         let depth = 1;
-        TAG_SCANNER_REGEX.lastIndex = startIndex;
-        let match;
-        while ((match = TAG_SCANNER_REGEX.exec(html)) !== null) {
-          if (match[0].startsWith("</")) {
+        let cursor = startIndex;
+        const len = html.length;
+        const openToken = `<${tagName}`;
+        const closeToken = `</${tagName}`;
+        const tokenLen = openToken.length;
+        while (cursor < len) {
+          const nextClose = html.indexOf(closeToken, cursor);
+          if (nextClose === -1) {
+            break;
+          }
+          const nextOpen = html.indexOf(openToken, cursor);
+          if (nextOpen !== -1 && nextOpen < nextClose) {
+            const afterCode = html.charCodeAt(nextOpen + tokenLen);
+            if (afterCode === 32 || afterCode === 62 || afterCode === 9 || afterCode === 10 || afterCode === 13 || afterCode === 47) {
+              const tagEnd = html.indexOf(">", nextOpen + tokenLen);
+              if (tagEnd === -1) {
+                break;
+              }
+              if (tagName === "div") {
+                const headerSlice = html.slice(nextOpen, Math.min(tagEnd + 1, nextOpen + 160));
+                if (headerSlice.includes('id="chapter-nav"') || headerSlice.includes("id='chapter-nav'") || headerSlice.includes('class="chapter-nav') || headerSlice.includes("class='chapter-nav")) {
+                  return html.slice(startIndex, nextOpen);
+                }
+              }
+              if (html.charCodeAt(tagEnd - 1) !== 47) {
+                depth++;
+              }
+              cursor = tagEnd + 1;
+            } else {
+              cursor = nextOpen + tokenLen;
+            }
+          } else {
+            const closeEnd = html.indexOf(">", nextClose + tokenLen + 1);
+            if (closeEnd === -1) {
+              break;
+            }
             depth--;
             if (depth === 0) {
-              return html.slice(startIndex, match.index);
+              return html.slice(startIndex, nextClose);
             }
-          } else if (!match[0].endsWith("/>")) {
-            depth++;
+            cursor = closeEnd + 1;
+          }
+        }
+        const navFallbackIdx = html.indexOf('id="chapter-nav"', startIndex);
+        if (navFallbackIdx !== -1) {
+          const navTagStart = html.lastIndexOf("<div", navFallbackIdx);
+          if (navTagStart >= startIndex) {
+            return html.slice(startIndex, navTagStart);
           }
         }
         return html.slice(startIndex);
@@ -3751,6 +3890,199 @@ var SourcePackage = (() => {
           }
         }
       }
+      var OPENING_QUOTE_CHARS = /* @__PURE__ */ new Set([
+        "",
+        " ",
+        "	",
+        "\n",
+        "\r",
+        "(",
+        "[",
+        "{",
+        "/",
+        ":",
+        "<",
+        "\u201C",
+        "\u2018",
+        "\u2014",
+        "\u2013"
+      ]);
+      function isAlphaNumChar(ch) {
+        if (!ch)
+          return false;
+        const code = ch.charCodeAt(0);
+        return code >= 48 && code <= 57 || code >= 65 && code <= 90 || code >= 97 && code <= 122 || code >= 128;
+      }
+      function isInsideHtmlTag(str, offset) {
+        const lastOpen = str.lastIndexOf("<", offset);
+        if (lastOpen === -1)
+          return false;
+        const lastClose = str.lastIndexOf(">", offset);
+        return lastOpen > lastClose;
+      }
+      function splitSegmentWithBoundary(input, regex, out) {
+        var _a, _b;
+        regex.lastIndex = 0;
+        let lastPos = 0;
+        let match;
+        while ((match = regex.exec(input)) !== null) {
+          if (isInsideHtmlTag(input, match.index)) {
+            continue;
+          }
+          const leftGroup = (_a = match[1]) != null ? _a : "";
+          const rightGroup = (_b = match[2]) != null ? _b : "";
+          const splitAt = match.index + leftGroup.length;
+          const left = input.slice(lastPos, splitAt).trim();
+          if (left) {
+            out.push(left);
+          }
+          lastPos = match.index + match[0].length - rightGroup.length;
+        }
+        const remainder = input.slice(lastPos).trim();
+        if (remainder) {
+          out.push(remainder);
+        }
+      }
+      function splitDialogueBlock(block, plainTextLen) {
+        let parts = [block];
+        const applySplitRegex = (regex) => {
+          const nextParts = [];
+          for (let i = 0, len = parts.length; i < len; i++) {
+            splitSegmentWithBoundary(parts[i], regex, nextParts);
+          }
+          parts = nextParts;
+        };
+        if (block.includes('"') || block.includes("\u201D") || block.includes("'") || block.includes("\u2019")) {
+          applySplitRegex(BACK_TO_BACK_QUOTE_SPLIT_REGEX);
+        }
+        if (block.includes("&gt;")) {
+          applySplitRegex(BACK_TO_BACK_TELEPATHY_SPLIT_REGEX);
+        }
+        if (block.includes("&lt;")) {
+          applySplitRegex(QUOTE_TO_TELEPATHY_SPLIT_REGEX);
+        }
+        if (plainTextLen > 220) {
+          applySplitRegex(LONG_DIALOGUE_BEAT_SPLIT_REGEX);
+        }
+        return parts;
+      }
+      function isStandaloneAngleCallout(textOnly) {
+        if (textOnly.startsWith("&lt;") && textOnly.endsWith("&gt;") && textOnly.length >= 10 && textOnly.length <= 168) {
+          return textOnly.indexOf("&lt;", 4) === -1 && textOnly.indexOf("&gt;", 4) === textOnly.length - 4;
+        }
+        return CALLOUT_RAW_ANGLE_REGEX.test(textOnly);
+      }
+      function isCalloutBlock(textOnly) {
+        if (CALLOUT_BRACKET_REGEX.test(textOnly)) {
+          return true;
+        }
+        if (isStandaloneAngleCallout(textOnly)) {
+          return true;
+        }
+        if (textOnly.length <= 260 && STAT_PIPE_REGEX.test(textOnly)) {
+          return true;
+        }
+        if (textOnly.length <= 220 && STAT_HEADER_REGEX.test(textOnly)) {
+          return true;
+        }
+        return false;
+      }
+      function isDuplicateChapterHeader(textOnly) {
+        return textOnly.length <= 160 && DUPLICATE_CHAPTER_HEADER_REGEX.test(textOnly);
+      }
+      function formatProseSegment(prose, initialPrevChar) {
+        if (!prose) {
+          return { formatted: prose, lastChar: initialPrevChar };
+        }
+        let text = prose;
+        if (text.includes("--")) {
+          text = text.replace(DOUBLE_HYPHEN_REGEX, "\u2014");
+        }
+        if (text.includes("...")) {
+          text = text.replace(TRIPLE_DOT_REGEX, "\u2026");
+        }
+        if (!text.includes('"') && !text.includes("'")) {
+          return {
+            formatted: text,
+            lastChar: text.charAt(text.length - 1) || initialPrevChar
+          };
+        }
+        let out = "";
+        let prev = initialPrevChar;
+        const len = text.length;
+        for (let i = 0; i < len; i++) {
+          const ch = text.charAt(i);
+          const next = i + 1 < len ? text.charAt(i + 1) : "";
+          if (ch === '"') {
+            let isOpen = false;
+            if (prev === "\u2014" || prev === "\u2013" || prev === "-") {
+              isOpen = isAlphaNumChar(next) || next === "'" || next === "\u2018";
+            } else if (OPENING_QUOTE_CHARS.has(prev)) {
+              isOpen = true;
+            }
+            const smart = isOpen ? "\u201C" : "\u201D";
+            out += smart;
+            prev = smart;
+          } else if (ch === "'") {
+            let isOpen = false;
+            if (isAlphaNumChar(prev)) {
+              isOpen = false;
+            } else if (prev === "\u2014" || prev === "\u2013" || prev === "-") {
+              isOpen = isAlphaNumChar(next) || next === '"' || next === "\u201C";
+            } else if (OPENING_QUOTE_CHARS.has(prev)) {
+              isOpen = isAlphaNumChar(next) || next === '"' || next === "\u201C";
+            }
+            const smart = isOpen ? "\u2018" : "\u2019";
+            out += smart;
+            prev = smart;
+          } else {
+            out += ch;
+            prev = ch;
+          }
+        }
+        return { formatted: out, lastChar: prev };
+      }
+      function applySmartTypographyToHtml(html) {
+        if (!html)
+          return "";
+        HTML_TAG_OR_ENTITY_REGEX.lastIndex = 0;
+        let result = "";
+        let lastIndex = 0;
+        let prevChar = "";
+        let match;
+        while ((match = HTML_TAG_OR_ENTITY_REGEX.exec(html)) !== null) {
+          if (match.index > lastIndex) {
+            const proseChunk = html.slice(lastIndex, match.index);
+            const { formatted, lastChar } = formatProseSegment(proseChunk, prevChar);
+            result += formatted;
+            prevChar = lastChar;
+          }
+          const token = match[0];
+          result += token;
+          if (token.charCodeAt(0) === 60) {
+            if (token.charCodeAt(1) !== 47 && (!prevChar || OPENING_QUOTE_CHARS.has(prevChar))) {
+              prevChar = "";
+            }
+          } else if (token === "&lt;") {
+            prevChar = "<";
+          } else if (token === "&gt;") {
+            prevChar = ">";
+          } else if (token === "&nbsp;") {
+            prevChar = " ";
+          } else if (token === "&mdash;") {
+            prevChar = "\u2014";
+          } else if (token === "&ndash;") {
+            prevChar = "\u2013";
+          } else {
+            prevChar = "a";
+          }
+          lastIndex = match.index + token.length;
+        }
+        if (lastIndex < html.length) {
+          result += formatProseSegment(html.slice(lastIndex), prevChar).formatted;
+        }
+        return result;
+      }
       function sanitizeChapterHtml(rawHtml, prefs) {
         var _a, _b;
         if (!rawHtml || typeof rawHtml !== "string") {
@@ -3759,6 +4091,9 @@ var SourcePackage = (() => {
         const sanitizeAds = (prefs == null ? void 0 : prefs.sanitizeAds) !== false;
         const formatTln = (prefs == null ? void 0 : prefs.formatTln) !== false;
         const normalizeSpacing = (prefs == null ? void 0 : prefs.normalizeSpacing) !== false;
+        const splitDialogue = (prefs == null ? void 0 : prefs.splitDialogue) !== false;
+        const formatCallouts = (prefs == null ? void 0 : prefs.formatCallouts) !== false;
+        const smartTypography = (prefs == null ? void 0 : prefs.smartTypography) !== false;
         const rawFragment = extractChapterFragment(rawHtml);
         const withoutComments = rawFragment.replace(HTML_COMMENTS_REGEX, "");
         const escapedHtml = escapeNonHtmlBrackets(withoutComments);
@@ -3773,7 +4108,7 @@ var SourcePackage = (() => {
         if (sanitizeAds) {
           bodyHtml = stripAggregatorWatermarks(bodyHtml);
         }
-        if (normalizeSpacing) {
+        if (normalizeSpacing || smartTypography) {
           bodyHtml = normalizeTypographyAndEntities(bodyHtml);
         }
         if (formatTln) {
@@ -3781,7 +4116,8 @@ var SourcePackage = (() => {
         }
         if (normalizeSpacing) {
           const rawBlocks = bodyHtml.split(BLOCK_BOUNDARY_REGEX);
-          const paragraphs = [];
+          const outputBlocks = [];
+          let checkedLeadingHeader = false;
           for (let i = 0, len = rawBlocks.length; i < len; i++) {
             const block = (_b = rawBlocks[i]) == null ? void 0 : _b.replace(HORIZONTAL_SPACE_COLLAPSE_REGEX, " ").trim();
             if (!block)
@@ -3792,11 +4128,40 @@ var SourcePackage = (() => {
             if (sanitizeAds && STANDALONE_NAV_LEAK_REGEX.test(textOnly)) {
               continue;
             }
-            paragraphs.push(`<p>${block}</p>`);
+            if (!checkedLeadingHeader) {
+              checkedLeadingHeader = true;
+              if (isDuplicateChapterHeader(textOnly)) {
+                continue;
+              }
+            }
+            if (smartTypography && SCENE_BREAK_REGEX.test(textOnly)) {
+              outputBlocks.push("<hr />");
+              continue;
+            }
+            const subBlocks = splitDialogue ? splitDialogueBlock(block, textOnly.length) : [block];
+            for (let j = 0, subLen = subBlocks.length; j < subLen; j++) {
+              const sub = subBlocks[j];
+              const subTextOnly = subLen === 1 ? textOnly : sub.replace(STRIP_TAGS_REGEX, "").replace(ENTITIES_NBSP_REGEX, " ").trim();
+              if (!subTextOnly)
+                continue;
+              if (smartTypography && SCENE_BREAK_REGEX.test(subTextOnly)) {
+                outputBlocks.push("<hr />");
+                continue;
+              }
+              const formattedSub = smartTypography ? applySmartTypographyToHtml(sub) : sub;
+              if (formatCallouts && isCalloutBlock(subTextOnly)) {
+                outputBlocks.push(`<blockquote>${formattedSub}</blockquote>`);
+              } else {
+                outputBlocks.push(`<p>${formattedSub}</p>`);
+              }
+            }
           }
-          bodyHtml = paragraphs.join("\n\n");
+          bodyHtml = outputBlocks.join("\n\n");
         } else {
           bodyHtml = bodyHtml.replace(EMPTY_P_REGEX, "").trim();
+          if (smartTypography) {
+            bodyHtml = applySmartTypographyToHtml(bodyHtml);
+          }
         }
         if (!bodyHtml) {
           return "<p>No chapter text available.</p>";
@@ -4083,7 +4448,7 @@ var SourcePackage = (() => {
       init_Buffer();
       init_process();
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.Target = exports.stripAggregatorWatermarks = exports.sanitizeChapterHtml = exports.parseNovelDetail = exports.parseNovelCards = exports.parseChapterNumber = exports.parseAjaxChapterOptions = exports.normalizeTypographyAndEntities = exports.normalizeImageUrl = exports.mapChapterEntriesToChapters = exports.mapCardToItem = exports.isNovelAllowed = exports.formatTranslatorNotes = exports.filterAndMapNovelCards = exports.extractCoverFromElement = exports.extractChapterNumber = exports.escapeNonHtmlBrackets = exports.compileBlacklistContext = exports.cleanTitle = exports.cleanAndDeduplicateTitle = exports.canResolveNovelFullUrl = void 0;
+      exports.Target = exports.stripAggregatorWatermarks = exports.sanitizeChapterHtml = exports.parseNovelDetail = exports.parseNovelCards = exports.parseChapterNumber = exports.parseAjaxChapterOptions = exports.normalizeTypographyAndEntities = exports.normalizeImageUrl = exports.mapChapterEntriesToChapters = exports.mapCardToItem = exports.isNovelAllowed = exports.formatTranslatorNotes = exports.filterAndMapNovelCards = exports.extractCoverFromElement = exports.extractChapterNumber = exports.escapeNonHtmlBrackets = exports.compileBlacklistContext = exports.cleanTitle = exports.cleanAndDeduplicateTitle = exports.canResolveNovelFullUrl = exports.applySmartTypographyToHtml = void 0;
       var toolchain_1 = require_dist();
       var api_js_1 = require_api();
       Object.defineProperty(exports, "canResolveNovelFullUrl", { enumerable: true, get: function() {
@@ -4108,6 +4473,9 @@ var SourcePackage = (() => {
         return preferences_js_1.isNovelAllowed;
       } });
       var scraper_js_1 = require_scraper();
+      Object.defineProperty(exports, "applySmartTypographyToHtml", { enumerable: true, get: function() {
+        return scraper_js_1.applySmartTypographyToHtml;
+      } });
       Object.defineProperty(exports, "escapeNonHtmlBrackets", { enumerable: true, get: function() {
         return scraper_js_1.escapeNonHtmlBrackets;
       } });
@@ -4423,7 +4791,7 @@ var SourcePackage = (() => {
       var Target = _Target;
       exports.default = Target;
       exports.Target = Target;
-      Target.info.version = 1.7;
+      Target.info.version = 1.8;
     }
   });
 
@@ -4435,7 +4803,7 @@ var SourcePackage = (() => {
       var runtime = require_runtime();
       var sourceModule = require_org();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "org.novelfull", "name": "NovelFull", "version": 1.7, "website": "https://novelfull.com", "rating": 0, "thumbnail": "novelfull.png", "languages": ["en"] };
+      exports.SourceMetadata = { "id": "org.novelfull", "name": "NovelFull", "version": 1.8, "website": "https://novelfull.com", "rating": 0, "thumbnail": "novelfull.png", "languages": ["en"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;

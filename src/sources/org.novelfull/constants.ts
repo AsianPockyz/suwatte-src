@@ -9,7 +9,7 @@ export { ContentRating };
 
 export const SOURCE_ID = "org.novelfull";
 export const SOURCE_NAME = "NovelFull";
-export const SOURCE_VERSION = 1.7;
+export const SOURCE_VERSION = 1.8;
 export const BASE_URL = "https://novelfull.com";
 export const VARIANT_ID = "org.novelfull";
 export const THUMBNAIL_FILENAME = "novelfull.png";
@@ -204,6 +204,9 @@ export const PREF_KEYS = {
   SANITIZE_ADS: "sanitize_ads",
   FORMAT_TLN: "format_tln",
   NORMALIZE_SPACING: "normalize_spacing",
+  SPLIT_DIALOGUE: "split_dialogue",
+  FORMAT_CALLOUTS: "format_callouts",
+  SMART_TYPOGRAPHY: "smart_typography",
   EXCLUDED_GENRES: "excluded_genres",
   CUSTOM_BLACKLIST: "custom_blacklist",
 } as const;

@@ -1,6 +1,6 @@
 {
   "name": "suwatte-atsu",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "scripts": {
     "build": "suwatte build",
     "postbuild": "node scripts/postbuild.cjs && node -e \"const fs=require('fs');const p='dist/sources.json';if(fs.existsSync(p)){const d=JSON.parse(fs.readFileSync(p,'utf8'));const s=d.sources.find(x=>x.id==='org.imhentai');if(s)s.version=1.9;fs.writeFileSync(p,JSON.stringify(d,null,2)+'\\n');}\""

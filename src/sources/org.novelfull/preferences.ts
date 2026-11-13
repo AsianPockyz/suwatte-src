@@ -41,6 +41,9 @@ let memoryPreferences: NovelFullUserPreferences = {
   sanitizeAds: true,
   formatTln: true,
   normalizeSpacing: true,
+  splitDialogue: true,
+  formatCallouts: true,
+  smartTypography: true,
   excludedGenres: [],
   customBlacklist: [],
 };
@@ -211,12 +214,18 @@ async function hydratePreferencesFromStore(): Promise<NovelFullUserPreferences> 
       storedSanitizeAds,
       storedFormatTln,
       storedNormalizeSpacing,
+      storedSplitDialogue,
+      storedFormatCallouts,
+      storedSmartTypography,
       storedExcludedGenres,
       storedCustomBlacklist,
     ] = await Promise.all([
       ObjectStore.get(PREF_KEYS.SANITIZE_ADS).catch(() => null),
       ObjectStore.get(PREF_KEYS.FORMAT_TLN).catch(() => null),
       ObjectStore.get(PREF_KEYS.NORMALIZE_SPACING).catch(() => null),
+      ObjectStore.get(PREF_KEYS.SPLIT_DIALOGUE).catch(() => null),
+      ObjectStore.get(PREF_KEYS.FORMAT_CALLOUTS).catch(() => null),
+      ObjectStore.get(PREF_KEYS.SMART_TYPOGRAPHY).catch(() => null),
       ObjectStore.get(PREF_KEYS.EXCLUDED_GENRES).catch(() => null),
       ObjectStore.get(PREF_KEYS.CUSTOM_BLACKLIST).catch(() => null),
     ]);
@@ -239,6 +248,30 @@ async function hydratePreferencesFromStore(): Promise<NovelFullUserPreferences> 
           )
         : memoryPreferences.normalizeSpacing;
 
+    const splitDialogue =
+      storedSplitDialogue !== null && storedSplitDialogue !== undefined
+        ? parseBooleanPref(
+            storedSplitDialogue,
+            memoryPreferences.splitDialogue
+          )
+        : memoryPreferences.splitDialogue;
+
+    const formatCallouts =
+      storedFormatCallouts !== null && storedFormatCallouts !== undefined
+        ? parseBooleanPref(
+            storedFormatCallouts,
+            memoryPreferences.formatCallouts
+          )
+        : memoryPreferences.formatCallouts;
+
+    const smartTypography =
+      storedSmartTypography !== null && storedSmartTypography !== undefined
+        ? parseBooleanPref(
+            storedSmartTypography,
+            memoryPreferences.smartTypography
+          )
+        : memoryPreferences.smartTypography;
+
     const excludedGenres =
       storedExcludedGenres !== null && storedExcludedGenres !== undefined
         ? parseStringList(storedExcludedGenres)
@@ -253,6 +286,9 @@ async function hydratePreferencesFromStore(): Promise<NovelFullUserPreferences> 
       sanitizeAds,
       formatTln,
       normalizeSpacing,
+      splitDialogue,
+      formatCallouts,
+      smartTypography,
       excludedGenres,
       customBlacklist,
     };
@@ -473,9 +509,40 @@ export async function buildSettingsForm(): Promise<UIForm> {
   return {
     sections: [
       {
-        header: "Reading & Typography Enhancements",
+        header: "Reader Layout & Typography",
         footer:
-          "Configure NovelFull's native chapter text sanitization engine, translator note callouts, and paragraph typography.",
+          "Auto-Split Multi-Speaker Dialogue breaks dense wall-of-text paragraphs into separate paragraphs. Clean Paragraph Structure & Headers converts line breaks into proper paragraphs, removes blank spacer lines, and strips duplicate chapter headers. Format System Windows & Stat Blocks highlights [System Alerts], <Telepathy> lines, and stat screens in distinct callout blocks. Book-Grade Quotes & Scene Dividers converts straight quotes to curly quotes, formats em-dashes, and cleans up ASCII scene breaks.",
+        views: [
+          UIToggle({
+            id: PREF_KEYS.SPLIT_DIALOGUE,
+            title: "Auto-Split Multi-Speaker Dialogue",
+            currentValue: prefs.splitDialogue,
+            defaultValue: true,
+          }),
+          UIToggle({
+            id: PREF_KEYS.NORMALIZE_SPACING,
+            title: "Clean Paragraph Structure & Headers",
+            currentValue: prefs.normalizeSpacing,
+            defaultValue: true,
+          }),
+          UIToggle({
+            id: PREF_KEYS.FORMAT_CALLOUTS,
+            title: "Format System Windows & Stat Blocks",
+            currentValue: prefs.formatCallouts,
+            defaultValue: true,
+          }),
+          UIToggle({
+            id: PREF_KEYS.SMART_TYPOGRAPHY,
+            title: "Book-Grade Quotes & Scene Dividers",
+            currentValue: prefs.smartTypography,
+            defaultValue: true,
+          }),
+        ],
+      },
+      {
+        header: "Sanitization & Translator Notes",
+        footer:
+          "Configure NovelFull's native chapter ad/watermark sanitization engine and translator note callouts.",
         views: [
           UIToggle({
             id: PREF_KEYS.SANITIZE_ADS,
@@ -487,12 +554,6 @@ export async function buildSettingsForm(): Promise<UIForm> {
             id: PREF_KEYS.FORMAT_TLN,
             title: "Format Translator Notes into Callouts",
             currentValue: prefs.formatTln,
-            defaultValue: true,
-          }),
-          UIToggle({
-            id: PREF_KEYS.NORMALIZE_SPACING,
-            title: "Normalize Paragraph Spacing & Punctuation",
-            currentValue: prefs.normalizeSpacing,
             defaultValue: true,
           }),
         ],
@@ -541,6 +602,9 @@ export async function updateUserPreferences(
     sanitizeAds,
     formatTln,
     normalizeSpacing,
+    splitDialogue,
+    formatCallouts,
+    smartTypography,
     excludedGenres,
     customBlacklist,
   } = memoryPreferences;
@@ -548,37 +612,25 @@ export async function updateUserPreferences(
   const storeAvailable = hasObjectStore();
   const writeTasks: Array<Promise<unknown>> = [];
 
-  if (data[PREF_KEYS.SANITIZE_ADS] !== undefined) {
-    sanitizeAds = parseBooleanPref(data[PREF_KEYS.SANITIZE_ADS], sanitizeAds);
+  const applyBoolPref = (key: string, current: boolean): boolean => {
+    const raw = data[key];
+    if (raw === undefined) return current;
+    const next = parseBooleanPref(raw, current);
     if (storeAvailable) {
-      writeTasks.push(
-        ObjectStore.set(PREF_KEYS.SANITIZE_ADS, sanitizeAds).catch(() => {})
-      );
+      writeTasks.push(ObjectStore.set(key, next).catch(() => {}));
     }
-  }
+    return next;
+  };
 
-  if (data[PREF_KEYS.FORMAT_TLN] !== undefined) {
-    formatTln = parseBooleanPref(data[PREF_KEYS.FORMAT_TLN], formatTln);
-    if (storeAvailable) {
-      writeTasks.push(
-        ObjectStore.set(PREF_KEYS.FORMAT_TLN, formatTln).catch(() => {})
-      );
-    }
-  }
-
-  if (data[PREF_KEYS.NORMALIZE_SPACING] !== undefined) {
-    normalizeSpacing = parseBooleanPref(
-      data[PREF_KEYS.NORMALIZE_SPACING],
-      normalizeSpacing
-    );
-    if (storeAvailable) {
-      writeTasks.push(
-        ObjectStore.set(PREF_KEYS.NORMALIZE_SPACING, normalizeSpacing).catch(
-          () => {}
-        )
-      );
-    }
-  }
+  sanitizeAds = applyBoolPref(PREF_KEYS.SANITIZE_ADS, sanitizeAds);
+  formatTln = applyBoolPref(PREF_KEYS.FORMAT_TLN, formatTln);
+  normalizeSpacing = applyBoolPref(
+    PREF_KEYS.NORMALIZE_SPACING,
+    normalizeSpacing
+  );
+  splitDialogue = applyBoolPref(PREF_KEYS.SPLIT_DIALOGUE, splitDialogue);
+  formatCallouts = applyBoolPref(PREF_KEYS.FORMAT_CALLOUTS, formatCallouts);
+  smartTypography = applyBoolPref(PREF_KEYS.SMART_TYPOGRAPHY, smartTypography);
 
   if (
     data[PREF_KEYS.EXCLUDED_GENRES] !== undefined &&
@@ -613,6 +665,9 @@ export async function updateUserPreferences(
     sanitizeAds,
     formatTln,
     normalizeSpacing,
+    splitDialogue,
+    formatCallouts,
+    smartTypography,
     excludedGenres,
     customBlacklist,
   };

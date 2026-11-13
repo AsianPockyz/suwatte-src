@@ -79,7 +79,6 @@ interface CachedNovelEntry {
 // Pre-Compiled Static Regex Pipeline (v1.2 High-Performance Engine)
 // ============================================================================
 
-const TAG_SCANNER_REGEX = /<\/?div\b[^>]*>/gi;
 const CHAPTER_CONTAINER_START_REGEX =
   /<(?:div|section|article)\b[^>]*(?:id\s*=\s*["'](?:chapter-content|chr-content)["']|class\s*=\s*["'][^"']*\b(?:chapter-c|chr-c|chapter-content|desc-text)\b)[^>]*>/i;
 const DESC_FALLBACK_START_REGEX =
@@ -94,6 +93,29 @@ const BLOCK_BOUNDARY_REGEX =
 const HORIZONTAL_SPACE_COLLAPSE_REGEX = /[ \t]{2,}/g;
 const STANDALONE_NAV_LEAK_REGEX =
   /^(?:prev(?:ious)?\s+chapter|next\s+chapter|table\s+of\s+contents)$/i;
+
+const DUPLICATE_CHAPTER_HEADER_REGEX =
+  /^(?:(?:volume|vol\.?|book)\s+\d+[\s,:;\-–—]*)?(?:(?:chapter|ch\.?|episode|ep\.?)\s*\d+(?:[.,]\d+)?(?:\s*[:\-–—|]\s*\S.*)?|c\.?\s*\d+(?:\.\d+)?\s*[:\-–—]\s*\S.*)$/i;
+const SCENE_BREAK_REGEX =
+  /^(?:\*(?:\s*\*){2,}|-(?:\s*-){2,}|~(?:\s*~){2,}|=(?:\s*=){2,}|o0o|0o0)$/i;
+const CALLOUT_BRACKET_REGEX = /^\[[^\]]{3,160}\]$/;
+const CALLOUT_RAW_ANGLE_REGEX = /^<[^>]{2,160}>$/;
+const STAT_PIPE_REGEX = /\|.*\|/;
+const STAT_HEADER_REGEX =
+  /^(?:Name|Level|Realm|HP|MP|Class|Title)\s*:/i;
+
+const BACK_TO_BACK_QUOTE_SPLIT_REGEX =
+  /([.!?…]["”'’](?:<\/(?:span|em|i|b|strong|u)>)?)\s+((?:<(?:span|em|i|b|strong|u)(?:\s+[^>]*)?>)?["“'‘])/g;
+const BACK_TO_BACK_TELEPATHY_SPLIT_REGEX =
+  /([.!?…]["”'’]?&gt;)\s+(&lt;[^&]|["“'‘][A-Za-z0-9])/g;
+const QUOTE_TO_TELEPATHY_SPLIT_REGEX =
+  /([.!?…]["”'’])\s+(&lt;[A-Za-z0-9“"'‘])/g;
+const LONG_DIALOGUE_BEAT_SPLIT_REGEX =
+  /([.!?…,]["”']\s+[^"“”<>\n]{2,160}?[.!?…])\s+(["“'][A-Z])/g;
+
+const HTML_TAG_OR_ENTITY_REGEX = /(<[^>]+>|&[a-zA-Z0-9#]+;)/g;
+const DOUBLE_HYPHEN_REGEX = /---?/g;
+const TRIPLE_DOT_REGEX = /\.\.\./g;
 
 const ANGLE_BRACKET_PAIR_REGEX = /<([^<>]+)>/g;
 const CLOSING_HTML_TAG_REGEX = /^\/\s*([a-zA-Z][a-zA-Z0-9]*)\s*$/;
@@ -1188,36 +1210,156 @@ export function mapDetailToContent(
 // 4. Native Novel Text Reader & Sanitization Engine (getChapterText)
 // ============================================================================
 
-/**
- * Extracts raw chapter body fragment from the full HTML page using fast string scanning,
- * avoiding parsing the whole 100KB document tree.
- */
-function extractChapterFragment(html: string): string {
-  const startMatch = CHAPTER_CONTAINER_START_REGEX.exec(html);
-  if (!startMatch) {
-    const descMatch = DESC_FALLBACK_START_REGEX.exec(html);
-    if (!descMatch) return html;
-    const startIndex = descMatch.index + descMatch[0].length;
-    return extractDivSlice(html, startIndex);
-  }
-  const startIndex = startMatch.index + startMatch[0].length;
-  return extractDivSlice(html, startIndex);
-}
+const CHAPTER_CONTAINER_MARKERS: readonly string[] = [
+  'id="chapter-content"',
+  "id='chapter-content'",
+  'id="chr-content"',
+  "id='chr-content'",
+  'class="chapter-c"',
+  "class='chapter-c'",
+  'class="chapter-c ',
+  "class='chapter-c ",
+];
 
-function extractDivSlice(html: string, startIndex: number): string {
-  let depth = 1;
-  TAG_SCANNER_REGEX.lastIndex = startIndex;
-  let match: RegExpExecArray | null;
-  while ((match = TAG_SCANNER_REGEX.exec(html)) !== null) {
-    if (match[0].startsWith("</")) {
-      depth--;
-      if (depth === 0) {
-        return html.slice(startIndex, match.index);
-      }
-    } else if (!match[0].endsWith("/>")) {
-      depth++;
+function extractContainerTagName(
+  html: string,
+  openTagStart: number
+): "div" | "section" | "article" | null {
+  const prefix = html.slice(openTagStart + 1, openTagStart + 9).toLowerCase();
+  if (prefix.startsWith("div")) {
+    const ch = prefix.charCodeAt(3);
+    if (ch === 32 || ch === 9 || ch === 10 || ch === 13 || ch === 62) {
+      return "div";
+    }
+  } else if (prefix.startsWith("section")) {
+    const ch = prefix.charCodeAt(7);
+    if (ch === 32 || ch === 9 || ch === 10 || ch === 13 || ch === 62) {
+      return "section";
+    }
+  } else if (prefix.startsWith("article")) {
+    const ch = prefix.charCodeAt(7);
+    if (ch === 32 || ch === 9 || ch === 10 || ch === 13 || ch === 62) {
+      return "article";
     }
   }
+  return null;
+}
+
+/**
+ * Extracts raw chapter body fragment from the full HTML page using fast `indexOf` slicing,
+ * avoiding full-document DOM parsing of headers, navbars, scripts, and footers.
+ */
+function extractChapterFragment(html: string): string {
+  let earliestMarkerIdx = -1;
+  for (let i = 0; i < CHAPTER_CONTAINER_MARKERS.length; i++) {
+    const idx = html.indexOf(CHAPTER_CONTAINER_MARKERS[i]!);
+    if (idx !== -1 && (earliestMarkerIdx === -1 || idx < earliestMarkerIdx)) {
+      earliestMarkerIdx = idx;
+    }
+  }
+
+  if (earliestMarkerIdx !== -1) {
+    const openTagStart = html.lastIndexOf("<", earliestMarkerIdx);
+    const openTagEnd = html.indexOf(">", earliestMarkerIdx);
+    if (openTagStart !== -1 && openTagEnd !== -1 && openTagStart < earliestMarkerIdx) {
+      const tagName = extractContainerTagName(html, openTagStart);
+      if (tagName) {
+        return extractElementSliceByIndexOf(html, openTagEnd + 1, tagName);
+      }
+    }
+  }
+
+  const startMatch = CHAPTER_CONTAINER_START_REGEX.exec(html);
+  if (startMatch) {
+    const startIndex = startMatch.index + startMatch[0].length;
+    const tagName = extractContainerTagName(html, startMatch.index) ?? "div";
+    return extractElementSliceByIndexOf(html, startIndex, tagName);
+  }
+
+  const descMatch = DESC_FALLBACK_START_REGEX.exec(html);
+  if (descMatch) {
+    const startIndex = descMatch.index + descMatch[0].length;
+    return extractElementSliceByIndexOf(html, startIndex, "div");
+  }
+
+  return html;
+}
+
+function extractElementSliceByIndexOf(
+  html: string,
+  startIndex: number,
+  tagName: "div" | "section" | "article"
+): string {
+  let depth = 1;
+  let cursor = startIndex;
+  const len = html.length;
+  const openToken = `<${tagName}`;
+  const closeToken = `</${tagName}`;
+  const tokenLen = openToken.length;
+
+  while (cursor < len) {
+    const nextClose = html.indexOf(closeToken, cursor);
+    if (nextClose === -1) {
+      break;
+    }
+
+    const nextOpen = html.indexOf(openToken, cursor);
+    if (nextOpen !== -1 && nextOpen < nextClose) {
+      const afterCode = html.charCodeAt(nextOpen + tokenLen);
+      if (
+        afterCode === 32 ||
+        afterCode === 62 ||
+        afterCode === 9 ||
+        afterCode === 10 ||
+        afterCode === 13 ||
+        afterCode === 47
+      ) {
+        const tagEnd = html.indexOf(">", nextOpen + tokenLen);
+        if (tagEnd === -1) {
+          break;
+        }
+        if (tagName === "div") {
+          const headerSlice = html.slice(
+            nextOpen,
+            Math.min(tagEnd + 1, nextOpen + 160)
+          );
+          if (
+            headerSlice.includes('id="chapter-nav"') ||
+            headerSlice.includes("id='chapter-nav'") ||
+            headerSlice.includes('class="chapter-nav') ||
+            headerSlice.includes("class='chapter-nav")
+          ) {
+            return html.slice(startIndex, nextOpen);
+          }
+        }
+        if (html.charCodeAt(tagEnd - 1) !== 47) {
+          depth++;
+        }
+        cursor = tagEnd + 1;
+      } else {
+        cursor = nextOpen + tokenLen;
+      }
+    } else {
+      const closeEnd = html.indexOf(">", nextClose + tokenLen + 1);
+      if (closeEnd === -1) {
+        break;
+      }
+      depth--;
+      if (depth === 0) {
+        return html.slice(startIndex, nextClose);
+      }
+      cursor = closeEnd + 1;
+    }
+  }
+
+  const navFallbackIdx = html.indexOf('id="chapter-nav"', startIndex);
+  if (navFallbackIdx !== -1) {
+    const navTagStart = html.lastIndexOf("<div", navFallbackIdx);
+    if (navTagStart >= startIndex) {
+      return html.slice(startIndex, navTagStart);
+    }
+  }
+
   return html.slice(startIndex);
 }
 
@@ -1339,13 +1481,258 @@ function encodeTextNodeBrackets(node: CheerioDomNode | undefined): void {
   }
 }
 
+const OPENING_QUOTE_CHARS: ReadonlySet<string> = new Set([
+  "",
+  " ",
+  "\t",
+  "\n",
+  "\r",
+  "(",
+  "[",
+  "{",
+  "/",
+  ":",
+  "<",
+  "“",
+  "‘",
+  "—",
+  "–",
+]);
+
+function isAlphaNumChar(ch: string): boolean {
+  if (!ch) return false;
+  const code = ch.charCodeAt(0);
+  return (
+    (code >= 48 && code <= 57) ||
+    (code >= 65 && code <= 90) ||
+    (code >= 97 && code <= 122) ||
+    code >= 128
+  );
+}
+
+function isInsideHtmlTag(str: string, offset: number): boolean {
+  const lastOpen = str.lastIndexOf("<", offset);
+  if (lastOpen === -1) return false;
+  const lastClose = str.lastIndexOf(">", offset);
+  return lastOpen > lastClose;
+}
+
+function splitSegmentWithBoundary(
+  input: string,
+  regex: RegExp,
+  out: string[]
+): void {
+  regex.lastIndex = 0;
+  let lastPos = 0;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(input)) !== null) {
+    if (isInsideHtmlTag(input, match.index)) {
+      continue;
+    }
+    const leftGroup = match[1] ?? "";
+    const rightGroup = match[2] ?? "";
+    const splitAt = match.index + leftGroup.length;
+    const left = input.slice(lastPos, splitAt).trim();
+    if (left) {
+      out.push(left);
+    }
+    lastPos = match.index + match[0].length - rightGroup.length;
+  }
+  const remainder = input.slice(lastPos).trim();
+  if (remainder) {
+    out.push(remainder);
+  }
+}
+
+function splitDialogueBlock(block: string, plainTextLen: number): string[] {
+  let parts: string[] = [block];
+
+  const applySplitRegex = (regex: RegExp) => {
+    const nextParts: string[] = [];
+    for (let i = 0, len = parts.length; i < len; i++) {
+      splitSegmentWithBoundary(parts[i]!, regex, nextParts);
+    }
+    parts = nextParts;
+  };
+
+  if (
+    block.includes('"') ||
+    block.includes("”") ||
+    block.includes("'") ||
+    block.includes("’")
+  ) {
+    applySplitRegex(BACK_TO_BACK_QUOTE_SPLIT_REGEX);
+  }
+
+  if (block.includes("&gt;")) {
+    applySplitRegex(BACK_TO_BACK_TELEPATHY_SPLIT_REGEX);
+  }
+
+  if (block.includes("&lt;")) {
+    applySplitRegex(QUOTE_TO_TELEPATHY_SPLIT_REGEX);
+  }
+
+  if (plainTextLen > 220) {
+    applySplitRegex(LONG_DIALOGUE_BEAT_SPLIT_REGEX);
+  }
+
+  return parts;
+}
+
+function isStandaloneAngleCallout(textOnly: string): boolean {
+  if (
+    textOnly.startsWith("&lt;") &&
+    textOnly.endsWith("&gt;") &&
+    textOnly.length >= 10 &&
+    textOnly.length <= 168
+  ) {
+    return (
+      textOnly.indexOf("&lt;", 4) === -1 &&
+      textOnly.indexOf("&gt;", 4) === textOnly.length - 4
+    );
+  }
+  return CALLOUT_RAW_ANGLE_REGEX.test(textOnly);
+}
+
+function isCalloutBlock(textOnly: string): boolean {
+  if (CALLOUT_BRACKET_REGEX.test(textOnly)) {
+    return true;
+  }
+  if (isStandaloneAngleCallout(textOnly)) {
+    return true;
+  }
+  if (textOnly.length <= 260 && STAT_PIPE_REGEX.test(textOnly)) {
+    return true;
+  }
+  if (textOnly.length <= 220 && STAT_HEADER_REGEX.test(textOnly)) {
+    return true;
+  }
+  return false;
+}
+
+function isDuplicateChapterHeader(textOnly: string): boolean {
+  return textOnly.length <= 160 && DUPLICATE_CHAPTER_HEADER_REGEX.test(textOnly);
+}
+
+function formatProseSegment(
+  prose: string,
+  initialPrevChar: string
+): { formatted: string; lastChar: string } {
+  if (!prose) {
+    return { formatted: prose, lastChar: initialPrevChar };
+  }
+
+  let text = prose;
+  if (text.includes("--")) {
+    text = text.replace(DOUBLE_HYPHEN_REGEX, "—");
+  }
+  if (text.includes("...")) {
+    text = text.replace(TRIPLE_DOT_REGEX, "…");
+  }
+
+  if (!text.includes('"') && !text.includes("'")) {
+    return {
+      formatted: text,
+      lastChar: text.charAt(text.length - 1) || initialPrevChar,
+    };
+  }
+
+  let out = "";
+  let prev = initialPrevChar;
+  const len = text.length;
+  for (let i = 0; i < len; i++) {
+    const ch = text.charAt(i);
+    const next = i + 1 < len ? text.charAt(i + 1) : "";
+    if (ch === '"') {
+      let isOpen = false;
+      if (prev === "—" || prev === "–" || prev === "-") {
+        isOpen = isAlphaNumChar(next) || next === "'" || next === "‘";
+      } else if (OPENING_QUOTE_CHARS.has(prev)) {
+        isOpen = true;
+      }
+      const smart = isOpen ? "“" : "”";
+      out += smart;
+      prev = smart;
+    } else if (ch === "'") {
+      let isOpen = false;
+      if (isAlphaNumChar(prev)) {
+        isOpen = false;
+      } else if (prev === "—" || prev === "–" || prev === "-") {
+        isOpen = isAlphaNumChar(next) || next === '"' || next === "“";
+      } else if (OPENING_QUOTE_CHARS.has(prev)) {
+        isOpen = isAlphaNumChar(next) || next === '"' || next === "“";
+      }
+      const smart = isOpen ? "‘" : "’";
+      out += smart;
+      prev = smart;
+    } else {
+      out += ch;
+      prev = ch;
+    }
+  }
+
+  return { formatted: out, lastChar: prev };
+}
+
+/**
+ * Applies smart curly quotes, em-dashes, and ellipses strictly to prose segments,
+ * leaving HTML tag attributes and HTML entities (`&quot;`, `&lt;`, `&gt;`) untouched.
+ */
+export function applySmartTypographyToHtml(html: string): string {
+  if (!html) return "";
+  HTML_TAG_OR_ENTITY_REGEX.lastIndex = 0;
+  let result = "";
+  let lastIndex = 0;
+  let prevChar = "";
+  let match: RegExpExecArray | null;
+
+  while ((match = HTML_TAG_OR_ENTITY_REGEX.exec(html)) !== null) {
+    if (match.index > lastIndex) {
+      const proseChunk = html.slice(lastIndex, match.index);
+      const { formatted, lastChar } = formatProseSegment(proseChunk, prevChar);
+      result += formatted;
+      prevChar = lastChar;
+    }
+    const token = match[0];
+    result += token;
+    if (token.charCodeAt(0) === 60) {
+      if (
+        token.charCodeAt(1) !== 47 &&
+        (!prevChar || OPENING_QUOTE_CHARS.has(prevChar))
+      ) {
+        prevChar = "";
+      }
+    } else if (token === "&lt;") {
+      prevChar = "<";
+    } else if (token === "&gt;") {
+      prevChar = ">";
+    } else if (token === "&nbsp;") {
+      prevChar = " ";
+    } else if (token === "&mdash;") {
+      prevChar = "—";
+    } else if (token === "&ndash;") {
+      prevChar = "–";
+    } else {
+      prevChar = "a";
+    }
+    lastIndex = match.index + token.length;
+  }
+
+  if (lastIndex < html.length) {
+    result += formatProseSegment(html.slice(lastIndex), prevChar).formatted;
+  }
+
+  return result;
+}
+
 /**
  * High-Performance Chapter Text Sanitization & Typography Pipeline for `getChapterText()`.
- * 1. Fast fragment extraction (skips 100KB of navbar/footer DOM).
+ * 1. Fast `indexOf` fragment extraction (skips 100KB+ of navbar/footer DOM).
  * 2. Escapes non-HTML `<...>` brackets before Cheerio parses so dialogue is never swallowed.
  * 3. Surgical Cheerio DOM removal for ad/script nodes only (preserves centered & span prose).
  * 4. Re-encodes literal `<` and `>` inside text nodes as `&lt;`/`&gt;` for Suwatte's HTML reader.
- * 5. Deterministic `\n\n` paragraph splitting across all block boundaries (`<p>`, `<div>`, `<br>`, etc.).
+ * 5. Single-pass reader formatting: duplicate header removal, paragraph normalization,
+ *    multi-speaker dialogue splitting, system/telepathy/stat callouts, and smart typography.
  */
 export function sanitizeChapterHtml(
   rawHtml: string,
@@ -1358,13 +1745,16 @@ export function sanitizeChapterHtml(
   const sanitizeAds = prefs?.sanitizeAds !== false;
   const formatTln = prefs?.formatTln !== false;
   const normalizeSpacing = prefs?.normalizeSpacing !== false;
+  const splitDialogue = prefs?.splitDialogue !== false;
+  const formatCallouts = prefs?.formatCallouts !== false;
+  const smartTypography = prefs?.smartTypography !== false;
 
   // 1. Fast slice extraction of chapter content container
   const rawFragment = extractChapterFragment(rawHtml);
   const withoutComments = rawFragment.replace(HTML_COMMENTS_REGEX, "");
   const escapedHtml = escapeNonHtmlBrackets(withoutComments);
 
-  // 2. Parse only the isolated chapter fragment (avoids full 100KB document tree)
+  // 2. Parse only the isolated chapter fragment (avoids full 100KB+ document tree)
   const $ = cheerio.load(`<div id="nf-frag">${escapedHtml}</div>`);
   const $container = $("#nf-frag");
 
@@ -1383,7 +1773,7 @@ export function sanitizeChapterHtml(
     bodyHtml = stripAggregatorWatermarks(bodyHtml);
   }
 
-  if (normalizeSpacing) {
+  if (normalizeSpacing || smartTypography) {
     bodyHtml = normalizeTypographyAndEntities(bodyHtml);
   }
 
@@ -1393,7 +1783,8 @@ export function sanitizeChapterHtml(
 
   if (normalizeSpacing) {
     const rawBlocks = bodyHtml.split(BLOCK_BOUNDARY_REGEX);
-    const paragraphs: string[] = [];
+    const outputBlocks: string[] = [];
+    let checkedLeadingHeader = false;
 
     for (let i = 0, len = rawBlocks.length; i < len; i++) {
       const block = rawBlocks[i]
@@ -1411,12 +1802,56 @@ export function sanitizeChapterHtml(
         continue;
       }
 
-      paragraphs.push(`<p>${block}</p>`);
+      if (!checkedLeadingHeader) {
+        checkedLeadingHeader = true;
+        if (isDuplicateChapterHeader(textOnly)) {
+          continue;
+        }
+      }
+
+      if (smartTypography && SCENE_BREAK_REGEX.test(textOnly)) {
+        outputBlocks.push("<hr />");
+        continue;
+      }
+
+      const subBlocks = splitDialogue
+        ? splitDialogueBlock(block, textOnly.length)
+        : [block];
+
+      for (let j = 0, subLen = subBlocks.length; j < subLen; j++) {
+        const sub = subBlocks[j]!;
+        const subTextOnly =
+          subLen === 1
+            ? textOnly
+            : sub
+                .replace(STRIP_TAGS_REGEX, "")
+                .replace(ENTITIES_NBSP_REGEX, " ")
+                .trim();
+        if (!subTextOnly) continue;
+
+        if (smartTypography && SCENE_BREAK_REGEX.test(subTextOnly)) {
+          outputBlocks.push("<hr />");
+          continue;
+        }
+
+        const formattedSub = smartTypography
+          ? applySmartTypographyToHtml(sub)
+          : sub;
+
+        if (formatCallouts && isCalloutBlock(subTextOnly)) {
+          outputBlocks.push(`<blockquote>${formattedSub}</blockquote>`);
+        } else {
+          outputBlocks.push(`<p>${formattedSub}</p>`);
+        }
+      }
     }
 
-    bodyHtml = paragraphs.join("\n\n");
+    bodyHtml = outputBlocks.join("\n\n");
   } else {
     bodyHtml = bodyHtml.replace(EMPTY_P_REGEX, "").trim();
+    if (smartTypography) {
+      bodyHtml = applySmartTypographyToHtml(bodyHtml);
+    }
   }
 
   if (!bodyHtml) {

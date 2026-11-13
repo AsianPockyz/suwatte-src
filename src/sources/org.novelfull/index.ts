@@ -54,6 +54,7 @@ import {
 } from "./preferences.js";
 import {
   NovelFullScraperClient,
+  applySmartTypographyToHtml,
   escapeNonHtmlBrackets,
   extractChapterNumber,
   extractCoverFromElement,
@@ -455,9 +456,10 @@ export default class Target
   }
 }
 
-Target.info.version = 1.7;
+Target.info.version = 1.8;
 
 export {
+  applySmartTypographyToHtml,
   canResolveNovelFullUrl,
   cleanAndDeduplicateTitle,
   cleanTitle,

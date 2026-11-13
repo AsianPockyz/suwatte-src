@@ -38,6 +38,9 @@ export interface NovelFullUserPreferences {
   sanitizeAds: boolean;
   formatTln: boolean;
   normalizeSpacing: boolean;
+  splitDialogue: boolean;
+  formatCallouts: boolean;
+  smartTypography: boolean;
   excludedGenres: string[];
   customBlacklist: string[];
 }

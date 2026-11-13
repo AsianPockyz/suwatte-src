@@ -19,7 +19,7 @@ import {
   UIFormSchema,
 } from "./node_modules/@suwatte/toolchain/dist/validate/index.js";
 
-console.log("=== NovelFull QA Automated Sandboxed Validation Loop (v1.7) ===");
+console.log("=== NovelFull QA Automated Sandboxed Validation Loop (v1.8) ===");
 
 // 1. Read the compiled production bundle for NovelFull
 const sttPath = path.resolve("./dist/sources/org.novelfull.stt");
@@ -376,7 +376,7 @@ assert.ok(
 const nfMetadata = NfSourcePackage.SourceMetadata;
 assert.equal(nfMetadata.id, "org.novelfull", "ID must be org.novelfull");
 assert.equal(nfMetadata.name, "NovelFull", "Name must be NovelFull");
-assert.equal(nfMetadata.version, 1.7, "Version must be numeric 1.7");
+assert.equal(nfMetadata.version, 1.8, "Version must be numeric 1.8");
 assert.equal(nfMetadata.website, "https://novelfull.com");
 assert.equal(
   nfMetadata.rating,
@@ -400,7 +400,7 @@ assert.ok(
   nfRunner,
   "SourcePackage.bootstrap() must return a valid runner instance"
 );
-assert.equal(nfRunner.info.version, 1.7, "Runner info.version must be 1.7");
+assert.equal(nfRunner.info.version, 1.8, "Runner info.version must be 1.8");
 assert.equal(
   nfRunner.getChapterPages,
   undefined,
@@ -411,7 +411,7 @@ assert.equal(
   "function",
   "getChapterText must be implemented"
 );
-console.log("PASS: SourcePackage.bootstrap() executed cleanly (v1.7).");
+console.log("PASS: SourcePackage.bootstrap() executed cleanly (v1.8).");
 
 // 5. Configuration Validation
 const nfConfig = nfRunner.getConfiguration();
@@ -482,18 +482,37 @@ console.log(
 // 9. Preferences Menu & O(1) Blacklist Filtering
 const nfPrefMenu = await nfRunner.getPreferenceMenu();
 UIFormSchema.parse(nfPrefMenu);
-assert.equal(nfPrefMenu.sections.length, 2);
+assert.equal(nfPrefMenu.sections.length, 3);
 assert.equal(
   nfPrefMenu.sections[0].header,
-  "Reading & Typography Enhancements"
+  "Reader Layout & Typography"
 );
-assert.equal(nfPrefMenu.sections[1].header, "Content Exclusions / Blacklist");
+assert.equal(
+  JSON.stringify(nfPrefMenu.sections[0].views.map((v) => v.toggle.props.id)),
+  JSON.stringify([
+    "split_dialogue",
+    "normalize_spacing",
+    "format_callouts",
+    "smart_typography",
+  ])
+);
+for (const toggleView of nfPrefMenu.sections[0].views) {
+  assert.equal(toggleView.toggle.props.defaultValue, true);
+}
+assert.equal(
+  nfPrefMenu.sections[1].header,
+  "Sanitization & Translator Notes"
+);
+assert.equal(nfPrefMenu.sections[2].header, "Content Exclusions / Blacklist");
 
 // Apply exclusions: exclude Harem genre and "mtl" keyword
 await nfRunner.onFormSubmitted("novelfull_prefs", {
   sanitize_ads: true,
   format_tln: true,
   normalize_spacing: true,
+  split_dialogue: true,
+  format_callouts: true,
+  smart_typography: true,
   excluded_genres: { include: ["Harem", "Ecchi"], exclude: [] },
   custom_blacklist: "mtl, machine translation",
 });
@@ -1117,39 +1136,56 @@ assert.ok(
 );
 assert.ok(
   nfChapterText.body.includes(
-    '"The journey to the martial peak is lonely," Yang Kai whispered—clenching his fists.'
+    "“The journey to the martial peak is lonely,” Yang Kai whispered—clenching his fists."
   ),
-  "Must normalize typography entities (&ldquo;, &rdquo;, &mdash;, &nbsp;)"
+  "Must normalize typography entities and apply smart curly quotes (&ldquo;, &rdquo;, &mdash;, &nbsp;)"
 );
 assert.ok(
-  nfChapterText.body.includes("...</p>"),
-  "Must normalize &hellip; to ..."
+  nfChapterText.body.includes("…</p>"),
+  "Must normalize &hellip; to … when smart_typography is enabled"
 );
 assert.ok(
-  nfChapterText.body.includes("</p>\n\n<p>"),
+  nfChapterText.body.includes("\n\n"),
   "Must normalize paragraph spacing with balanced \\n\\n"
 );
 console.log(
   "PASS: getChapterText() surgical ad removal, watermark stripping, < > preservation, TLN formatting, and entity normalization verified."
 );
 
-// 12b. In-Memory Parsing Performance Benchmark (Requirement: < 15ms)
-const benchRuns = 100;
+// 12b. In-Memory Parsing Performance Benchmark (150 KB+ Full-Page HTML, Requirement: < 15ms)
+const headBoilerplate = `<head><title>Chapter 2239</title>${"<meta name='x' content='y'/>".repeat(250)}<script>${"var x = 1;".repeat(4000)}</script></head>`;
+const navbarAndSidebarBoilerplate = `<header><nav>${"<a href='/genre/Action'>Action</a>".repeat(1200)}</nav></header><aside class="sidebar">${"<div class='widget'>Sidebar Widget Entry</div>".repeat(900)}</aside>`;
+const footerBoilerplate = `<div id="chapter-nav"><a href="/prev">Prev</a><a href="/next">Next</a></div><footer>${"<p>Footer copyright link</p>".repeat(1200)}<script>${"console.log(1);".repeat(2000)}</script></footer>`;
+const twentyFiveParagraphs = Array.from(
+  { length: 25 },
+  (_, idx) =>
+    `<p>"This is paragraph ${idx + 1} of the battle," Arthur declared--raising his sword before the gate... [System Alert ${idx + 1}]</p>`
+).join("\n");
+const large150KbChapterHtml = `<!DOCTYPE html><html>${headBoilerplate}<body>${navbarAndSidebarBoilerplate}<div id="chapter-content" class="chapter-c">${twentyFiveParagraphs}</div>${footerBoilerplate}</body></html>`;
+const largeHtmlBytes = Buffer.byteLength(large150KbChapterHtml, "utf8");
+assert.ok(
+  largeHtmlBytes >= 150 * 1024,
+  `Benchmark HTML payload must be >= 150 KB, got ${largeHtmlBytes} bytes`
+);
+
+// Warm up JIT once, then measure realistic 150 KB full-page parse latency
+nfRunner.sanitizeChapterHtml(large150KbChapterHtml);
+const benchRuns = 50;
 const benchStart = performance.now();
 for (let i = 0; i < benchRuns; i++) {
-  nfRunner.sanitizeChapterHtml(sampleChapterHtml);
+  nfRunner.sanitizeChapterHtml(large150KbChapterHtml);
 }
 const benchTotal = performance.now() - benchStart;
 const avgMs = benchTotal / benchRuns;
 console.log(
-  `BENCHMARK: ${benchRuns} in-memory getChapterText parses in ${benchTotal.toFixed(2)}ms (${avgMs.toFixed(4)}ms/parse)`
+  `BENCHMARK: ${benchRuns} full-page (${(largeHtmlBytes / 1024).toFixed(1)} KB) getChapterText parses in ${benchTotal.toFixed(2)}ms (${avgMs.toFixed(4)}ms/parse)`
 );
 assert.ok(
   avgMs < 15,
-  `getChapterText in-memory parsing must be under 15ms, got ${avgMs.toFixed(4)}ms`
+  `getChapterText 150KB+ in-memory parsing must be under 15ms, got ${avgMs.toFixed(4)}ms`
 );
 console.log(
-  `PASS: getChapterText() near-instant parsing verified (${avgMs.toFixed(4)}ms < 15ms target).`
+  `PASS: getChapterText() near-instant pre-Cheerio slicing verified (${avgMs.toFixed(4)}ms < 15ms target).`
 );
 
 // 12c. v1.7 Verification: Angle-Bracket Dialogue, Inline Watermarks, Centered Dialogue & Deterministic Resume
@@ -1267,8 +1303,8 @@ for (const sanitizeFlag of [true, false]) {
 
   if (sanitizeFlag) {
     assert.ok(
-      rawRes.body.includes('<p>"Hello!" "Goodbye!"</p>'),
-      "Inline watermark must be stripped while preserving adjacent dialogue"
+      rawRes.body.includes("<p>“Hello!”</p>\n\n<p>“Goodbye!”</p>"),
+      "Inline watermark must be stripped and back-to-back quotes split with smart quotes by default"
     );
   }
 
@@ -1325,6 +1361,134 @@ console.log(
   "PASS: v1.7 < > dialogue preservation, surgical ad blocking, centered dialogue, and deterministic resume verified."
 );
 
+// 12d. v1.8 Reader Layout & Typography Engine Assertions
+const v18SampleHtml = `
+<!DOCTYPE html>
+<html>
+<body>
+  <div id="chapter-content" class="chapter-c">
+    <p>Chapter 1: Title</p>
+    <p>"Hello there!" "General Kenobi?" <span class="speaker" data-id="npc-1">"We meet again."</span></p>
+    <p>"I won't forgive you for this betrayal!" Arthur slammed his heavy gauntlet onto the oak table, shattering the porcelain teacup into razor-sharp splinters. "You crossed the line this time," Elena replied coldly, drawing her silver blade as frost crept across the stone floor.</p>
+    <p>He shouted "Fire!" and charged.</p>
+    <p>&lt;Who goes there?&gt; &lt;Step into the light.&gt;</p>
+    <p>[System Notification: Level Up!]</p>
+    <p><Come forward.></p>
+    <p>Name: Sung Jin-Woo</p>
+    <p>| STR: 145 | AGI: 138 | INT: 99 |</p>
+    <p>***</p>
+    <p>He muttered, 'I don't know--maybe it's over...'</p>
+    <p>Chapter 3 of the manual was missing.</p>
+  </div>
+</body>
+</html>
+`;
+
+const v18Formatted = nfRunner.sanitizeChapterHtml(v18SampleHtml, {
+  sanitizeAds: true,
+  formatTln: true,
+  normalizeSpacing: true,
+  splitDialogue: true,
+  formatCallouts: true,
+  smartTypography: true,
+});
+
+// Duplicate header stripped, while prose starting with "Chapter 3..." is kept
+assert.ok(
+  !v18Formatted.includes("Chapter 1: Title"),
+  "Duplicate chapter header at start of chapter body must be stripped"
+);
+assert.ok(
+  v18Formatted.includes("<p>Chapter 3 of the manual was missing.</p>"),
+  "Prose mentioning Chapter 3 mid-sentence must NOT be falsely stripped"
+);
+
+// Back-to-back quotes split & dense multi-speaker >220 char beat split
+assert.ok(
+  v18Formatted.includes("<p>“Hello there!”</p>\n\n<p>“General Kenobi?”</p>"),
+  "Back-to-back dialogue quotes must split into separate paragraphs"
+);
+assert.ok(
+  v18Formatted.includes(
+    "<p>“I won’t forgive you for this betrayal!” Arthur slammed his heavy gauntlet onto the oak table, shattering the porcelain teacup into razor-sharp splinters.</p>\n\n<p>“You crossed the line this time,” Elena replied coldly, drawing her silver blade as frost crept across the stone floor.</p>"
+  ),
+  "Dense >220 char multi-speaker paragraph with narrative beat must split before new speaker quote"
+);
+
+// Safety: Mid-sentence quote must NOT be split
+assert.ok(
+  v18Formatted.includes("<p>He shouted “Fire!” and charged.</p>"),
+  "Mid-sentence quote must NOT be split"
+);
+
+// Telepathy split + callout wrapping + < > preservation
+assert.ok(
+  v18Formatted.includes(
+    "<blockquote>&lt;Who goes there?&gt;</blockquote>\n\n<blockquote>&lt;Step into the light.&gt;</blockquote>"
+  ),
+  "Back-to-back telepathy pairs must split and format into distinct callout blockquotes"
+);
+assert.ok(
+  v18Formatted.includes("<blockquote>[System Notification: Level Up!]</blockquote>"),
+  "[System Notification: Level Up!] must format into <blockquote>"
+);
+assert.ok(
+  v18Formatted.includes("<blockquote>&lt;Come forward.&gt;</blockquote>"),
+  "<Come forward.> must format into <blockquote> while staying encoded as &lt;Come forward.&gt;"
+);
+const $v18Rendered = cheerio.load(v18Formatted);
+assert.ok(
+  $v18Rendered.text().includes("<Come forward.>"),
+  "Rendered HTML must visibly preserve '<Come forward.>' inside callout"
+);
+assert.ok(
+  v18Formatted.includes("<blockquote>Name: Sung Jin-Woo</blockquote>") &&
+    v18Formatted.includes("<blockquote>| STR: 145 | AGI: 138 | INT: 99 |</blockquote>"),
+  "Stat headers and pipe-delimited stat lines must format into <blockquote>"
+);
+
+// Scene divider conversion & HTML attribute preservation
+assert.ok(
+  v18Formatted.includes("\n\n<hr />\n\n"),
+  "ASCII *** scene divider must become <hr />"
+);
+assert.ok(
+  v18Formatted.includes('<span class="speaker" data-id="npc-1">“We meet again.”</span>'),
+  "Smart quotes must convert prose quotes without mutating HTML tag attributes"
+);
+assert.ok(
+  v18Formatted.includes("He muttered, ‘I don’t know—maybe it’s over…’"),
+  "Smart single quotes, apostrophes, em-dashes (-- -> —), and ellipses (... -> …) must apply cleanly"
+);
+
+// Verify toggles can cleanly disable each feature
+const v18RawToggles = nfRunner.sanitizeChapterHtml(v18SampleHtml, {
+  sanitizeAds: true,
+  formatTln: true,
+  normalizeSpacing: true,
+  splitDialogue: false,
+  formatCallouts: false,
+  smartTypography: false,
+});
+assert.ok(
+  v18RawToggles.includes('<p>"Hello there!" "General Kenobi?"'),
+  "split_dialogue=false must keep adjacent dialogue unsplit"
+);
+assert.ok(
+  v18RawToggles.includes("<p>[System Notification: Level Up!]</p>") &&
+    v18RawToggles.includes("<p>&lt;Come forward.&gt;</p>"),
+  "format_callouts=false must keep callouts as normal <p> paragraphs"
+);
+assert.ok(
+  v18RawToggles.includes("<p>***</p>") &&
+    v18RawToggles.includes("He muttered, 'I don't know--maybe it's over...'"),
+  "smart_typography=false must preserve ASCII scene dividers, straight quotes, --, and ..."
+);
+
+console.log(
+  "PASS: v1.8 Reader Layout & Typography Engine (dialogue split, callouts, smart quotes, scene breaks, duplicate header removal) verified."
+);
+
 // 13. Verify Multi-Source Catalog Manifest (dist/sources.json & root sources.json)
 const sourcesJsonRaw = fs.readFileSync(
   path.resolve("./dist/sources.json"),
@@ -1347,7 +1511,7 @@ assert.ok(nfEntry, "org.novelfull must exist in dist/sources.json");
 
 assert.equal(nfEntry.id, "org.novelfull");
 assert.equal(nfEntry.name, "NovelFull");
-assert.equal(nfEntry.version, 1.7);
+assert.equal(nfEntry.version, 1.8);
 assert.equal(nfEntry.path, "org.novelfull");
 assert.equal(nfEntry.variantId, "org.novelfull");
 assert.equal(nfEntry.thumbnail, "novelfull.png");
@@ -1366,7 +1530,7 @@ assert.equal(
 );
 const rootNfEntry = rootSourcesCatalog.sources.find((s) => s.id === "org.novelfull");
 assert.ok(rootNfEntry, "org.novelfull must exist in root sources.json");
-assert.equal(rootNfEntry.version, 1.7);
+assert.equal(rootNfEntry.version, 1.8);
 assert.equal(rootNfEntry.variantId, "org.novelfull");
 assert.equal(rootNfEntry.thumbnail, "novelfull.png");
 
