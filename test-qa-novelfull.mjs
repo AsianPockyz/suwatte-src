@@ -19,7 +19,7 @@ import {
   UIFormSchema,
 } from "./node_modules/@suwatte/toolchain/dist/validate/index.js";
 
-console.log("=== NovelFull QA Automated Sandboxed Validation Loop (v1.8) ===");
+console.log("=== NovelFull QA Automated Sandboxed Validation Loop (v1.9) ===");
 
 // 1. Read the compiled production bundle for NovelFull
 const sttPath = path.resolve("./dist/sources/org.novelfull.stt");
@@ -376,7 +376,7 @@ assert.ok(
 const nfMetadata = NfSourcePackage.SourceMetadata;
 assert.equal(nfMetadata.id, "org.novelfull", "ID must be org.novelfull");
 assert.equal(nfMetadata.name, "NovelFull", "Name must be NovelFull");
-assert.equal(nfMetadata.version, 1.8, "Version must be numeric 1.8");
+assert.equal(nfMetadata.version, 1.9, "Version must be numeric 1.9");
 assert.equal(nfMetadata.website, "https://novelfull.com");
 assert.equal(
   nfMetadata.rating,
@@ -400,7 +400,7 @@ assert.ok(
   nfRunner,
   "SourcePackage.bootstrap() must return a valid runner instance"
 );
-assert.equal(nfRunner.info.version, 1.8, "Runner info.version must be 1.8");
+assert.equal(nfRunner.info.version, 1.9, "Runner info.version must be 1.9");
 assert.equal(
   nfRunner.getChapterPages,
   undefined,
@@ -411,7 +411,7 @@ assert.equal(
   "function",
   "getChapterText must be implemented"
 );
-console.log("PASS: SourcePackage.bootstrap() executed cleanly (v1.8).");
+console.log("PASS: SourcePackage.bootstrap() executed cleanly (v1.9).");
 
 // 5. Configuration Validation
 const nfConfig = nfRunner.getConfiguration();
@@ -1582,7 +1582,7 @@ assert.ok(nfEntry, "org.novelfull must exist in dist/sources.json");
 
 assert.equal(nfEntry.id, "org.novelfull");
 assert.equal(nfEntry.name, "NovelFull");
-assert.equal(nfEntry.version, 1.8);
+assert.equal(nfEntry.version, 1.9);
 assert.equal(nfEntry.path, "org.novelfull");
 assert.equal(nfEntry.variantId, "org.novelfull");
 assert.equal(nfEntry.thumbnail, "novelfull.png");
@@ -1601,7 +1601,7 @@ assert.equal(
 );
 const rootNfEntry = rootSourcesCatalog.sources.find((s) => s.id === "org.novelfull");
 assert.ok(rootNfEntry, "org.novelfull must exist in root sources.json");
-assert.equal(rootNfEntry.version, 1.8);
+assert.equal(rootNfEntry.version, 1.9);
 assert.equal(rootNfEntry.variantId, "org.novelfull");
 assert.equal(rootNfEntry.thumbnail, "novelfull.png");
 

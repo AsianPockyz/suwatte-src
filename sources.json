@@ -1,6 +1,6 @@
 {
   "catalogVersion": 2,
-  "generatedAt": "2026-11-13T20:30:44.993Z",
+  "generatedAt": "2026-11-13T20:35:40.810Z",
   "listName": "Atsumaru Source",
   "sources": [
     {
@@ -42,7 +42,7 @@
     {
       "id": "org.novelfull",
       "name": "NovelFull",
-      "version": 1.8,
+      "version": 1.9,
       "website": "https://novelfull.com",
       "rating": 0,
       "thumbnail": "novelfull.png",

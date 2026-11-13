@@ -829,7 +829,7 @@ var SourcePackage = (() => {
       } });
       exports.SOURCE_ID = "org.novelfull";
       exports.SOURCE_NAME = "NovelFull";
-      exports.SOURCE_VERSION = 1.8;
+      exports.SOURCE_VERSION = 1.9;
       exports.BASE_URL = "https://novelfull.com";
       exports.VARIANT_ID = "org.novelfull";
       exports.THUMBNAIL_FILENAME = "novelfull.png";
@@ -5213,7 +5213,7 @@ ${bodyHtml}`;
       var Target = _Target;
       exports.default = Target;
       exports.Target = Target;
-      Target.info.version = 1.8;
+      Target.info.version = 1.9;
     }
   });
 
@@ -5225,7 +5225,7 @@ ${bodyHtml}`;
       var runtime = require_runtime();
       var sourceModule = require_org();
       var cls = runtime.resolveDefaultExport(sourceModule);
-      exports.SourceMetadata = { "id": "org.novelfull", "name": "NovelFull", "version": 1.8, "website": "https://novelfull.com", "rating": 0, "thumbnail": "novelfull.png", "languages": ["en"] };
+      exports.SourceMetadata = { "id": "org.novelfull", "name": "NovelFull", "version": 1.9, "website": "https://novelfull.com", "rating": 0, "thumbnail": "novelfull.png", "languages": ["en"] };
       exports.SourceConfiguration = null;
       exports.bootstrap = function bootstrap() {
         var args = null;

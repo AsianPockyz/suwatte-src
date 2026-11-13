@@ -457,7 +457,7 @@ export default class Target
   }
 }
 
-Target.info.version = 1.8;
+Target.info.version = 1.9;
 
 export {
   applySmartTypographyToHtml,

@@ -93,7 +93,7 @@ if (fs.existsSync(sourcesJsonPath)) {
       } else if (sourceKey === "org.novelfull") {
         cleanSource.id = "org.novelfull";
         cleanSource.name = "NovelFull";
-        cleanSource.version = 1.8;
+        cleanSource.version = 1.9;
         cleanSource.website = "https://novelfull.com";
         cleanSource.rating = 0;
         cleanSource.thumbnail = "novelfull.png";
