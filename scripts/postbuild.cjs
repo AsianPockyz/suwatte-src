@@ -19,8 +19,12 @@ const distSourcesNovelfullStt = path.join(
 );
 const distRootNovelfullStt = path.join(root, "dist", "org.novelfull.stt");
 const sourcesJsonPath = path.join(root, "dist", "sources.json");
+const rootSourcesDir = path.join(root, "sources");
+const rootNovelfullStt = path.join(rootSourcesDir, "org.novelfull.stt");
+const rootSourcesJsonPath = path.join(root, "sources.json");
 
-// 1. Ensure .stt files are available in both dist/ and dist/sources/
+// 1. Ensure .stt files are available in both dist/ and dist/sources/,
+// and sync ONLY org.novelfull.stt to root sources/ for GitHub Pages deployment
 if (fs.existsSync(distSourcesAtsuStt)) {
   fs.copyFileSync(distSourcesAtsuStt, distRootAtsuStt);
 }
@@ -29,6 +33,10 @@ if (fs.existsSync(distSourcesImhentaiStt)) {
 }
 if (fs.existsSync(distSourcesNovelfullStt)) {
   fs.copyFileSync(distSourcesNovelfullStt, distRootNovelfullStt);
+  if (!fs.existsSync(rootSourcesDir)) {
+    fs.mkdirSync(rootSourcesDir, { recursive: true });
+  }
+  fs.copyFileSync(distSourcesNovelfullStt, rootNovelfullStt);
 }
 
 // 2. Ensure assets/ and dist/assets/ contain Atsu.png, imhentai.png, and novelfull.png
@@ -85,7 +93,7 @@ if (fs.existsSync(sourcesJsonPath)) {
       } else if (sourceKey === "org.novelfull") {
         cleanSource.id = "org.novelfull";
         cleanSource.name = "NovelFull";
-        cleanSource.version = 1.6;
+        cleanSource.version = 1.7;
         cleanSource.website = "https://novelfull.com";
         cleanSource.rating = 0;
         cleanSource.thumbnail = "novelfull.png";
@@ -114,4 +122,5 @@ if (fs.existsSync(sourcesJsonPath)) {
   }
   const serialized = JSON.stringify(data, null, 2);
   fs.writeFileSync(sourcesJsonPath, serialized + "\n");
+  fs.writeFileSync(rootSourcesJsonPath, serialized + "\n");
 }

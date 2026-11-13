@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 import vm from "node:vm";
+import * as cheerio from "cheerio";
 import {
   ChapterSchema,
   ContentSchema,
@@ -18,7 +19,7 @@ import {
   UIFormSchema,
 } from "./node_modules/@suwatte/toolchain/dist/validate/index.js";
 
-console.log("=== NovelFull QA Automated Sandboxed Validation Loop (v1.6) ===");
+console.log("=== NovelFull QA Automated Sandboxed Validation Loop (v1.7) ===");
 
 // 1. Read the compiled production bundle for NovelFull
 const sttPath = path.resolve("./dist/sources/org.novelfull.stt");
@@ -224,17 +225,27 @@ const sampleChapterHtml = `
     <!-- Hidden aggregator comment -->
     <script>window.evilTracker = 1;</script>
     <style>.ads { display: block; }</style>
+    <iframe src="https://ads.example.com/frame"></iframe>
+    <noscript>Enable JS</noscript>
+    <ins class="adsbygoogle">AdSense Block</ins>
     <div class="ads ads-holder">Advertisement Banner</div>
-    <div align="center"><a href="https://patreon.com/scammer">Support us on Patreon!</a></div>
+    <div class="ads-box">Ad Box</div>
+    <div id="div-gpt-ad-12345">GPT Ad</div>
+    <div class="custom-ad-container">Ad Container</div>
+    <div align="center">System Alert</div>
     <p>Read novel online free on NovelFull</p>
     <p>&ldquo;The journey to the martial peak is lonely,&rdquo; Yang Kai whispered&mdash;clenching his fists.&nbsp;&nbsp;</p>
     <br><br><br><br>
     <p></p>
     <p>&nbsp;</p>
+    <p><Come forward.></p>
     <p>He opened the mysterious black stone pillow. [TL Note: Black Stone Pillow is an Emperor Artifact] Slowly, golden letters emerged&hellip;</p>
+    <span>Bare span dialogue</span><br>Bare text after br
     <p>Visit novelfull.com for the best novel reading experience</p>
     <p>If you discover any errors ( broken links, non-standard content, etc.. ), Please let us know &lt; report chapter &gt; so we can fix it as soon as possible.</p>
-    <p>Join our Discord at https://discord.gg/novelfull or donate via PayPal!</p>
+    <p>Previous Chapter</p>
+    <p>Next Chapter</p>
+    <p>Table of Contents</p>
   </div>
 </body>
 </html>
@@ -365,7 +376,7 @@ assert.ok(
 const nfMetadata = NfSourcePackage.SourceMetadata;
 assert.equal(nfMetadata.id, "org.novelfull", "ID must be org.novelfull");
 assert.equal(nfMetadata.name, "NovelFull", "Name must be NovelFull");
-assert.equal(nfMetadata.version, 1.6, "Version must be numeric 1.6");
+assert.equal(nfMetadata.version, 1.7, "Version must be numeric 1.7");
 assert.equal(nfMetadata.website, "https://novelfull.com");
 assert.equal(
   nfMetadata.rating,
@@ -389,7 +400,7 @@ assert.ok(
   nfRunner,
   "SourcePackage.bootstrap() must return a valid runner instance"
 );
-assert.equal(nfRunner.info.version, 1.6, "Runner info.version must be 1.6");
+assert.equal(nfRunner.info.version, 1.7, "Runner info.version must be 1.7");
 assert.equal(
   nfRunner.getChapterPages,
   undefined,
@@ -400,7 +411,7 @@ assert.equal(
   "function",
   "getChapterText must be implemented"
 );
-console.log("PASS: SourcePackage.bootstrap() executed cleanly (v1.6).");
+console.log("PASS: SourcePackage.bootstrap() executed cleanly (v1.7).");
 
 // 5. Configuration Validation
 const nfConfig = nfRunner.getConfiguration();
@@ -1062,21 +1073,41 @@ SourceChapterTextSchema.parse(nfChapterText);
 assert.equal(nfChapterText.format, "html");
 assert.ok(
   !nfChapterText.body.includes("<script") &&
-    !nfChapterText.body.includes("<style"),
-  "Must strip script and style tags"
+    !nfChapterText.body.includes("<style") &&
+    !nfChapterText.body.includes("<iframe") &&
+    !nfChapterText.body.includes("<noscript") &&
+    !nfChapterText.body.includes("<ins"),
+  "Must strip script, style, iframe, noscript, and ins tags"
 );
 assert.ok(
   !nfChapterText.body.includes("Advertisement Banner") &&
-    !nfChapterText.body.includes("patreon.com") &&
-    !nfChapterText.body.includes("discord.gg") &&
-    !nfChapterText.body.includes("PayPal"),
-  "Must strip ads, Patreon, Discord, and PayPal promos"
+    !nfChapterText.body.includes("AdSense Block") &&
+    !nfChapterText.body.includes("Ad Box") &&
+    !nfChapterText.body.includes("GPT Ad") &&
+    !nfChapterText.body.includes("Ad Container"),
+  "Must strip surgical ad DOM selectors (.ads, .ads-holder, .ads-box, .adsbygoogle, div-gpt-ad, ad-container)"
+);
+assert.ok(
+  nfChapterText.body.includes("System Alert"),
+  "Must preserve centered dialogue (<div align='center'>System Alert</div>)"
+);
+assert.ok(
+  nfChapterText.body.includes("&lt;Come forward.&gt;"),
+  "Must preserve <Come forward.> encoded as &lt;Come forward.&gt; in HTML output"
+);
+assert.ok(
+  nfChapterText.body.includes("<span>Bare span dialogue</span>") &&
+    nfChapterText.body.includes("Bare text after br"),
+  "Must preserve bare text nodes and inline spans separated by <br>"
 );
 assert.ok(
   !nfChapterText.body.toLowerCase().includes("read novel online free on novelfull") &&
     !nfChapterText.body.toLowerCase().includes("visit novelfull.com for the best") &&
-    !nfChapterText.body.toLowerCase().includes("if you discover any errors"),
-  "Must strip aggregator watermarks"
+    !nfChapterText.body.toLowerCase().includes("if you discover any errors") &&
+    !nfChapterText.body.includes("Previous Chapter") &&
+    !nfChapterText.body.includes("Next Chapter") &&
+    !nfChapterText.body.includes("Table of Contents"),
+  "Must strip aggregator watermarks and standalone navigation leak lines"
 );
 assert.ok(
   nfChapterText.body.includes(
@@ -1099,7 +1130,7 @@ assert.ok(
   "Must normalize paragraph spacing with balanced \\n\\n"
 );
 console.log(
-  "PASS: getChapterText() sanitization, watermark stripping, TLN formatting, and entity normalization verified."
+  "PASS: getChapterText() surgical ad removal, watermark stripping, < > preservation, TLN formatting, and entity normalization verified."
 );
 
 // 12b. In-Memory Parsing Performance Benchmark (Requirement: < 15ms)
@@ -1121,7 +1152,180 @@ console.log(
   `PASS: getChapterText() near-instant parsing verified (${avgMs.toFixed(4)}ms < 15ms target).`
 );
 
-// 13. Verify Multi-Source Catalog Manifest (dist/sources.json)
+// 12c. v1.7 Verification: Angle-Bracket Dialogue, Inline Watermarks, Centered Dialogue & Deterministic Resume
+class V17ChapterTestClient {
+  async get(url) {
+    if (url.includes("/ajax-chapter-option")) {
+      return {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+        data: `
+          <select class="chapter_jump form-control">
+            <option value="/test-novel/chapter-1-prologue.html">Prologue</option>
+            <option value="/test-novel/chapter-2-awakening.html">Chapter 2: Awakening</option>
+            <option value="/test-novel/chapter-10-2-years-later.html">Chapter 10: 2 Years Later</option>
+          </select>
+        `,
+      };
+    }
+    if (url.endsWith("/test-novel.html")) {
+      return {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+        data: `
+          <html><body>
+            <div class="col-info-desc">
+              <div class="books"><div class="desc"><h3 class="title">Test Novel</h3></div></div>
+              <div id="rating" data-novel-id="77777"></div>
+            </div>
+          </body></html>
+        `,
+      };
+    }
+    if (url.endsWith("/test-novel/chapter-raw-brackets.html")) {
+      return {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+        data: `
+          <div id="chapter-content" class="chapter-c">
+            <p><Come forward.></p>
+            <p><I am a god.></p>
+            <p><<Nested Alert>></p>
+            <div align="center">System Alert</div>
+            <center>Level Up</center>
+            <p>"Hello!" Read novel online free on novelfull.com "Goodbye!"</p>
+            <span>First span line</span><br><div>Second div line</div>Bare text line
+          </div>
+        `,
+      };
+    }
+    if (url.endsWith("/test-novel/chapter-escaped-brackets.html")) {
+      return {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+        data: `
+          <div id="chapter-content" class="chapter-c">
+            <p>&lt;Come forward.&gt;</p>
+            <p>&lt;I am a god.&gt;</p>
+          </div>
+        `,
+      };
+    }
+    return {
+      status: 200,
+      headers: { "content-type": "text/html; charset=utf-8" },
+      data: "",
+    };
+  }
+}
+
+const v17Runner = new nfRunner.constructor(
+  new (class extends nfRunner.scraper.constructor {
+    constructor() {
+      super(new V17ChapterTestClient());
+    }
+  })()
+);
+
+for (const sanitizeFlag of [true, false]) {
+  await v17Runner.onFormSubmitted("novelfull_prefs", {
+    sanitize_ads: sanitizeFlag,
+    format_tln: true,
+    normalize_spacing: true,
+  });
+
+  const rawRes = await v17Runner.getChapterText("test-novel", "chapter-raw-brackets");
+  SourceChapterTextSchema.parse(rawRes);
+  assert.ok(
+    rawRes.body.includes("&lt;Come forward.&gt;"),
+    `Raw <Come forward.> must stay encoded as &lt;Come forward.&gt; (sanitize_ads=${sanitizeFlag})`
+  );
+  assert.ok(
+    rawRes.body.includes("&lt;I am a god.&gt;"),
+    `Raw <I am a god.> must not be misparsed as <i> (sanitize_ads=${sanitizeFlag})`
+  );
+  assert.ok(
+    rawRes.body.includes("&lt;&lt;Nested Alert&gt;&gt;"),
+    `Nested <<Nested Alert>> must be preserved (sanitize_ads=${sanitizeFlag})`
+  );
+  const $rawRendered = cheerio.load(rawRes.body);
+  assert.ok(
+    $rawRendered.text().includes("<Come forward.>"),
+    `Rendered HTML text must visibly contain '<Come forward.>' (sanitize_ads=${sanitizeFlag})`
+  );
+  assert.ok(
+    rawRes.body.includes("<p>System Alert</p>") &&
+      rawRes.body.includes("<p>Level Up</p>"),
+    `Centered dialogue must be preserved (sanitize_ads=${sanitizeFlag})`
+  );
+  assert.ok(
+    rawRes.body.includes("<p><span>First span line</span></p>") &&
+      rawRes.body.includes("<p>Second div line</p>") &&
+      rawRes.body.includes("<p>Bare text line</p>"),
+    `Bare text nodes across <span>, <br>, and <div> must be preserved (sanitize_ads=${sanitizeFlag})`
+  );
+
+  if (sanitizeFlag) {
+    assert.ok(
+      rawRes.body.includes('<p>"Hello!" "Goodbye!"</p>'),
+      "Inline watermark must be stripped while preserving adjacent dialogue"
+    );
+  }
+
+  const escapedRes = await v17Runner.getChapterText("test-novel", "chapter-escaped-brackets");
+  SourceChapterTextSchema.parse(escapedRes);
+  assert.ok(
+    escapedRes.body.includes("&lt;Come forward.&gt;"),
+    `Escaped &lt;Come forward.&gt; must stay encoded as &lt;Come forward.&gt; (sanitize_ads=${sanitizeFlag})`
+  );
+  const $escapedRendered = cheerio.load(escapedRes.body);
+  assert.ok(
+    $escapedRendered.text().includes("<Come forward.>"),
+    `Escaped input must visibly render '<Come forward.>' (sanitize_ads=${sanitizeFlag})`
+  );
+}
+
+// Deterministic paragraph output across reloads (for Suwatte chapter resume offset)
+const loadA = await v17Runner.getChapterText("test-novel", "chapter-raw-brackets");
+const loadB = await v17Runner.getChapterText("test-novel", "chapter-raw-brackets");
+assert.equal(
+  loadA.body,
+  loadB.body,
+  "getChapterText() must produce byte-identical deterministic output across reloads"
+);
+
+// parseChapterNumber title-vs-URL consistency and getChapters deterministic indices
+assert.equal(
+  v17Runner.parseChapterNumber("Chapter 10: 2 Years Later", "/test-novel/chapter-10-2-years-later.html"),
+  10,
+  "Must parse Chapter 10 instead of misreading '-10-2-' in URL as 10.2"
+);
+const chReload1 = await v17Runner.getChapters("test-novel");
+const chReload2 = await v17Runner.getChapters("test-novel");
+assert.equal(chReload1.length, 3);
+assert.deepEqual(
+  chReload1.map((c) => ({ id: c.id, index: c.index, number: c.number })),
+  chReload2.map((c) => ({ id: c.id, index: c.index, number: c.number })),
+  "getChapters() must produce identical ordering, chapterId, and indices across reloads"
+);
+const seenIndices = new Set();
+for (let i = 0; i < chReload1.length; i++) {
+  const ch = chReload1[i];
+  ChapterSchema.parse(ch);
+  assert.ok(!Number.isNaN(ch.index) && ch.index === i, "index must be sequential with zero NaN");
+  assert.ok(!Number.isNaN(ch.number), "number must never be NaN");
+  assert.ok(!seenIndices.has(ch.index), "index must be unique");
+  seenIndices.add(ch.index);
+}
+assert.equal(chReload1[0].number, 10);
+assert.equal(chReload1[1].number, 2);
+assert.equal(chReload1[2].number, 1);
+
+console.log(
+  "PASS: v1.7 < > dialogue preservation, surgical ad blocking, centered dialogue, and deterministic resume verified."
+);
+
+// 13. Verify Multi-Source Catalog Manifest (dist/sources.json & root sources.json)
 const sourcesJsonRaw = fs.readFileSync(
   path.resolve("./dist/sources.json"),
   "utf8"
@@ -1143,14 +1347,38 @@ assert.ok(nfEntry, "org.novelfull must exist in dist/sources.json");
 
 assert.equal(nfEntry.id, "org.novelfull");
 assert.equal(nfEntry.name, "NovelFull");
-assert.equal(nfEntry.version, 1.6);
+assert.equal(nfEntry.version, 1.7);
 assert.equal(nfEntry.path, "org.novelfull");
 assert.equal(nfEntry.variantId, "org.novelfull");
 assert.equal(nfEntry.thumbnail, "novelfull.png");
 assert.equal(nfEntry.environment, "jsc");
 assert.equal(nfEntry.minSupportedAppVersion, undefined);
+
+const rootSourcesJsonRaw = fs.readFileSync(
+  path.resolve("./sources.json"),
+  "utf8"
+);
+const rootSourcesCatalog = JSON.parse(rootSourcesJsonRaw);
+assert.equal(
+  rootSourcesCatalog.sources.length,
+  3,
+  "root sources.json must contain all 3 sources: moe.atsu, org.imhentai, and org.novelfull"
+);
+const rootNfEntry = rootSourcesCatalog.sources.find((s) => s.id === "org.novelfull");
+assert.ok(rootNfEntry, "org.novelfull must exist in root sources.json");
+assert.equal(rootNfEntry.version, 1.7);
+assert.equal(rootNfEntry.variantId, "org.novelfull");
+assert.equal(rootNfEntry.thumbnail, "novelfull.png");
+
+const rootSttPath = path.resolve("./sources/org.novelfull.stt");
+assert.ok(fs.existsSync(rootSttPath), "Root sources/org.novelfull.stt must exist");
+assert.equal(
+  Buffer.compare(fs.readFileSync(sttPath), fs.readFileSync(rootSttPath)),
+  0,
+  "Root sources/org.novelfull.stt must match dist/sources/org.novelfull.stt"
+);
 console.log(
-  "PASS: Multi-source catalog manifest (dist/sources.json) verified for moe.atsu, org.imhentai, and org.novelfull."
+  "PASS: Multi-source catalog manifest (dist/sources.json & root sources.json) and root sources/org.novelfull.stt sync verified."
 );
 
 // 14. Icon Validation (Requirement 4.2)

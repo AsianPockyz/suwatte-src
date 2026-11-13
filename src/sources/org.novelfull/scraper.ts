@@ -45,10 +45,11 @@ import {
   IMAGE_HEADERS,
   INLINE_NOVEL_ID_REGEX,
   ORIGIN_URL,
-  PROMO_LINK_HREF_REGEX,
   RATE_LIMIT_PER_SECOND,
   REFERER_URL,
+  SURGICAL_AD_DOM_SELECTOR,
   TLN_BRACKET_REGEX,
+  VALID_HTML_TAGS,
   VOLUME_NUMBER_REGEX,
   WATERMARK_PATTERNS,
 } from "./constants.js";
@@ -83,20 +84,38 @@ const CHAPTER_CONTAINER_START_REGEX =
   /<(?:div|section|article)\b[^>]*(?:id\s*=\s*["'](?:chapter-content|chr-content)["']|class\s*=\s*["'][^"']*\b(?:chapter-c|chr-c|chapter-content|desc-text)\b)[^>]*>/i;
 const DESC_FALLBACK_START_REGEX =
   /<div\b[^>]*\bclass\s*=\s*["'][^"']*\bdesc\b[^"']*>/i;
-const P_TAG_EXTRACTOR_REGEX = /<p\b[^>]*>([\s\S]*?)<\/p>/gi;
 const STRIP_TAGS_REGEX = /<[^>]+>/g;
-const PROMO_KEYWORD_REGEX = /\b(?:patreon|discord|paypal|ko-fi|novelfull)\b/i;
 const INLINE_ON_HANDLER_REGEX =
   /\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi;
-const REPEATED_BR_REGEX = /(?:<br\s*\/?>\s*){2,}/gi;
-const SINGLE_BR_REGEX = /<br\s*\/?>/gi;
-const OPEN_P_DIV_REGEX = /<(?:p|div)\b[^>]*>/gi;
-const CLOSE_DIV_REGEX = /<\/div>/gi;
-const NESTED_P_REGEX = /<p>\s*<p>/gi;
-const NESTED_CLOSE_P_REGEX = /<\/p>\s*<\/p>/gi;
-const EMPTY_P_REGEX = /<p>(?:\s|&nbsp;|\u00a0|<br>)*<\/p>/gi;
+const EMPTY_P_REGEX = /<p>(?:\s|&nbsp;|\u00a0|<br\s*\/?>)*<\/p>/gi;
 const HTML_COMMENTS_REGEX = /<!--[\s\S]*?-->/g;
-const LINE_BREAK_BLOCK_REGEX = /\r?\n\s*\r?\n|\r?\n/;
+const BLOCK_BOUNDARY_REGEX =
+  /<\/?(?:p|div|center|blockquote|section|article|h[1-6]|hr)\b[^>]*>|<br\s*\/?>|\r?\n/gi;
+const HORIZONTAL_SPACE_COLLAPSE_REGEX = /[ \t]{2,}/g;
+const STANDALONE_NAV_LEAK_REGEX =
+  /^(?:prev(?:ious)?\s+chapter|next\s+chapter|table\s+of\s+contents)$/i;
+
+const ANGLE_BRACKET_PAIR_REGEX = /<([^<>]+)>/g;
+const CLOSING_HTML_TAG_REGEX = /^\/\s*([a-zA-Z][a-zA-Z0-9]*)\s*$/;
+const OPENING_HTML_TAG_REGEX =
+  /^([a-zA-Z][a-zA-Z0-9]*)(?:\s+([\s\S]*?))?\s*\/?$/;
+const SINGLE_LETTER_HTML_TAGS: ReadonlySet<string> = new Set([
+  "a",
+  "b",
+  "i",
+  "p",
+  "s",
+  "u",
+]);
+const VALID_HTML_ATTRS_REGEX =
+  /^(?:[a-zA-Z_:][-a-zA-Z0-9_:.]*(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?(?:\s+|$))+$/;
+const UNCLOSED_OPEN_BRACKET_REGEX = /<(?![^<>]*>)/g;
+
+const EXPLICIT_CHAPTER_MARKER_REGEX =
+  /(?:\b(?:chapter|ch\.?)|^c\.?)\s*(\d+(?:\.\d+)?)/i;
+const LEADING_CHAPTER_NUMBER_REGEX = /^(\d+(?:\.\d+)?)\s*[:\-\.]/;
+const URL_CHAPTER_NUMBER_REGEX = /(?:chapter|ch)[-_](\d+(?:[\.-]\d+)?)/i;
+const STANDALONE_NUMBER_REGEX = /\b(\d+(?:\.\d+)?)\b/;
 
 const OPTION_TAG_REGEX =
   /<option\b[^>]*\bvalue\s*=\s*(?:"([^"]*)"|'([^']*)'|([^>\s]+))[^>]*>([\s\S]*?)<\/option>/gi;
@@ -598,40 +617,40 @@ export function parseChapterNumber(
   rawUrl: string,
   fallbackIdx = 0
 ): number {
-  // Priority 1: Extract from URL slug (cleanest, never contains commas)
-  // Matches: chapter-1-slug, chapter-1000-slug, ch-1.5-slug
-  const urlMatch = rawUrl.match(/(?:chapter|ch)[-_](\d+(?:[\.-]\d+)?)/i);
-  if (urlMatch?.[1]) {
-    const val = parseFloat(urlMatch[1].replace("-", "."));
-    if (!Number.isNaN(val)) return val;
+  // Strip thousands commas before inspecting title ("Chapter 1,000: Battle" -> "Chapter 1000: Battle")
+  const cleanTitle = (title ?? "").replace(/,/g, "").trim();
+
+  // Priority 1: Explicit chapter markers in title so "Chapter 10: 2 Years Later" parses as 10
+  const explicitMatch = EXPLICIT_CHAPTER_MARKER_REGEX.exec(cleanTitle);
+  if (explicitMatch?.[1]) {
+    const val = parseFloat(explicitMatch[1]);
+    if (Number.isFinite(val)) return val;
   }
 
-  // Priority 2: Extract from title after stripping thousands commas
-  // "Chapter 1,000: Battle" -> "Chapter 1000: Battle"
-  const cleanTitle = title.replace(/,/g, "").trim();
-
-  // Match: "Chapter 123", "Ch. 123", "C123", "C.123"
-  const cMatch = cleanTitle.match(/(?:chapter|ch\.?|^c\.?)\s*(\d+(?:\.\d+)?)/i);
-  if (cMatch?.[1]) {
-    const val = parseFloat(cMatch[1]);
-    if (!Number.isNaN(val)) return val;
-  }
-
-  // Match leading digits: "1000: Title" or "1000 - Title"
-  const leadMatch = cleanTitle.match(/^(\d+(?:\.\d+)?)\s*[:\-\.]/);
+  // Priority 2: Leading digits in title ("1000: Title", "1541 - 911: Return")
+  const leadMatch = LEADING_CHAPTER_NUMBER_REGEX.exec(cleanTitle);
   if (leadMatch?.[1]) {
     const val = parseFloat(leadMatch[1]);
-    if (!Number.isNaN(val)) return val;
+    if (Number.isFinite(val)) return val;
   }
 
-  // Match any standalone number
-  const anyNum = cleanTitle.match(/\b(\d+(?:\.\d+)?)\b/);
+  // Priority 3: URL slug fallback for non-numeric titles ("Prologue" + /chapter-1-slug.html)
+  const urlMatch = URL_CHAPTER_NUMBER_REGEX.exec(rawUrl ?? "");
+  if (urlMatch?.[1]) {
+    const val = parseFloat(urlMatch[1].replace("-", "."));
+    if (Number.isFinite(val)) return val;
+  }
+
+  // Priority 4: Any standalone number in title
+  const anyNum = STANDALONE_NUMBER_REGEX.exec(cleanTitle);
   if (anyNum?.[1]) {
     const val = parseFloat(anyNum[1]);
-    if (!Number.isNaN(val)) return val;
+    if (Number.isFinite(val)) return val;
   }
 
-  return fallbackIdx;
+  return typeof fallbackIdx === "number" && Number.isFinite(fallbackIdx)
+    ? fallbackIdx
+    : 0;
 }
 
 /**
@@ -797,27 +816,41 @@ export function mapChapterEntriesToChapters(
   }
 
   const cleanNovelSlug = extractNovelId(novelSlug);
+  const seenIds = new Set<string>();
+  const indexedEntries: Array<{ chapter: Chapter; origIdx: number }> = [];
 
-  const chapters: Chapter[] = entries.map((entry, idx) => {
-    const chapterNumber =
+  for (let i = 0, len = entries.length; i < len; i++) {
+    const entry = entries[i];
+    if (!entry) continue;
+
+    const rawId = entry.chapterId || entry.id || "";
+    const chapterId =
+      extractChapterId(rawId, cleanNovelSlug) || String(entry.id || "").trim();
+    if (!chapterId || seenIds.has(chapterId)) continue;
+    seenIds.add(chapterId);
+
+    const parsedNumber =
       typeof entry.number === "number" &&
       Number.isFinite(entry.number) &&
       entry.number >= 0
         ? entry.number
-        : extractChapterNumber(entry.title || "", entry.chapterId || "", idx + 1);
+        : parseChapterNumber(entry.title || "", rawId, i + 1);
+    const chapterNumber =
+      Number.isFinite(parsedNumber) && parsedNumber >= 0 ? parsedNumber : i + 1;
 
+    const webUrl = entry.webUrl || buildChapterUrl(cleanNovelSlug, chapterId);
     const chapter: Chapter = {
-      id: entry.id,
-      index: idx,
+      id: chapterId,
+      index: 0,
       number: chapterNumber,
       title: entry.title || `Chapter ${chapterNumber}`,
       language: "en",
-      webUrl: entry.webUrl || buildChapterUrl(cleanNovelSlug, entry.id),
-      date: entry.date ?? new Date(1700000000000 + idx * 60000),
+      webUrl,
+      ...(entry.date ? { date: entry.date } : {}),
       data: {
-        chapterId: entry.chapterId,
+        chapterId,
         contentId: cleanNovelSlug,
-        webUrl: entry.webUrl || buildChapterUrl(cleanNovelSlug, entry.id),
+        webUrl,
       },
     };
 
@@ -829,26 +862,24 @@ export function mapChapterEntriesToChapters(
       chapter.volume = entry.volume;
     }
 
-    return chapter;
+    indexedEntries.push({ chapter, origIdx: i });
+  }
+
+  // 1. Sort descending: Highest chapter number first (Atsumaru blueprint),
+  // breaking ties deterministically by original chronological order.
+  indexedEntries.sort((a, b) => {
+    if (b.chapter.number !== a.chapter.number) {
+      return b.chapter.number - a.chapter.number;
+    }
+    return b.origIdx - a.origIdx;
   });
 
-  // 1. Sort descending: Highest chapter number first (Atsumaru blueprint)
-  chapters.sort((a, b) => b.number - a.number);
-
-  // 2. Assign index sequentially matching descending progression (0 = Latest Chapter)
-  chapters.forEach((ch, idx) => {
+  // 2. Assign sequential indices 0..N-1 in a single pass
+  const chapters = new Array<Chapter>(indexedEntries.length);
+  for (let idx = 0, len = indexedEntries.length; idx < len; idx++) {
+    const ch = indexedEntries[idx]!.chapter;
     ch.index = idx;
-  });
-
-  // 3. Safety check: ensure chapters[0] is not less than the last chapter
-  if (
-    chapters.length > 1 &&
-    chapters[0].number < chapters[chapters.length - 1].number
-  ) {
-    chapters.reverse();
-    chapters.forEach((ch, idx) => {
-      ch.index = idx;
-    });
+    chapters[idx] = ch;
   }
 
   return chapters;
@@ -1231,12 +1262,90 @@ export function stripAggregatorWatermarks(textOrHtml: string): string {
   return cleaned;
 }
 
+interface CheerioDomNode {
+  type?: string;
+  data?: string;
+  children?: CheerioDomNode[];
+}
+
+function isValidHtmlTagToken(rawInner: string): boolean {
+  const inner = rawInner.trim();
+  if (!inner) return false;
+  if (inner.startsWith("!--") && inner.endsWith("--")) return true;
+
+  const closeMatch = CLOSING_HTML_TAG_REGEX.exec(inner);
+  if (closeMatch?.[1]) {
+    return VALID_HTML_TAGS.has(closeMatch[1].toLowerCase());
+  }
+
+  const openMatch = OPENING_HTML_TAG_REGEX.exec(inner);
+  if (!openMatch?.[1]) return false;
+
+  const tagName = openMatch[1].toLowerCase();
+  if (!VALID_HTML_TAGS.has(tagName)) return false;
+
+  const attrSegment = (openMatch[2] ?? "").trim();
+  if (!attrSegment) return true;
+
+  if (SINGLE_LETTER_HTML_TAGS.has(tagName) && !attrSegment.includes("=")) {
+    return false;
+  }
+
+  return VALID_HTML_ATTRS_REGEX.test(attrSegment);
+}
+
+/**
+ * Escapes any `<...>` sequence whose tag name is not in `VALID_HTML_TAGS` (or does not
+ * have valid HTML attribute syntax) to `&lt;...&gt;` before Cheerio parses the HTML.
+ */
+export function escapeNonHtmlBrackets(html: string): string {
+  if (!html || typeof html !== "string") {
+    return "";
+  }
+
+  let current = html;
+  for (let pass = 0; pass < 4; pass++) {
+    let changed = false;
+    const next = current.replace(
+      ANGLE_BRACKET_PAIR_REGEX,
+      (full: string, inner: string) => {
+        if (isValidHtmlTagToken(inner)) {
+          return full;
+        }
+        changed = true;
+        return `&lt;${inner}&gt;`;
+      }
+    );
+    current = next;
+    if (!changed) break;
+  }
+
+  return current.replace(UNCLOSED_OPEN_BRACKET_REGEX, "&lt;");
+}
+
+function encodeTextNodeBrackets(node: CheerioDomNode | undefined): void {
+  if (!node) return;
+  if (node.type === "text" && typeof node.data === "string") {
+    if (node.data.includes("<") || node.data.includes(">")) {
+      node.data = node.data.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    return;
+  }
+  const children = node.children;
+  if (Array.isArray(children)) {
+    for (let i = 0, len = children.length; i < len; i++) {
+      encodeTextNodeBrackets(children[i]);
+    }
+  }
+}
+
 /**
  * High-Performance Chapter Text Sanitization & Typography Pipeline for `getChapterText()`.
  * 1. Fast fragment extraction (skips 100KB of navbar/footer DOM).
- * 2. Single-pass isolated Cheerio cleanup for ads, scripts, and promo links.
- * 3. Pre-compiled static regex pipeline for watermarks, TLN, smart quotes, and entity normalization.
- * 4. Zero-allocation paragraph extraction without secondary Cheerio loading.
+ * 2. Escapes non-HTML `<...>` brackets before Cheerio parses so dialogue is never swallowed.
+ * 3. Surgical Cheerio DOM removal for ad/script nodes only (preserves centered & span prose).
+ * 4. Re-encodes literal `<` and `>` inside text nodes as `&lt;`/`&gt;` for Suwatte's HTML reader.
+ * 5. Deterministic `\n\n` paragraph splitting across all block boundaries (`<p>`, `<div>`, `<br>`, etc.).
  */
 export function sanitizeChapterHtml(
   rawHtml: string,
@@ -1253,43 +1362,22 @@ export function sanitizeChapterHtml(
   // 1. Fast slice extraction of chapter content container
   const rawFragment = extractChapterFragment(rawHtml);
   const withoutComments = rawFragment.replace(HTML_COMMENTS_REGEX, "");
+  const escapedHtml = escapeNonHtmlBrackets(withoutComments);
 
   // 2. Parse only the isolated chapter fragment (avoids full 100KB document tree)
-  const $ = cheerio.load(`<div id="nf-frag">${withoutComments}</div>`);
+  const $ = cheerio.load(`<div id="nf-frag">${escapedHtml}</div>`);
   const $container = $("#nf-frag");
 
-  // Always strip executable/unsafe elements
-  $container
-    .find("script, style, iframe, noscript, object, embed, form, input, button")
-    .remove();
-
+  // Always strip executable/unsafe elements; when sanitizeAds is enabled, remove surgical ad selectors only
+  $container.find("script, style, iframe, noscript").remove();
   if (sanitizeAds) {
-    // Strip aggregator ad containers & centered promo blocks
-    $container
-      .find(
-        ".ads, .ads-holder, .ads-content, .ad, ins, div[align='center'], [class*='ads-'], [id*='ads-']"
-      )
-      .remove();
-
-    // Strip aggregator donation & promo anchor links
-    $container.find("a").each((_i, el) => {
-      const $a = $(el);
-      const href = ($a.attr("href") ?? "").trim();
-      const text = $a.text().trim();
-      if (
-        PROMO_LINK_HREF_REGEX.test(href) ||
-        PROMO_LINK_HREF_REGEX.test(text) ||
-        PROMO_KEYWORD_REGEX.test(text)
-      ) {
-        $a.remove();
-      }
-    });
+    $container.find(SURGICAL_AD_DOM_SELECTOR).remove();
   }
 
-  let bodyHtml = $container.html() ?? "";
+  // Keep literal < and > inside prose encoded as &lt; / &gt; when serializing back to HTML
+  encodeTextNodeBrackets($container[0] as unknown as CheerioDomNode);
 
-  // 3. Pre-compiled static regex pipeline
-  bodyHtml = bodyHtml.replace(INLINE_ON_HANDLER_REGEX, "");
+  let bodyHtml = ($container.html() ?? "").replace(INLINE_ON_HANDLER_REGEX, "");
 
   if (sanitizeAds) {
     bodyHtml = stripAggregatorWatermarks(bodyHtml);
@@ -1304,47 +1392,29 @@ export function sanitizeChapterHtml(
   }
 
   if (normalizeSpacing) {
-    bodyHtml = bodyHtml
-      .replace(REPEATED_BR_REGEX, "</p>\n\n<p>")
-      .replace(SINGLE_BR_REGEX, "<br>")
-      .replace(OPEN_P_DIV_REGEX, "<p>")
-      .replace(CLOSE_DIV_REGEX, "</p>")
-      .replace(NESTED_P_REGEX, "<p>")
-      .replace(NESTED_CLOSE_P_REGEX, "</p>")
-      .replace(EMPTY_P_REGEX, "");
-
-    // Extract paragraph blocks with pre-compiled regex (NO second cheerio.load!)
+    const rawBlocks = bodyHtml.split(BLOCK_BOUNDARY_REGEX);
     const paragraphs: string[] = [];
-    P_TAG_EXTRACTOR_REGEX.lastIndex = 0;
-    let pMatch: RegExpExecArray | null;
-    while ((pMatch = P_TAG_EXTRACTOR_REGEX.exec(bodyHtml)) !== null) {
-      const inner = pMatch[1]?.trim() ?? "";
-      const textOnly = inner.replace(STRIP_TAGS_REGEX, "").trim();
-      if (inner && textOnly) {
-        paragraphs.push(`<p>${inner}</p>`);
+
+    for (let i = 0, len = rawBlocks.length; i < len; i++) {
+      const block = rawBlocks[i]
+        ?.replace(HORIZONTAL_SPACE_COLLAPSE_REGEX, " ")
+        .trim();
+      if (!block) continue;
+
+      const textOnly = block
+        .replace(STRIP_TAGS_REGEX, "")
+        .replace(ENTITIES_NBSP_REGEX, " ")
+        .trim();
+      if (!textOnly) continue;
+
+      if (sanitizeAds && STANDALONE_NAV_LEAK_REGEX.test(textOnly)) {
+        continue;
       }
+
+      paragraphs.push(`<p>${block}</p>`);
     }
 
-    if (paragraphs.length === 0) {
-      const blocks = bodyHtml
-        .split(LINE_BREAK_BLOCK_REGEX)
-        .map((line) => line.trim())
-        .filter(
-          (line) =>
-            line.length > 0 &&
-            line.replace(STRIP_TAGS_REGEX, "").trim().length > 0
-        );
-      for (let i = 0; i < blocks.length; i++) {
-        const b = blocks[i]!;
-        paragraphs.push(b.startsWith("<p>") ? b : `<p>${b}</p>`);
-      }
-    }
-
-    if (paragraphs.length > 0) {
-      bodyHtml = normalizeTypographyAndEntities(paragraphs.join("\n\n"));
-    } else {
-      bodyHtml = normalizeTypographyAndEntities(bodyHtml.trim());
-    }
+    bodyHtml = paragraphs.join("\n\n");
   } else {
     bodyHtml = bodyHtml.replace(EMPTY_P_REGEX, "").trim();
   }
@@ -1739,25 +1809,6 @@ export class NovelFullScraperClient {
 
     if (chapters.length === 0) {
       chapters = mapChapterEntriesToChapters(detail.onPageChapters, slug);
-    }
-
-    // 1. Sort descending: Highest chapter number first (Atsumaru blueprint)
-    chapters.sort((a, b) => b.number - a.number);
-
-    // 2. Assign index sequentially matching descending progression (0 = Latest Chapter)
-    chapters.forEach((ch, idx) => {
-      ch.index = idx;
-    });
-
-    // 3. Safety check: ensure chapters[0] is not less than the last chapter
-    if (
-      chapters.length > 1 &&
-      chapters[0].number < chapters[chapters.length - 1].number
-    ) {
-      chapters.reverse();
-      chapters.forEach((ch, idx) => {
-        ch.index = idx;
-      });
     }
 
     return chapters;

@@ -54,6 +54,7 @@ import {
 } from "./preferences.js";
 import {
   NovelFullScraperClient,
+  escapeNonHtmlBrackets,
   extractChapterNumber,
   extractCoverFromElement,
   filterAndMapNovelCards,
@@ -175,6 +176,7 @@ export default class Target
   static readonly parseNovelCards = parseNovelCards;
   static readonly parseNovelDetail = parseNovelDetail;
   static readonly parseAjaxChapterOptions = parseAjaxChapterOptions;
+  static readonly escapeNonHtmlBrackets = escapeNonHtmlBrackets;
   static readonly sanitizeChapterHtml = sanitizeChapterHtml;
   static readonly filterAndMapNovelCards = filterAndMapNovelCards;
   static readonly compileBlacklistContext = compileBlacklistContext;
@@ -190,6 +192,7 @@ export default class Target
   public readonly parseNovelCards = parseNovelCards;
   public readonly parseNovelDetail = parseNovelDetail;
   public readonly parseAjaxChapterOptions = parseAjaxChapterOptions;
+  public readonly escapeNonHtmlBrackets = escapeNonHtmlBrackets;
   public readonly sanitizeChapterHtml = sanitizeChapterHtml;
   public readonly filterAndMapNovelCards = filterAndMapNovelCards;
   public readonly compileBlacklistContext = compileBlacklistContext;
@@ -411,31 +414,16 @@ export default class Target
   async getChapters(contentId: string): Promise<Chapter[]> {
     const chapters = await this.scraper.fetchChapters(contentId);
 
-    // 1. Sort descending: Highest chapter number first (Atsumaru blueprint)
-    chapters.sort((a, b) => b.number - a.number);
-
-    // 2. Assign index sequentially matching descending progression (0 = Latest Chapter)
-    chapters.forEach((ch, idx) => {
-      ch.index = idx;
-    });
-
-    // 3. Safety check: ensure chapters[0] is not less than the last chapter
-    if (
-      chapters.length > 1 &&
-      chapters[0].number < chapters[chapters.length - 1].number
-    ) {
-      chapters.reverse();
-      chapters.forEach((ch, idx) => {
-        ch.index = idx;
-      });
+    for (let idx = 0, len = chapters.length; idx < len; idx++) {
+      chapters[idx]!.index = idx;
     }
 
     if (chapters.length > 0) {
       console.log(
-        `FIRST: ${chapters[0].title} (num: ${chapters[0].number}, idx: ${chapters[0].index})`
+        `FIRST: ${chapters[0]!.title} (num: ${chapters[0]!.number}, idx: ${chapters[0]!.index})`
       );
       console.log(
-        `LAST: ${chapters[chapters.length - 1].title} (num: ${chapters[chapters.length - 1].number}, idx: ${chapters[chapters.length - 1].index})`
+        `LAST: ${chapters[chapters.length - 1]!.title} (num: ${chapters[chapters.length - 1]!.number}, idx: ${chapters[chapters.length - 1]!.index})`
       );
     }
 
@@ -467,13 +455,14 @@ export default class Target
   }
 }
 
-Target.info.version = 1.6;
+Target.info.version = 1.7;
 
 export {
   canResolveNovelFullUrl,
   cleanAndDeduplicateTitle,
   cleanTitle,
   compileBlacklistContext,
+  escapeNonHtmlBrackets,
   extractChapterNumber,
   extractCoverFromElement,
   filterAndMapNovelCards,

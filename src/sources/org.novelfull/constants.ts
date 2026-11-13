@@ -9,7 +9,7 @@ export { ContentRating };
 
 export const SOURCE_ID = "org.novelfull";
 export const SOURCE_NAME = "NovelFull";
-export const SOURCE_VERSION = 1.6;
+export const SOURCE_VERSION = 1.7;
 export const BASE_URL = "https://novelfull.com";
 export const VARIANT_ID = "org.novelfull";
 export const THUMBNAIL_FILENAME = "novelfull.png";
@@ -106,23 +106,55 @@ export const BG_IMAGE_URL_REGEX =
 export const TLN_BRACKET_REGEX =
   /(?:\[|\()(?:TL|TN|Translator(?:'s)?)(?:\s*Note)?:\s*([^\])]+?)(?:\]|\))/gi;
 
-// Aggregator watermark & promo stripping regexes:
-export const WATERMARK_PATTERNS: readonly RegExp[] = Object.freeze([
-  /read\s+novel\s+online\s+free\s+on\s+novelfull(?:\.(?:com|net))?\.?/gi,
-  /visit\s+novelfull\.(?:com|net)\s+for\s+the\s+best\s+novel\s+reading\s+experience\.?/gi,
-  /if\s+you\s+discover\s+any\s+errors[\s\S]{0,250}?(?:please[\s\S]{0,60}?report|as\s+soon\s+as\s+possible)[^<\n]*/gi,
-  /if\s+you\s+discover\s+any\s+errors[^<\n]*/gi,
-  /find\s+authorized\s+novels\s+in\s+webnovel[\s\S]{0,200}?for\s+visiting\.?/gi,
-  /read\s+latest\s+chapters?\s+at\s+novelfull(?:\.(?:com|net))?[^<\n]*/gi,
-  /this\s+chapter\s+is\s+updated\s+by\s+novelfull(?:\.(?:com|net))?[^<\n]*/gi,
-  /updated\s+by\s+novelfull(?:\.(?:com|net))?[^<\n]*/gi,
-  /source\s*:\s*novelfull\.(?:com|net)/gi,
-  /(?:support\s+us\s+on|join\s+our|donate\s+(?:via|to|on)|check\s+out\s+our|follow\s+us\s+on)\s+[^<\n]*?\b(?:patreon|discord|paypal|ko-fi|buymeacoffee)\b[^<\n]*/gi,
-  /https?:\/\/(?:www\.)?(?:patreon\.com|discord\.(?:gg|com)|paypal\.(?:me|com)|ko-fi\.com|buymeacoffee\.com)\/[^\s<")']*/gi,
+// Valid HTML tag whitelist preserved before Cheerio parsing so non-HTML <...> dialogue is escaped.
+export const VALID_HTML_TAGS: ReadonlySet<string> = new Set([
+  "p",
+  "br",
+  "div",
+  "span",
+  "b",
+  "i",
+  "em",
+  "strong",
+  "u",
+  "s",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "blockquote",
+  "ul",
+  "ol",
+  "li",
+  "hr",
+  "a",
+  "img",
+  "script",
+  "style",
+  "iframe",
+  "ins",
+  "noscript",
+  "font",
+  "center",
+  "sub",
+  "sup",
+  "table",
+  "tr",
+  "td",
+  "th",
 ]);
 
-export const PROMO_LINK_HREF_REGEX =
-  /(?:patreon\.com|discord\.(?:gg|com)|paypal\.(?:me|com)|ko-fi\.com|buymeacoffee\.com|novelfull\.(?:com|net))/i;
+export const SURGICAL_AD_DOM_SELECTOR =
+  'script, style, iframe, noscript, ins, .adsbygoogle, .ads, .ads-holder, .ads-box, [id^="div-gpt-ad"], [class*="ad-container"]';
+
+// Surgical phrase-only NovelFull boilerplate & navigation leak patterns (no greedy .*$ patterns):
+export const WATERMARK_PATTERNS: readonly RegExp[] = Object.freeze([
+  /(?:read\s+novel\s+online\s+free\s+(?:on|at)\s+novelfull(?:\.com|\.net)?|visit\s+novelfull(?:\.com|\.net)?\s+for\s+the\s+best\s+novel\s+reading\s+experience|source:\s*novelfull(?:\.com|\.net)?)/gi,
+  /if\s+you\s+discover\s+any\s+errors(?:\s*\(?\s*broken\s+links,\s*non-standard\s+content,\s*etc\.{0,3}\s*\)?)?,?\s*please\s+let\s+us\s+know(?:\s*(?:&lt;|<)\s*report\s+chapter\s*(?:&gt;|>))?\s+so\s+we\s+can\s+fix\s+it\s+as\s+soon\s+as\s+possible\.?/gi,
+  /^\s*(?:prev(?:ious)?\s+chapter|next\s+chapter|table\s+of\s+contents)\s*$/gim,
+]);
 
 // Reserved non-novel path prefixes on NovelFull
 export const RESERVED_PATHS_SET: ReadonlySet<string> = new Set([
